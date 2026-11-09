@@ -1,0 +1,10 @@
+{
+  "name": "marka",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down"
+  }
+}
