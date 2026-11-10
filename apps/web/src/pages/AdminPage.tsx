@@ -1,14 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-
-const API_URL = import.meta.env.VITE_API_URL || "";
+import { apiFetch, setAccessToken } from "../../lib/api";
 
 type Service = { id: string; name: string; durationMin: number; price: number };
 type Reservation = { id: string; clientName: string; clientPhone: string; startTime: string; service: { name: string } };
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   
@@ -28,16 +26,13 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const [resSvc, resRes] = await Promise.all([
-        fetch(`${API_URL}/api/v1/reservations/services`).then(r => r.json()),
-        fetch(`${API_URL}/api/v1/reservations`, { credentials: "include" }).then(r => {
-          if (r.status === 401) throw new Error("Sessão expirada");
-          return r.json();
-        })
+        apiFetch<Service[]>("/api/v1/reservations/services", { skipAuth: true }),
+        apiFetch<Reservation[]>("/api/v1/reservations") // Aqui o apiFetch já injeta o Bearer token!
       ]);
-      setServices(Array.isArray(resSvc) ? resSvc : []);
-      setReservations(Array.isArray(resRes) ? resRes : []);
+      setServices(resSvc);
+      setReservations(resRes);
       setIsAuthenticated(true);
-    } catch (err) {
+    } catch (err: any) {
       setIsAuthenticated(false);
     } finally {
       setLoading(false);
@@ -52,15 +47,13 @@ export default function AdminPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/v1/auth/login`, {
+      const data = await apiFetch<{ token: string }>("/api/v1/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password }),
-        credentials: "include",
+        skipAuth: true,
       });
 
-      if (!res.ok) throw new Error("Email ou password incorretos");
-      
+      setAccessToken(data.token); // Guarda o token!
       showToast("Login efetuado com sucesso!", "success");
       await loadData();
     } catch (err: any) {
@@ -71,7 +64,7 @@ export default function AdminPage() {
   }
 
   async function handleLogout() {
-    await fetch(`${API_URL}/api/v1/auth/logout`, { method: "POST", credentials: "include" });
+    setAccessToken(null);
     setIsAuthenticated(false);
     setEmail("");
     setPassword("");
@@ -80,18 +73,14 @@ export default function AdminPage() {
   async function handleCreateService(e: FormEvent) {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_URL}/api/v1/reservations/services`, {
+      await apiFetch("/api/v1/reservations/services", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
           durationMin: Number(formData.durationMin),
           price: Number(formData.price),
         }),
-        credentials: "include",
       });
-      
-      if (!res.ok) throw new Error("Erro ao criar serviço");
       
       setFormData({ name: "", durationMin: "30", price: "" });
       loadData();
