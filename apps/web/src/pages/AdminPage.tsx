@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { apiFetch, setAccessToken } from "../../lib/api";
+import { apiFetch, setAccessToken } from "../lib/api"; // <-- CORREÇÃO AQUI
 
 type Service = { id: string; name: string; durationMin: number; price: number };
 type Reservation = { id: string; clientName: string; clientPhone: string; startTime: string; service: { name: string } };
@@ -27,7 +27,7 @@ export default function AdminPage() {
     try {
       const [resSvc, resRes] = await Promise.all([
         apiFetch<Service[]>("/api/v1/reservations/services", { skipAuth: true }),
-        apiFetch<Reservation[]>("/api/v1/reservations") // Aqui o apiFetch já injeta o Bearer token!
+        apiFetch<Reservation[]>("/api/v1/reservations") 
       ]);
       setServices(resSvc);
       setReservations(resRes);
@@ -53,7 +53,7 @@ export default function AdminPage() {
         skipAuth: true,
       });
 
-      setAccessToken(data.token); // Guarda o token!
+      setAccessToken(data.token); 
       showToast("Login efetuado com sucesso!", "success");
       await loadData();
     } catch (err: any) {
