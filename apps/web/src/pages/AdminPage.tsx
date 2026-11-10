@@ -1,23 +1,22 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 type Service = { id: string; name: string; durationMin: number; price: number };
 type Reservation = { id: string; clientName: string; clientPhone: string; startTime: string; service: { name: string } };
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  // Estados do Login
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   
-  // Estados do Painel
   const [services, setServices] = useState<Service[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [formData, setFormData] = useState({ name: "", durationMin: "30", price: "" });
   const [loading, setLoading] = useState(false);
   
-  // Notificações
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   function showToast(message: string, type: "success" | "error") {
@@ -29,8 +28,8 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const [resSvc, resRes] = await Promise.all([
-        fetch("/api/v1/reservations/services").then(r => r.json()), // Rota pública
-        fetch("/api/v1/reservations", { credentials: "include" }).then(r => {
+        fetch(`${API_URL}/api/v1/reservations/services`).then(r => r.json()),
+        fetch(`${API_URL}/api/v1/reservations`, { credentials: "include" }).then(r => {
           if (r.status === 401) throw new Error("Sessão expirada");
           return r.json();
         })
@@ -45,7 +44,6 @@ export default function AdminPage() {
     }
   }
 
-  // Tenta carregar os dados ao abrir a página (se já tiver o cookie de login, entra direto)
   useEffect(() => {
     loadData();
   }, []);
@@ -54,13 +52,10 @@ export default function AdminPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/auth/login", {
+      const res = await fetch(`${API_URL}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email: email.trim(), // <-- CORREÇÃO AQUI: Limpa espaços do email
-          password: password 
-        }),
+        body: JSON.stringify({ email: email.trim(), password }),
         credentials: "include",
       });
 
@@ -76,7 +71,7 @@ export default function AdminPage() {
   }
 
   async function handleLogout() {
-    await fetch("/api/v1/auth/logout", { method: "POST", credentials: "include" });
+    await fetch(`${API_URL}/api/v1/auth/logout`, { method: "POST", credentials: "include" });
     setIsAuthenticated(false);
     setEmail("");
     setPassword("");
@@ -85,7 +80,7 @@ export default function AdminPage() {
   async function handleCreateService(e: FormEvent) {
     e.preventDefault();
     try {
-      const res = await fetch("/api/v1/reservations/services", {
+      const res = await fetch(`${API_URL}/api/v1/reservations/services`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -93,7 +88,7 @@ export default function AdminPage() {
           durationMin: Number(formData.durationMin),
           price: Number(formData.price),
         }),
-        credentials: "include", // Envia o cookie de autenticação
+        credentials: "include",
       });
       
       if (!res.ok) throw new Error("Erro ao criar serviço");
@@ -106,22 +101,6 @@ export default function AdminPage() {
     }
   }
 
-  async function handleCancelReservation(id: string) {
-    if (!window.confirm("Tem a certeza que deseja cancelar esta reserva?")) return;
-    try {
-      const res = await fetch(`/api/v1/reservations/${id}/cancel`, {
-        method: "PATCH",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Erro ao cancelar");
-      loadData();
-      showToast("Reserva cancelada.", "success");
-    } catch (err) {
-      showToast("Erro ao cancelar reserva.", "error");
-    }
-  }
-
-  // Ecrã de Login
   if (!isAuthenticated && !loading) {
     return (
       <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4">
@@ -172,12 +151,10 @@ export default function AdminPage() {
     );
   }
 
-  // Ecrã de Loading
   if (loading && !isAuthenticated) {
     return <div className="min-h-screen flex items-center justify-center text-zinc-500">A carregar...</div>;
   }
 
-  // Ecrã do Painel
   return (
     <div className="min-h-screen bg-zinc-50 p-6 md:p-10 relative overflow-hidden">
       {toast && (
@@ -217,7 +194,7 @@ export default function AdminPage() {
               <label className="block text-sm text-zinc-700 mb-1">Preço (Kz)</label>
               <input type="number" required min="0" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-zinc-900 outline-none" placeholder="Ex: 3000" />
             </div>
-            <button type="submit" className="w-full bg-zinc-900 text-white py-2 rounded-lg font-medium hover:bg-zinc-800 transition-colors">
+            <button type="submit" className="w-full bg-zinc-900 text-white py-2 rounded-lg font-medium hover:bg-zinc-800">
               Adicionar
             </button>
           </form>
@@ -237,7 +214,6 @@ export default function AdminPage() {
                     <th className="px-4 py-3">Data/Hora</th>
                     <th className="px-4 py-3">Cliente</th>
                     <th className="px-4 py-3">Serviço</th>
-                    <th className="px-4 py-3 text-right">Ação</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
@@ -246,11 +222,6 @@ export default function AdminPage() {
                       <td className="px-4 py-3 text-zinc-700">{new Date(r.startTime).toLocaleString("pt-AO")}</td>
                       <td className="px-4 py-3 font-medium">{r.clientName} <span className="text-zinc-400 block text-xs">{r.clientPhone}</span></td>
                       <td className="px-4 py-3 text-zinc-600">{r.service.name}</td>
-                      <td className="px-4 py-3 text-right">
-                        <button onClick={() => handleCancelReservation(r.id)} className="text-xs font-medium text-red-600 hover:text-red-800 hover:underline">
-                          Cancelar
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -264,7 +235,7 @@ export default function AdminPage() {
               {services.map(s => (
                 <li key={s.id} className="flex justify-between items-center text-sm border-b border-zinc-100 pb-2">
                   <span className="text-zinc-800">{s.name} ({s.durationMin} min)</span>
-                  <span className="font-medium text-zinc-900">{s.price} Kz</span>
+                  <span className="font-medium text-zinc-900">{Number(s.price).toLocaleString("pt-AO")} Kz</span>
                 </li>
               ))}
             </ul>

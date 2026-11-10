@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 type Service = {
   id: string;
   name: string;
@@ -18,14 +20,19 @@ export default function ClientPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/v1/reservations/services")
+    fetch(`${API_URL}/api/v1/reservations/services`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setServices(data);
+        setLoading(false);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   }, []);
 
   async function handleSubmit(e: FormEvent) {
@@ -40,7 +47,7 @@ export default function ClientPage() {
     const startTime = new Date(`${date}T${time}:00.000Z`).toISOString();
 
     try {
-      const res = await fetch("/api/v1/reservations", {
+      const res = await fetch(`${API_URL}/api/v1/reservations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -59,6 +66,15 @@ export default function ClientPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 text-zinc-500">
+        <div className="w-10 h-10 border-4 border-zinc-200 border-t-zinc-900 rounded-full animate-spin mb-4"></div>
+        <p>A carregar serviços, aguarde...</p>
+      </div>
+    );
   }
 
   if (isSuccess) {
@@ -93,8 +109,7 @@ export default function ClientPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 py-12 px-4 relative">
-      {/* Link escondido para o Admin (podes mudar o estilo depois) */}
-      <Link to="/admin" className="absolute top-4 right-4 text-xs text-zinc-400 hover:text-zinc-900">
+      <Link to="/admin" className="absolute top-4 right-4 text-xs text-zinc-400 hover:text-zinc-900 font-medium">
         Acesso Restrito (Admin)
       </Link>
 
@@ -116,7 +131,7 @@ export default function ClientPage() {
               <label className="block text-sm font-medium text-zinc-700 mb-2">1. Escolha o serviço</label>
               <div className="grid grid-cols-1 gap-2">
                 {services.length === 0 ? (
-                  <p className="text-sm text-zinc-500">A carregar serviços...</p>
+                  <p className="text-sm text-zinc-500">Nenhum serviço disponível de momento.</p>
                 ) : (
                   services.map((svc) => (
                     <div
@@ -133,7 +148,7 @@ export default function ClientPage() {
                           <div className="font-semibold text-zinc-900">{svc.name}</div>
                           <div className="text-sm text-zinc-500">{svc.durationMin} minutos</div>
                         </div>
-                        <div className="font-bold text-zinc-900">{svc.price} Kz</div>
+                        <div className="font-bold text-zinc-900">{Number(svc.price).toLocaleString("pt-AO")} Kz</div>
                       </div>
                     </div>
                   ))
