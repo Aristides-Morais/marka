@@ -1,9 +1,41 @@
 import { Router } from "express";
-import { createReservationSchema, createServiceSchema } from "./reservation.schemas.js";
-import { cancelReservation, createReservation, createService, getReservations, listServices } from "./reservation.service.js";
+import { z } from "zod";
+import { prisma } from "../../lib/prisma.js";
 import { requireAuth } from "../../middleware/auth.middleware.js";
-import { reservationLimiter } from "../../middleware/rateLimit.middleware.js"; // <-- NOVO
+// ... (resto dos imports)
 
+export const reservationRouter = Router();
+
+// Rota pública para o frontend saber o horário de funcionamento
+reservationRouter.get("/hours", async (req, res, next) => {
+  try {
+    const admin = await prisma.user.findFirst();
+    res.json({ openTime: admin?.openTime || "08:00", closeTime: admin?.closeTime || "18:00" });
+  } catch (err) { next(err); }
+});
+
+// Rota privada para atualizar o horário
+reservationRouter.patch("/hours", requireAuth, async (req, res, next) => {
+  try {
+    const schema = z.object({
+      openTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+      closeTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/),
+    });
+    const { openTime, closeTime } = schema.parse(req.body);
+    
+    const admin = await prisma.user.findFirst();
+    if (!admin) throw new Error("Admin não encontrado");
+
+    const updated = await prisma.user.update({
+      where: { id: admin.id },
+      data: { openTime, closeTime },
+    });
+
+    res.json({ openTime: updated.openTime, closeTime: updated.closeTime });
+  } catch (err) { next(err); }
+});
+
+// ... (as rotas de serviços e reservas que já tinhas mantêm-se abaixo)
 export const reservationRouter = Router();
 
 // --- ROTAS PÚBLICAS (Clientes) ---

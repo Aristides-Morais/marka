@@ -30,16 +30,46 @@ export async function getReservations(date?: string) {
   });
 }
 
+// ... (mantém os imports e o início da função)
+
 export async function createReservation(input: CreateReservationInput) {
   const service = await prisma.service.findFirst({
     where: { id: input.serviceId, active: true },
   });
+
   if (!service) throw new ReservationError("SERVICE_NOT_FOUND", "Serviço não encontrado", 404);
 
   const startTime = new Date(input.startTime);
   const endTime = new Date(startTime.getTime() + service.durationMin * 60000);
-  if (startTime < new Date()) throw new ReservationError("INVALID_DATE", "Não é possível agendar no passado", 400);
 
+  if (startTime < new Date()) {
+    throw new ReservationError("INVALID_DATE", "Não é possível agendar no passado", 400);
+  }
+
+  // NOVA REGRA: Verificar horário de funcionamento
+  const admin = await prisma.user.findFirst();
+  if (admin) {
+    const [openHour, openMin] = admin.openTime.split(":").map(Number);
+    const [closeHour, closeMin] = admin.closeTime.split(":").map(Number);
+
+    const startHour = startTime.getHours();
+    const startMinute = startTime.getMinutes();
+    const endHour = endTime.getHours();
+    const endMinute = endTime.getMinutes();
+
+    // Converter tudo para minutos para facilitar a comparação
+    const startInMinutes = startHour * 60 + startMinute;
+    const endInMinutes = endHour * 60 + endMinute;
+    const openInMinutes = openHour * 60 + openMin;
+    const closeInMinutes = closeHour * 60 + closeMin;
+
+    if (startInMinutes < openInMinutes || endInMinutes > closeInMinutes) {
+      throw new ReservationError("OUTSIDE_HOURS", `A loja funciona apenas entre as ${admin.openTime} e as ${admin.closeTime}`, 400);
+    }
+  }
+
+  return prisma.$transaction(async (tx) => {
+    // ... (o resto do código da transação de conflito de horário mantém-se igual)
   return prisma.$transaction(async (tx) => {
     const conflictingReservation = await tx.reservation.findFirst({
       where: {

@@ -44,5 +44,9 @@ model User {
   role         String   @default("ADMIN")
   createdAt    DateTime @default(now())
 
+  // NOVOS CAMPOS DE HORÁRIO
+  openTime     String   @default("08:00")
+  closeTime    String   @default("18:00")
+
   @@map("users")
 }
