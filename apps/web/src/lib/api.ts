@@ -13,19 +13,19 @@ export function getAccessToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-// ADICIONADO: tenant?: string para identificar o negócio
 type ApiOptions = RequestInit & { skipAuth?: boolean; tenant?: string };
 
 export async function apiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
   const { skipAuth, tenant, ...init } = options;
-
   const headers = new Headers(init.headers);
   
+  // CORREÇÃO AQUI: Só define JSON se NÃO for um upload de ficheiro (FormData)
   if (init.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
+    if (!(init.body instanceof FormData)) {
+      headers.set("Content-Type", "application/json");
+    }
   }
   
-  // INJEÇÃO CRÍTICA: Se houver um tenant, envia no header para o backend saber quem é
   if (tenant) {
     headers.set("x-business-slug", tenant);
   }
@@ -45,16 +45,10 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
     let errorBody: { error?: { code: string; message: string; details?: unknown } } = {};
     try {
       errorBody = await response.json();
-    } catch {
-      // resposta sem JSON
-    }
+    } catch {}
     
-    const err = new Error(
-      errorBody.error?.message ?? `HTTP ${response.status}`
-    ) as Error & {
-      code?: string;
-      status?: number;
-      details?: unknown;
+    const err = new Error(errorBody.error?.message ?? `HTTP ${response.status}`) as Error & {
+      code?: string; status?: number; details?: unknown;
     };
     err.code = errorBody.error?.code;
     err.status = response.status;
