@@ -1,7 +1,31 @@
+# Dependências
 node_modules/
+.pnpm-store/
+
+# Variáveis de Ambiente (Protege TODOS os .env, mas permite o example)
 .env
+.env.*
+!.env.example
+
+# Builds e Cache
 dist/
+build/
+.turbo/
+.vite/
+
+# Prisma Client Gerado (NÃO envies isto para o GitHub, o Render gera sozinho)
+apps/api/src/generated/prisma/
+packages/*/src/generated/prisma/
+
+# Pasta de Uploads de Imagens (Não enches o GitHub com fotos de teste)
+apps/api/public/uploads/
+
+# Ferramentas de IA / Editores (O que já tinhas)
 .agents/
 .claude/
 .windsurf/
 skills-lock.json
+
+# Sistema Operativo (Ficheiros ocultos do Windows/Mac)
+.DS_Store
+Thumbs.db
