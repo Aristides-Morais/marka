@@ -14,15 +14,17 @@ export default function StorePage() {
   const [isCartOpen, setIsCartOpen] = useState(false); 
   const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({ name: "", phone: "", address: "" });
+  
+  // Estas são as variáveis que estavam a dar erro por não serem usadas:
   const [isSuccess, setIsSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug) return;
     
-    // Vamos buscar os produtos E os dados do negócio (nome, logo, cor) ao mesmo tempo
     Promise.all([
       apiFetch<Product[]>("/api/v1/products", { skipAuth: true, tenant: slug }),
       apiFetch<any>("/api/v1/business/info", { skipAuth: true, tenant: slug })
@@ -96,13 +98,11 @@ export default function StorePage() {
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-20 flex items-center justify-between gap-4">
           
           <div className="flex items-center gap-4">
-            {/* BOTÃO VOLTAR ÀS RESERVAS (Canto Superior Esquerdo) */}
             <Link to={`/${slug}`} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               <span className="hidden md:block">Reservas</span>
             </Link>
 
-            {/* LOGO E NOME DO NEGÓCIO */}
             <div className="flex items-center gap-3 border-l border-gray-200 pl-4 ml-2">
               {store.logoUrl ? (
                 <img src={store.logoUrl} alt="Logo" className="w-10 h-10 rounded-full object-cover border border-gray-100 shadow-sm" />
@@ -117,7 +117,6 @@ export default function StorePage() {
             </div>
           </div>
 
-          {/* BARRA DE PESQUISA */}
           <div className="hidden md:flex flex-1 max-w-md relative mx-4">
             <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input 
@@ -127,7 +126,6 @@ export default function StorePage() {
             />
           </div>
 
-          {/* CARRINHO */}
           <div className="flex items-center gap-4">
             <button onClick={() => setIsCartOpen(true)} className="relative text-white p-2.5 rounded-full transition-colors shadow-lg" style={{ backgroundColor: store.primaryColor }}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
@@ -142,7 +140,6 @@ export default function StorePage() {
       {/* ÁREA PRINCIPAL (GRELHA DE PRODUTOS) */}
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
         
-        {/* Pesquisa Mobile */}
         <div className="md:hidden relative mb-6">
             <input type="text" placeholder="Procurar produtos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-white border border-gray-200 rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-2" style={{ "--tw-ring-color": store.primaryColor } as any} />
         </div>
@@ -193,9 +190,106 @@ export default function StorePage() {
         )}
       </main>
 
-      {/* O RESTO DO CARRINHO E MODAL MANTÉM-SE IGUAL AO CÓDIGO ANTERIOR */}
+      {/* OVERLAY DO CARRINHO */}
       {isCartOpen && <div className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)} />}
-      {/* ... (Copiar o Carrinho e o Modal de Sucesso do código anterior, lembrando de trocar as cores fixas verde pelo 'store.primaryColor') ... */}
+
+      {/* CARRINHO LATERAL (ESTILO PREMIUM) */}
+      <aside className={`fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${isCartOpen ? "translate-x-0" : "translate-x-full"}`}>
+        
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <svg className="w-6 h-6" style={{ color: store.primaryColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+            O teu Carrinho
+          </h2>
+          <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-gray-900 bg-gray-50 p-2 rounded-full">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {cart.length === 0 ? (
+            <div className="text-center mt-20">
+              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                 <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+              </div>
+              <p className="text-gray-500 font-medium mb-6">O teu carrinho está vazio.</p>
+              <button onClick={() => setIsCartOpen(false)} className="text-white px-6 py-2.5 rounded-full font-medium transition-colors" style={{ backgroundColor: store.primaryColor }}>Começar a comprar</button>
+            </div>
+          ) : (
+            cart.map((item) => (
+              <div key={item.id} className="flex gap-4 border-b border-gray-50 pb-6">
+                <div className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
+                   {item.imageUrl ? <img src={item.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-100"></div>}
+                </div>
+                <div className="flex-1 flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 text-sm">{item.name}</h4>
+                      <p className="text-xs text-gray-400 mt-1">{Number(item.price).toLocaleString("pt-AO")} Kz / un</p>
+                    </div>
+                    <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 transition-colors">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    </button>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="flex items-center bg-gray-50 rounded-full border border-gray-200">
+                      <button onClick={() => decreaseQuantity(item.id)} className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded-l-full transition-colors">-</button>
+                      <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
+                      <button onClick={() => increaseQuantity(item.id)} disabled={item.quantity >= item.stock} className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded-r-full disabled:opacity-50 transition-colors">+</button>
+                    </div>
+                    <span className="font-bold" style={{ color: store.primaryColor }}>{(Number(item.price) * Number(item.quantity)).toLocaleString("pt-AO")} Kz</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* RESUMO E CHECKOUT */}
+        {cart.length > 0 && (
+          <div className="p-6 border-t border-gray-100 bg-gray-50/50">
+            {errorMsg && <div className="mb-4 p-3 bg-red-100 text-red-700 text-xs rounded-xl">{errorMsg}</div>}
+            
+            <div className="space-y-3 mb-6 text-sm">
+              <div className="flex justify-between text-gray-500">
+                <span>Subtotal</span>
+                <span className="font-medium text-gray-900">{Number(cartSubtotal).toLocaleString("pt-AO")} Kz</span>
+              </div>
+              <div className="flex justify-between text-gray-500">
+                <span>Taxa de Entrega</span>
+                <span className="font-medium text-gray-900">{Number(deliveryFee).toLocaleString("pt-AO")} Kz</span>
+              </div>
+              <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
+                <span className="font-bold text-gray-900 text-base">Total</span>
+                <span className="font-extrabold text-xl" style={{ color: store.primaryColor }}>{Number(cartTotal).toLocaleString("pt-AO")} Kz</span>
+              </div>
+            </div>
+
+            <form onSubmit={handleCheckout} className="space-y-3">
+              <input required placeholder="O teu nome completo" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2" style={{ "--tw-ring-color": store.primaryColor } as any} />
+              <input required placeholder="Telefone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2" style={{ "--tw-ring-color": store.primaryColor } as any} />
+              <input required placeholder="Endereço de entrega" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2" style={{ "--tw-ring-color": store.primaryColor } as any} />
+              <button type="submit" disabled={submitting} className="w-full text-white py-4 rounded-xl font-bold text-base transition-colors disabled:opacity-50 shadow-lg mt-2" style={{ backgroundColor: store.primaryColor }}>
+                {submitting ? "A processar..." : "Finalizar Compra"}
+              </button>
+            </form>
+          </div>
+        )}
+      </aside>
+
+      {/* MODAL DE SUCESSO */}
+      {isSuccess && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-scale-up">
+            <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: `${store.primaryColor}20`, color: store.primaryColor }}>
+              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Pedido Efetuado!</h2>
+            <p className="text-gray-500 mb-8 text-sm">O teu pedido foi recebido com sucesso. O vendedor entrará em contacto em breve.</p>
+            <button onClick={() => setIsSuccess(false)} className="w-full text-white py-3 rounded-xl font-semibold transition-colors" style={{ backgroundColor: store.primaryColor }}>Voltar à Loja</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
