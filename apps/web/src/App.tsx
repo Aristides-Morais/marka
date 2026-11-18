@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import ClientPage from "./pages/ClientPage"; // <--- MUDANÇA AQUI (Adicionado /pages/)
+import ClientPage from "./pages/ClientPage";
 import AdminPage from "./pages/AdminPage";
 import StorePage from "./pages/StorePage";
 
