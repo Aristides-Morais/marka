@@ -13,25 +13,28 @@ export function getAccessToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-type ApiOptions = RequestInit & { skipAuth?: boolean };
+// ADICIONADO: tenant?: string para identificar o negócio
+type ApiOptions = RequestInit & { skipAuth?: boolean; tenant?: string };
 
 export async function apiFetch<T = unknown>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { skipAuth, ...init } = options;
+  const { skipAuth, tenant, ...init } = options;
 
   const headers = new Headers(init.headers);
   
-  // Se houver dados a enviar, define o Content-Type
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
   
-  // Se não for uma rota pública (login), adiciona o Token
+  // INJEÇÃO CRÍTICA: Se houver um tenant, envia no header para o backend saber quem é
+  if (tenant) {
+    headers.set("x-business-slug", tenant);
+  }
+
   const token = getAccessToken();
   if (!skipAuth && token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  // Usa o API_URL (que vem da Vercel) em vez de localhost
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers,
@@ -39,7 +42,6 @@ export async function apiFetch<T = unknown>(path: string, options: ApiOptions = 
   });
 
   if (!response.ok) {
-    // Tenta ler o erro do backend, se não conseguir, usa o status HTTP
     let errorBody: { error?: { code: string; message: string; details?: unknown } } = {};
     try {
       errorBody = await response.json();

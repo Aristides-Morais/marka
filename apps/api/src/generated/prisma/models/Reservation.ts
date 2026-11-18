@@ -26,34 +26,40 @@ export type AggregateReservation = {
 
 export type ReservationMinAggregateOutputType = {
   id: string | null
+  businessId: string | null
   serviceId: string | null
   clientName: string | null
   clientPhone: string | null
   startTime: Date | null
   endTime: Date | null
   status: string | null
+  notes: string | null
   createdAt: Date | null
 }
 
 export type ReservationMaxAggregateOutputType = {
   id: string | null
+  businessId: string | null
   serviceId: string | null
   clientName: string | null
   clientPhone: string | null
   startTime: Date | null
   endTime: Date | null
   status: string | null
+  notes: string | null
   createdAt: Date | null
 }
 
 export type ReservationCountAggregateOutputType = {
   id: number
+  businessId: number
   serviceId: number
   clientName: number
   clientPhone: number
   startTime: number
   endTime: number
   status: number
+  notes: number
   createdAt: number
   _all: number
 }
@@ -61,34 +67,40 @@ export type ReservationCountAggregateOutputType = {
 
 export type ReservationMinAggregateInputType = {
   id?: true
+  businessId?: true
   serviceId?: true
   clientName?: true
   clientPhone?: true
   startTime?: true
   endTime?: true
   status?: true
+  notes?: true
   createdAt?: true
 }
 
 export type ReservationMaxAggregateInputType = {
   id?: true
+  businessId?: true
   serviceId?: true
   clientName?: true
   clientPhone?: true
   startTime?: true
   endTime?: true
   status?: true
+  notes?: true
   createdAt?: true
 }
 
 export type ReservationCountAggregateInputType = {
   id?: true
+  businessId?: true
   serviceId?: true
   clientName?: true
   clientPhone?: true
   startTime?: true
   endTime?: true
   status?: true
+  notes?: true
   createdAt?: true
   _all?: true
 }
@@ -167,12 +179,14 @@ export type ReservationGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 
 export type ReservationGroupByOutputType = {
   id: string
+  businessId: string
   serviceId: string
   clientName: string
   clientPhone: string
   startTime: Date
   endTime: Date
   status: string
+  notes: string | null
   createdAt: Date
   _count: ReservationCountAggregateOutputType | null
   _min: ReservationMinAggregateOutputType | null
@@ -199,25 +213,31 @@ export type ReservationWhereInput = {
   OR?: Prisma.ReservationWhereInput[]
   NOT?: Prisma.ReservationWhereInput | Prisma.ReservationWhereInput[]
   id?: Prisma.StringFilter<"Reservation"> | string
+  businessId?: Prisma.StringFilter<"Reservation"> | string
   serviceId?: Prisma.StringFilter<"Reservation"> | string
   clientName?: Prisma.StringFilter<"Reservation"> | string
   clientPhone?: Prisma.StringFilter<"Reservation"> | string
   startTime?: Prisma.DateTimeFilter<"Reservation"> | Date | string
   endTime?: Prisma.DateTimeFilter<"Reservation"> | Date | string
   status?: Prisma.StringFilter<"Reservation"> | string
+  notes?: Prisma.StringNullableFilter<"Reservation"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Reservation"> | Date | string
+  business?: Prisma.XOR<Prisma.BusinessScalarRelationFilter, Prisma.BusinessWhereInput>
   service?: Prisma.XOR<Prisma.ServiceScalarRelationFilter, Prisma.ServiceWhereInput>
 }
 
 export type ReservationOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  businessId?: Prisma.SortOrder
   serviceId?: Prisma.SortOrder
   clientName?: Prisma.SortOrder
   clientPhone?: Prisma.SortOrder
   startTime?: Prisma.SortOrder
   endTime?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  business?: Prisma.BusinessOrderByWithRelationInput
   service?: Prisma.ServiceOrderByWithRelationInput
 }
 
@@ -226,24 +246,29 @@ export type ReservationWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.ReservationWhereInput | Prisma.ReservationWhereInput[]
   OR?: Prisma.ReservationWhereInput[]
   NOT?: Prisma.ReservationWhereInput | Prisma.ReservationWhereInput[]
+  businessId?: Prisma.StringFilter<"Reservation"> | string
   serviceId?: Prisma.StringFilter<"Reservation"> | string
   clientName?: Prisma.StringFilter<"Reservation"> | string
   clientPhone?: Prisma.StringFilter<"Reservation"> | string
   startTime?: Prisma.DateTimeFilter<"Reservation"> | Date | string
   endTime?: Prisma.DateTimeFilter<"Reservation"> | Date | string
   status?: Prisma.StringFilter<"Reservation"> | string
+  notes?: Prisma.StringNullableFilter<"Reservation"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Reservation"> | Date | string
+  business?: Prisma.XOR<Prisma.BusinessScalarRelationFilter, Prisma.BusinessWhereInput>
   service?: Prisma.XOR<Prisma.ServiceScalarRelationFilter, Prisma.ServiceWhereInput>
 }, "id">
 
 export type ReservationOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  businessId?: Prisma.SortOrder
   serviceId?: Prisma.SortOrder
   clientName?: Prisma.SortOrder
   clientPhone?: Prisma.SortOrder
   startTime?: Prisma.SortOrder
   endTime?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.ReservationCountOrderByAggregateInput
   _max?: Prisma.ReservationMaxOrderByAggregateInput
@@ -255,12 +280,14 @@ export type ReservationScalarWhereWithAggregatesInput = {
   OR?: Prisma.ReservationScalarWhereWithAggregatesInput[]
   NOT?: Prisma.ReservationScalarWhereWithAggregatesInput | Prisma.ReservationScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Reservation"> | string
+  businessId?: Prisma.StringWithAggregatesFilter<"Reservation"> | string
   serviceId?: Prisma.StringWithAggregatesFilter<"Reservation"> | string
   clientName?: Prisma.StringWithAggregatesFilter<"Reservation"> | string
   clientPhone?: Prisma.StringWithAggregatesFilter<"Reservation"> | string
   startTime?: Prisma.DateTimeWithAggregatesFilter<"Reservation"> | Date | string
   endTime?: Prisma.DateTimeWithAggregatesFilter<"Reservation"> | Date | string
   status?: Prisma.StringWithAggregatesFilter<"Reservation"> | string
+  notes?: Prisma.StringNullableWithAggregatesFilter<"Reservation"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Reservation"> | Date | string
 }
 
@@ -271,18 +298,22 @@ export type ReservationCreateInput = {
   startTime: Date | string
   endTime: Date | string
   status?: string
+  notes?: string | null
   createdAt?: Date | string
+  business: Prisma.BusinessCreateNestedOneWithoutReservationsInput
   service: Prisma.ServiceCreateNestedOneWithoutReservationsInput
 }
 
 export type ReservationUncheckedCreateInput = {
   id?: string
+  businessId: string
   serviceId: string
   clientName: string
   clientPhone: string
   startTime: Date | string
   endTime: Date | string
   status?: string
+  notes?: string | null
   createdAt?: Date | string
 }
 
@@ -293,29 +324,35 @@ export type ReservationUpdateInput = {
   startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  business?: Prisma.BusinessUpdateOneRequiredWithoutReservationsNestedInput
   service?: Prisma.ServiceUpdateOneRequiredWithoutReservationsNestedInput
 }
 
 export type ReservationUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  businessId?: Prisma.StringFieldUpdateOperationsInput | string
   serviceId?: Prisma.StringFieldUpdateOperationsInput | string
   clientName?: Prisma.StringFieldUpdateOperationsInput | string
   clientPhone?: Prisma.StringFieldUpdateOperationsInput | string
   startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ReservationCreateManyInput = {
   id?: string
+  businessId: string
   serviceId: string
   clientName: string
   clientPhone: string
   startTime: Date | string
   endTime: Date | string
   status?: string
+  notes?: string | null
   createdAt?: Date | string
 }
 
@@ -326,17 +363,20 @@ export type ReservationUpdateManyMutationInput = {
   startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ReservationUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  businessId?: Prisma.StringFieldUpdateOperationsInput | string
   serviceId?: Prisma.StringFieldUpdateOperationsInput | string
   clientName?: Prisma.StringFieldUpdateOperationsInput | string
   clientPhone?: Prisma.StringFieldUpdateOperationsInput | string
   startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -352,35 +392,83 @@ export type ReservationOrderByRelationAggregateInput = {
 
 export type ReservationCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  businessId?: Prisma.SortOrder
   serviceId?: Prisma.SortOrder
   clientName?: Prisma.SortOrder
   clientPhone?: Prisma.SortOrder
   startTime?: Prisma.SortOrder
   endTime?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type ReservationMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  businessId?: Prisma.SortOrder
   serviceId?: Prisma.SortOrder
   clientName?: Prisma.SortOrder
   clientPhone?: Prisma.SortOrder
   startTime?: Prisma.SortOrder
   endTime?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type ReservationMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  businessId?: Prisma.SortOrder
   serviceId?: Prisma.SortOrder
   clientName?: Prisma.SortOrder
   clientPhone?: Prisma.SortOrder
   startTime?: Prisma.SortOrder
   endTime?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+}
+
+export type ReservationCreateNestedManyWithoutBusinessInput = {
+  create?: Prisma.XOR<Prisma.ReservationCreateWithoutBusinessInput, Prisma.ReservationUncheckedCreateWithoutBusinessInput> | Prisma.ReservationCreateWithoutBusinessInput[] | Prisma.ReservationUncheckedCreateWithoutBusinessInput[]
+  connectOrCreate?: Prisma.ReservationCreateOrConnectWithoutBusinessInput | Prisma.ReservationCreateOrConnectWithoutBusinessInput[]
+  createMany?: Prisma.ReservationCreateManyBusinessInputEnvelope
+  connect?: Prisma.ReservationWhereUniqueInput | Prisma.ReservationWhereUniqueInput[]
+}
+
+export type ReservationUncheckedCreateNestedManyWithoutBusinessInput = {
+  create?: Prisma.XOR<Prisma.ReservationCreateWithoutBusinessInput, Prisma.ReservationUncheckedCreateWithoutBusinessInput> | Prisma.ReservationCreateWithoutBusinessInput[] | Prisma.ReservationUncheckedCreateWithoutBusinessInput[]
+  connectOrCreate?: Prisma.ReservationCreateOrConnectWithoutBusinessInput | Prisma.ReservationCreateOrConnectWithoutBusinessInput[]
+  createMany?: Prisma.ReservationCreateManyBusinessInputEnvelope
+  connect?: Prisma.ReservationWhereUniqueInput | Prisma.ReservationWhereUniqueInput[]
+}
+
+export type ReservationUpdateManyWithoutBusinessNestedInput = {
+  create?: Prisma.XOR<Prisma.ReservationCreateWithoutBusinessInput, Prisma.ReservationUncheckedCreateWithoutBusinessInput> | Prisma.ReservationCreateWithoutBusinessInput[] | Prisma.ReservationUncheckedCreateWithoutBusinessInput[]
+  connectOrCreate?: Prisma.ReservationCreateOrConnectWithoutBusinessInput | Prisma.ReservationCreateOrConnectWithoutBusinessInput[]
+  upsert?: Prisma.ReservationUpsertWithWhereUniqueWithoutBusinessInput | Prisma.ReservationUpsertWithWhereUniqueWithoutBusinessInput[]
+  createMany?: Prisma.ReservationCreateManyBusinessInputEnvelope
+  set?: Prisma.ReservationWhereUniqueInput | Prisma.ReservationWhereUniqueInput[]
+  disconnect?: Prisma.ReservationWhereUniqueInput | Prisma.ReservationWhereUniqueInput[]
+  delete?: Prisma.ReservationWhereUniqueInput | Prisma.ReservationWhereUniqueInput[]
+  connect?: Prisma.ReservationWhereUniqueInput | Prisma.ReservationWhereUniqueInput[]
+  update?: Prisma.ReservationUpdateWithWhereUniqueWithoutBusinessInput | Prisma.ReservationUpdateWithWhereUniqueWithoutBusinessInput[]
+  updateMany?: Prisma.ReservationUpdateManyWithWhereWithoutBusinessInput | Prisma.ReservationUpdateManyWithWhereWithoutBusinessInput[]
+  deleteMany?: Prisma.ReservationScalarWhereInput | Prisma.ReservationScalarWhereInput[]
+}
+
+export type ReservationUncheckedUpdateManyWithoutBusinessNestedInput = {
+  create?: Prisma.XOR<Prisma.ReservationCreateWithoutBusinessInput, Prisma.ReservationUncheckedCreateWithoutBusinessInput> | Prisma.ReservationCreateWithoutBusinessInput[] | Prisma.ReservationUncheckedCreateWithoutBusinessInput[]
+  connectOrCreate?: Prisma.ReservationCreateOrConnectWithoutBusinessInput | Prisma.ReservationCreateOrConnectWithoutBusinessInput[]
+  upsert?: Prisma.ReservationUpsertWithWhereUniqueWithoutBusinessInput | Prisma.ReservationUpsertWithWhereUniqueWithoutBusinessInput[]
+  createMany?: Prisma.ReservationCreateManyBusinessInputEnvelope
+  set?: Prisma.ReservationWhereUniqueInput | Prisma.ReservationWhereUniqueInput[]
+  disconnect?: Prisma.ReservationWhereUniqueInput | Prisma.ReservationWhereUniqueInput[]
+  delete?: Prisma.ReservationWhereUniqueInput | Prisma.ReservationWhereUniqueInput[]
+  connect?: Prisma.ReservationWhereUniqueInput | Prisma.ReservationWhereUniqueInput[]
+  update?: Prisma.ReservationUpdateWithWhereUniqueWithoutBusinessInput | Prisma.ReservationUpdateWithWhereUniqueWithoutBusinessInput[]
+  updateMany?: Prisma.ReservationUpdateManyWithWhereWithoutBusinessInput | Prisma.ReservationUpdateManyWithWhereWithoutBusinessInput[]
+  deleteMany?: Prisma.ReservationScalarWhereInput | Prisma.ReservationScalarWhereInput[]
 }
 
 export type ReservationCreateNestedManyWithoutServiceInput = {
@@ -425,6 +513,72 @@ export type ReservationUncheckedUpdateManyWithoutServiceNestedInput = {
   deleteMany?: Prisma.ReservationScalarWhereInput | Prisma.ReservationScalarWhereInput[]
 }
 
+export type ReservationCreateWithoutBusinessInput = {
+  id?: string
+  clientName: string
+  clientPhone: string
+  startTime: Date | string
+  endTime: Date | string
+  status?: string
+  notes?: string | null
+  createdAt?: Date | string
+  service: Prisma.ServiceCreateNestedOneWithoutReservationsInput
+}
+
+export type ReservationUncheckedCreateWithoutBusinessInput = {
+  id?: string
+  serviceId: string
+  clientName: string
+  clientPhone: string
+  startTime: Date | string
+  endTime: Date | string
+  status?: string
+  notes?: string | null
+  createdAt?: Date | string
+}
+
+export type ReservationCreateOrConnectWithoutBusinessInput = {
+  where: Prisma.ReservationWhereUniqueInput
+  create: Prisma.XOR<Prisma.ReservationCreateWithoutBusinessInput, Prisma.ReservationUncheckedCreateWithoutBusinessInput>
+}
+
+export type ReservationCreateManyBusinessInputEnvelope = {
+  data: Prisma.ReservationCreateManyBusinessInput | Prisma.ReservationCreateManyBusinessInput[]
+  skipDuplicates?: boolean
+}
+
+export type ReservationUpsertWithWhereUniqueWithoutBusinessInput = {
+  where: Prisma.ReservationWhereUniqueInput
+  update: Prisma.XOR<Prisma.ReservationUpdateWithoutBusinessInput, Prisma.ReservationUncheckedUpdateWithoutBusinessInput>
+  create: Prisma.XOR<Prisma.ReservationCreateWithoutBusinessInput, Prisma.ReservationUncheckedCreateWithoutBusinessInput>
+}
+
+export type ReservationUpdateWithWhereUniqueWithoutBusinessInput = {
+  where: Prisma.ReservationWhereUniqueInput
+  data: Prisma.XOR<Prisma.ReservationUpdateWithoutBusinessInput, Prisma.ReservationUncheckedUpdateWithoutBusinessInput>
+}
+
+export type ReservationUpdateManyWithWhereWithoutBusinessInput = {
+  where: Prisma.ReservationScalarWhereInput
+  data: Prisma.XOR<Prisma.ReservationUpdateManyMutationInput, Prisma.ReservationUncheckedUpdateManyWithoutBusinessInput>
+}
+
+export type ReservationScalarWhereInput = {
+  AND?: Prisma.ReservationScalarWhereInput | Prisma.ReservationScalarWhereInput[]
+  OR?: Prisma.ReservationScalarWhereInput[]
+  NOT?: Prisma.ReservationScalarWhereInput | Prisma.ReservationScalarWhereInput[]
+  id?: Prisma.StringFilter<"Reservation"> | string
+  businessId?: Prisma.StringFilter<"Reservation"> | string
+  serviceId?: Prisma.StringFilter<"Reservation"> | string
+  clientName?: Prisma.StringFilter<"Reservation"> | string
+  clientPhone?: Prisma.StringFilter<"Reservation"> | string
+  startTime?: Prisma.DateTimeFilter<"Reservation"> | Date | string
+  endTime?: Prisma.DateTimeFilter<"Reservation"> | Date | string
+  status?: Prisma.StringFilter<"Reservation"> | string
+  notes?: Prisma.StringNullableFilter<"Reservation"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"Reservation"> | Date | string
+}
+
 export type ReservationCreateWithoutServiceInput = {
   id?: string
   clientName: string
@@ -432,16 +586,20 @@ export type ReservationCreateWithoutServiceInput = {
   startTime: Date | string
   endTime: Date | string
   status?: string
+  notes?: string | null
   createdAt?: Date | string
+  business: Prisma.BusinessCreateNestedOneWithoutReservationsInput
 }
 
 export type ReservationUncheckedCreateWithoutServiceInput = {
   id?: string
+  businessId: string
   clientName: string
   clientPhone: string
   startTime: Date | string
   endTime: Date | string
   status?: string
+  notes?: string | null
   createdAt?: Date | string
 }
 
@@ -471,27 +629,63 @@ export type ReservationUpdateManyWithWhereWithoutServiceInput = {
   data: Prisma.XOR<Prisma.ReservationUpdateManyMutationInput, Prisma.ReservationUncheckedUpdateManyWithoutServiceInput>
 }
 
-export type ReservationScalarWhereInput = {
-  AND?: Prisma.ReservationScalarWhereInput | Prisma.ReservationScalarWhereInput[]
-  OR?: Prisma.ReservationScalarWhereInput[]
-  NOT?: Prisma.ReservationScalarWhereInput | Prisma.ReservationScalarWhereInput[]
-  id?: Prisma.StringFilter<"Reservation"> | string
-  serviceId?: Prisma.StringFilter<"Reservation"> | string
-  clientName?: Prisma.StringFilter<"Reservation"> | string
-  clientPhone?: Prisma.StringFilter<"Reservation"> | string
-  startTime?: Prisma.DateTimeFilter<"Reservation"> | Date | string
-  endTime?: Prisma.DateTimeFilter<"Reservation"> | Date | string
-  status?: Prisma.StringFilter<"Reservation"> | string
-  createdAt?: Prisma.DateTimeFilter<"Reservation"> | Date | string
-}
-
-export type ReservationCreateManyServiceInput = {
+export type ReservationCreateManyBusinessInput = {
   id?: string
+  serviceId: string
   clientName: string
   clientPhone: string
   startTime: Date | string
   endTime: Date | string
   status?: string
+  notes?: string | null
+  createdAt?: Date | string
+}
+
+export type ReservationUpdateWithoutBusinessInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  clientName?: Prisma.StringFieldUpdateOperationsInput | string
+  clientPhone?: Prisma.StringFieldUpdateOperationsInput | string
+  startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  endTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  service?: Prisma.ServiceUpdateOneRequiredWithoutReservationsNestedInput
+}
+
+export type ReservationUncheckedUpdateWithoutBusinessInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  clientName?: Prisma.StringFieldUpdateOperationsInput | string
+  clientPhone?: Prisma.StringFieldUpdateOperationsInput | string
+  startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  endTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type ReservationUncheckedUpdateManyWithoutBusinessInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  serviceId?: Prisma.StringFieldUpdateOperationsInput | string
+  clientName?: Prisma.StringFieldUpdateOperationsInput | string
+  clientPhone?: Prisma.StringFieldUpdateOperationsInput | string
+  startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  endTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type ReservationCreateManyServiceInput = {
+  id?: string
+  businessId: string
+  clientName: string
+  clientPhone: string
+  startTime: Date | string
+  endTime: Date | string
+  status?: string
+  notes?: string | null
   createdAt?: Date | string
 }
 
@@ -502,26 +696,32 @@ export type ReservationUpdateWithoutServiceInput = {
   startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  business?: Prisma.BusinessUpdateOneRequiredWithoutReservationsNestedInput
 }
 
 export type ReservationUncheckedUpdateWithoutServiceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  businessId?: Prisma.StringFieldUpdateOperationsInput | string
   clientName?: Prisma.StringFieldUpdateOperationsInput | string
   clientPhone?: Prisma.StringFieldUpdateOperationsInput | string
   startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ReservationUncheckedUpdateManyWithoutServiceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  businessId?: Prisma.StringFieldUpdateOperationsInput | string
   clientName?: Prisma.StringFieldUpdateOperationsInput | string
   clientPhone?: Prisma.StringFieldUpdateOperationsInput | string
   startTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   endTime?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -529,75 +729,92 @@ export type ReservationUncheckedUpdateManyWithoutServiceInput = {
 
 export type ReservationSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  businessId?: boolean
   serviceId?: boolean
   clientName?: boolean
   clientPhone?: boolean
   startTime?: boolean
   endTime?: boolean
   status?: boolean
+  notes?: boolean
   createdAt?: boolean
+  business?: boolean | Prisma.BusinessDefaultArgs<ExtArgs>
   service?: boolean | Prisma.ServiceDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["reservation"]>
 
 export type ReservationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  businessId?: boolean
   serviceId?: boolean
   clientName?: boolean
   clientPhone?: boolean
   startTime?: boolean
   endTime?: boolean
   status?: boolean
+  notes?: boolean
   createdAt?: boolean
+  business?: boolean | Prisma.BusinessDefaultArgs<ExtArgs>
   service?: boolean | Prisma.ServiceDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["reservation"]>
 
 export type ReservationSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  businessId?: boolean
   serviceId?: boolean
   clientName?: boolean
   clientPhone?: boolean
   startTime?: boolean
   endTime?: boolean
   status?: boolean
+  notes?: boolean
   createdAt?: boolean
+  business?: boolean | Prisma.BusinessDefaultArgs<ExtArgs>
   service?: boolean | Prisma.ServiceDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["reservation"]>
 
 export type ReservationSelectScalar = {
   id?: boolean
+  businessId?: boolean
   serviceId?: boolean
   clientName?: boolean
   clientPhone?: boolean
   startTime?: boolean
   endTime?: boolean
   status?: boolean
+  notes?: boolean
   createdAt?: boolean
 }
 
-export type ReservationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "serviceId" | "clientName" | "clientPhone" | "startTime" | "endTime" | "status" | "createdAt", ExtArgs["result"]["reservation"]>
+export type ReservationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "businessId" | "serviceId" | "clientName" | "clientPhone" | "startTime" | "endTime" | "status" | "notes" | "createdAt", ExtArgs["result"]["reservation"]>
 export type ReservationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  business?: boolean | Prisma.BusinessDefaultArgs<ExtArgs>
   service?: boolean | Prisma.ServiceDefaultArgs<ExtArgs>
 }
 export type ReservationIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  business?: boolean | Prisma.BusinessDefaultArgs<ExtArgs>
   service?: boolean | Prisma.ServiceDefaultArgs<ExtArgs>
 }
 export type ReservationIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  business?: boolean | Prisma.BusinessDefaultArgs<ExtArgs>
   service?: boolean | Prisma.ServiceDefaultArgs<ExtArgs>
 }
 
 export type $ReservationPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Reservation"
   objects: {
+    business: Prisma.$BusinessPayload<ExtArgs>
     service: Prisma.$ServicePayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    businessId: string
     serviceId: string
     clientName: string
     clientPhone: string
     startTime: Date
     endTime: Date
     status: string
+    notes: string | null
     createdAt: Date
   }, ExtArgs["result"]["reservation"]>
   composites: {}
@@ -993,6 +1210,7 @@ readonly fields: ReservationFieldRefs;
  */
 export interface Prisma__ReservationClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  business<T extends Prisma.BusinessDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BusinessDefaultArgs<ExtArgs>>): Prisma.Prisma__BusinessClient<runtime.Types.Result.GetResult<Prisma.$BusinessPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   service<T extends Prisma.ServiceDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ServiceDefaultArgs<ExtArgs>>): Prisma.Prisma__ServiceClient<runtime.Types.Result.GetResult<Prisma.$ServicePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1024,12 +1242,14 @@ export interface Prisma__ReservationClient<T, Null = never, ExtArgs extends runt
  */
 export interface ReservationFieldRefs {
   readonly id: Prisma.FieldRef<"Reservation", 'String'>
+  readonly businessId: Prisma.FieldRef<"Reservation", 'String'>
   readonly serviceId: Prisma.FieldRef<"Reservation", 'String'>
   readonly clientName: Prisma.FieldRef<"Reservation", 'String'>
   readonly clientPhone: Prisma.FieldRef<"Reservation", 'String'>
   readonly startTime: Prisma.FieldRef<"Reservation", 'DateTime'>
   readonly endTime: Prisma.FieldRef<"Reservation", 'DateTime'>
   readonly status: Prisma.FieldRef<"Reservation", 'String'>
+  readonly notes: Prisma.FieldRef<"Reservation", 'String'>
   readonly createdAt: Prisma.FieldRef<"Reservation", 'DateTime'>
 }
     

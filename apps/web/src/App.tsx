@@ -1,13 +1,19 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ClientPage from "./ClientPage"; // Vamos mover o código antigo para aqui
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import ClientPage from "./pages/ClientPage"; // <--- MUDANÇA AQUI (Adicionado /pages/)
 import AdminPage from "./pages/AdminPage";
+import StorePage from "./pages/StorePage";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<ClientPage />} />
-        <Route path="/admin" element={<AdminPage />} />
+        {/* Redireciona a raiz para um negócio padrão */}
+        <Route path="/" element={<Navigate to="/sara" replace />} />
+        
+        {/* Rotas Dinâmicas por Negócio */}
+        <Route path="/:slug" element={<ClientPage />} />
+        <Route path="/:slug/loja" element={<StorePage />} />
+        <Route path="/:slug/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   );

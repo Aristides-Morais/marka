@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
-import { apiFetch } from "./lib/api";
+import { Link, useParams } from "react-router-dom";
+import { apiFetch } from "../lib/api";
 
 type Service = { id: string; name: string; durationMin: number; price: number };
 
 export default function ClientPage() {
+  const { slug } = useParams();
+
   const [services, setServices] = useState<Service[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [date, setDate] = useState("");
@@ -18,15 +20,16 @@ export default function ClientPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!slug) return;
     Promise.all([
-      apiFetch<Service[]>("/api/v1/reservations/services", { skipAuth: true }),
-      apiFetch<{ openTime: string, closeTime: string }>("/api/v1/reservations/hours", { skipAuth: true })
+      apiFetch<Service[]>("/api/v1/reservations/services", { skipAuth: true, tenant: slug }),
+      apiFetch<{ openTime: string, closeTime: string }>("/api/v1/reservations/hours", { skipAuth: true, tenant: slug })
     ]).then(([svcs, hrs]) => {
       setServices(svcs);
       setHours(hrs);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, []);
+  }, [slug]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -41,6 +44,7 @@ export default function ClientPage() {
         method: "POST",
         body: JSON.stringify({ serviceId: selectedService.id, clientName: formData.name, clientPhone: formData.phone, startTime }),
         skipAuth: true,
+        tenant: slug,
       });
       setIsSuccess(true);
     } catch (err: any) {
@@ -69,14 +73,26 @@ export default function ClientPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 py-12 px-4 relative">
-      <Link to="/admin" className="absolute top-4 right-4 text-xs text-zinc-400 hover:text-zinc-900">Admin</Link>
+      <Link to={`/${slug}/admin`} className="absolute top-4 right-4 text-xs text-zinc-400 hover:text-zinc-900">Admin</Link>
       
       <div className="max-w-lg mx-auto">
         <header className="text-center mb-8">
-          <h1 className="text-3xl font-bold">Marka</h1>
+          <h1 className="text-3xl font-bold capitalize">{slug}</h1>
           <p className="text-zinc-500">Faça a sua reserva online</p>
           <p className="text-xs text-emerald-600 font-medium mt-2 bg-emerald-50 inline-block px-3 py-1 rounded-full">Aberto das {hours.openTime} às {hours.closeTime}</p>
         </header>
+
+        {/* --- BOTÃO NOVO PARA A LOJA --- */}
+        <Link 
+          to={`/${slug}/loja`} 
+          className="flex items-center justify-between w-full bg-zinc-900 text-white p-4 rounded-xl mb-6 shadow-md hover:bg-zinc-800 transition-colors group"
+        >
+          <div>
+            <span className="font-bold text-lg block">Ir para a Loja</span>
+            <span className="text-xs text-zinc-300">Ver produtos e fazer compras</span>
+          </div>
+          <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+        </Link>
 
         <div className="bg-white rounded-2xl p-6 md:p-8 border border-zinc-200 shadow-sm">
           {errorMsg && <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm rounded-lg">{errorMsg}</div>}

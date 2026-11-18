@@ -1,104 +1,87 @@
 import { prisma } from "../../lib/prisma.js";
-import type { CreateServiceInput, CreateReservationInput } from "./reservation.schemas.js";
+import { createReservationSchema, createServiceSchema } from "./reservation.schemas.js";
+import { z } from "zod";
 
-export class ReservationError extends Error {
-  constructor(public code: string, message: string, public statusCode = 400) {
-    super(message);
-    this.name = "ReservationError";
-  }
+type CreateServiceInput = z.infer<typeof createServiceSchema>;
+type CreateReservationInput = z.infer<typeof createReservationSchema>;
+
+// ================= LISTAR SERVIÇOS =================
+export async function listServices(businessId: string) {
+  return prisma.service.findMany({
+    where: { 
+      businessId, // <--- ISOLAMENTO: Apenas serviços DESTE negócio
+      active: true 
+    },
+    orderBy: { createdAt: "asc" },
+  });
 }
 
-export async function createService(input: CreateServiceInput) {
-  return prisma.service.create({ data: input });
+// ================= CRIAR SERVIÇO =================
+export async function createService(input: CreateServiceInput, businessId: string) {
+  return prisma.service.create({
+    data: {
+      ...input,
+      businessId, // <--- ISOLAMENTO: Força o serviço a pertencer a este negócio
+    },
+  });
 }
 
-export async function listServices() {
-  return prisma.service.findMany({ where: { active: true }, orderBy: { name: "asc" } });
-}
+// ================= LISTAR RESERVAS =================
+export async function getReservations(date: string | undefined, businessId: string) {
+  const whereClause: any = { 
+    businessId, // <--- ISOLAMENTO: O admin só vê reservas do seu negócio
+  };
 
-export async function getReservations(date?: string) {
-  let where: any = {};
-  
+  // Se o admin filtrar por data, aplicamos o filtro
   if (date) {
-    const start = new Date(`${date}T00:00:00.000Z`);
-    const end = new Date(`${date}T23:59:59.999Z`);
-    where.startTime = { gte: start, lte: end };
+    const startOfDay = new Date(`${date}T00:00:00.000Z`);
+    const endOfDay = new Date(`${date}T23:59:59.999Z`);
+    whereClause.startTime = {
+      gte: startOfDay,
+      lte: endOfDay,
+    };
   }
 
   return prisma.reservation.findMany({
-    where,
-    include: { service: { select: { name: true } } },
+    where: whereClause,
+    include: {
+      service: true, // Traz os detalhes do serviço (nome, preço)
+    },
     orderBy: { startTime: "asc" },
   });
 }
 
-export async function createReservation(input: CreateReservationInput) {
+// ================= CRIAR RESERVA (PÚBLICA) =================
+export async function createReservation(input: CreateReservationInput, businessId: string) {
+  // 1. Verificar se o serviço existe e PERTENCE a este negócio
+  // Isto impede que alguém tente agendar um serviço do Hashtag na página da Sara
   const service = await prisma.service.findFirst({
-    where: { id: input.serviceId, active: true },
+    where: { 
+      id: input.serviceId,
+      businessId, // <--- CRÍTICO DE SEGURANÇA
+      active: true
+    },
   });
 
-  if (!service) throw new ReservationError("SERVICE_NOT_FOUND", "Serviço não encontrado", 404);
+  if (!service) {
+    throw new Error("Serviço não encontrado ou inativo neste negócio.");
+  }
 
+  // 2. Calcular a hora de fim com base na duração do serviço
   const startTime = new Date(input.startTime);
   const endTime = new Date(startTime.getTime() + service.durationMin * 60000);
 
-  if (startTime < new Date()) {
-    throw new ReservationError("INVALID_DATE", "Não é possível agendar no passado", 400);
-  }
-
-  // --- NOVA REGRA: VERIFICAR HORÁRIO DE FUNCIONAMENTO ---
-  const admin = await prisma.user.findFirst();
-  if (admin) {
-    const [openHour, openMin] = admin.openTime.split(":").map(Number);
-    const [closeHour, closeMin] = admin.closeTime.split(":").map(Number);
-
-    const startInMinutes = startTime.getHours() * 60 + startTime.getMinutes();
-    const endInMinutes = endTime.getHours() * 60 + endTime.getMinutes();
-    const openInMinutes = openHour * 60 + openMin;
-    const closeInMinutes = closeHour * 60 + closeMin;
-
-    if (startInMinutes < openInMinutes || endInMinutes > closeInMinutes) {
-      throw new ReservationError(
-        "OUTSIDE_HOURS", 
-        `A loja funciona apenas entre as ${admin.openTime} e as ${admin.closeTime}`, 
-        400
-      );
-    }
-  }
-  // -----------------------------------------------------
-
-  return prisma.$transaction(async (tx) => {
-    const conflictingReservation = await tx.reservation.findFirst({
-      where: {
-        status: { not: "CANCELLED" },
-        OR: [
-          { startTime: { lte: startTime }, endTime: { gt: startTime } },
-          { startTime: { gte: startTime }, endTime: { lte: endTime } },
-          { startTime: { lt: endTime }, endTime: { gte: endTime } },
-        ],
-      },
-    });
-
-    if (conflictingReservation) {
-      throw new ReservationError("TIME_CONFLICT", "Este horário já está ocupado por outra reserva.", 409);
-    }
-
-    return tx.reservation.create({
-      data: {
-        serviceId: input.serviceId,
-        clientName: input.clientName,
-        clientPhone: input.clientPhone,
-        startTime,
-        endTime,
-      },
-      include: { service: true },
-    });
-  });
-}
-
-export async function cancelReservation(id: string) {
-  return prisma.reservation.update({
-    where: { id },
-    data: { status: "CANCELLED" },
+  // 3. Criar a reserva
+  return prisma.reservation.create({
+    data: {
+      clientName: input.clientName,
+      clientPhone: input.clientPhone,
+      startTime,
+      endTime,
+      notes: input.notes,
+      status: "CONFIRMED",
+      serviceId: service.id,
+      businessId, // <--- ISOLAMENTO: Amarra a reserva a este negócio
+    },
   });
 }
