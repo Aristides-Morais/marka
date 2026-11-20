@@ -6,6 +6,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ======================
@@ -13,15 +14,17 @@ datasource db {
 // ======================
 model Business {
   id            String   @id @default(cuid())
-  slug          String   @unique          // ex: "sara", "hashtag", "thammyb"
+  slug          String   @unique
   name          String
   logoUrl       String?
   primaryColor  String   @default("#16a34a")
-  phone         String?
+  phone         String?   // Usado para contacto e WhatsApp
+  iban          String?   // NOVO: Para pagamentos
+  expressNumber String?   // NOVO: Para pagamentos
   address       String?
   openTime      String   @default("08:00")
   closeTime     String   @default("18:00")
-  modules       String[] @default(["booking"]) // ["booking"], ["store"] ou ["booking", "store"]
+  modules       String[] @default(["booking"])
   active        Boolean  @default(true)
   createdAt     DateTime @default(now())
 
@@ -42,7 +45,7 @@ model User {
   email         String
   passwordHash  String
   name          String
-  role          String   @default("ADMIN") // ADMIN | STAFF
+  role          String   @default("ADMIN")
   businessId    String
   createdAt     DateTime @default(now())
 
@@ -82,7 +85,7 @@ model Reservation {
   clientPhone   String
   startTime     DateTime
   endTime       DateTime
-  status        String   @default("CONFIRMED") // CONFIRMED | CANCELLED | COMPLETED
+  status        String   @default("CONFIRMED")
   notes         String?
   createdAt     DateTime @default(now())
 
@@ -124,7 +127,7 @@ model Order {
   clientName    String
   clientPhone   String
   total         Decimal  @db.Decimal(12, 2)
-  status        String   @default("PENDING") // PENDING | CONFIRMED | DELIVERED | CANCELLED
+  status        String   @default("PENDING")
   notes         String?
   createdAt     DateTime @default(now())
 

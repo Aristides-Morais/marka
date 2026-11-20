@@ -1,34 +1,34 @@
 import { Router } from "express";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
+import { v2 as cloudinary } from "cloudinary";
 
 export const uploadRouter = Router();
 
-const uploadDir = path.join(process.cwd(), "public", "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
+// Configuração do Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Guarda a imagem na memória temporariamente
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-uploadRouter.post("/", upload.single("image"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "Nenhuma imagem enviada." });
+uploadRouter.post("/", upload.single("image"), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "Nenhuma imagem enviada." });
+
+    // Envia para o Cloudinary
+    const b64 = Buffer.from(req.file.buffer).toString("base64");
+    const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+    
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: "marka_uploads", // Cria uma pasta na tua conta Cloudinary
+    });
+
+    res.json({ url: result.secure_url }); // Devolve o link da imagem
+  } catch (error) {
+    next(error);
   }
-  
-  // CORREÇÃO AQUI: Gera o link automaticamente (localhost ou Render)
-  const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
-  
-  res.json({ url: imageUrl });
 });

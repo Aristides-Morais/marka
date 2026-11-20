@@ -18,7 +18,9 @@ export default function AdminPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [hours, setHours] = useState({ openTime: "08:00", closeTime: "18:00" });
-  const [businessData, setBusinessData] = useState({ name: "", logoUrl: "", primaryColor: "#1A4D2E" });
+  
+  // Estado atualizado com os novos campos
+  const [businessData, setBusinessData] = useState({ name: "", logoUrl: "", primaryColor: "#1A4D2E", phone: "", iban: "", expressNumber: "" });
 
   const [formData, setFormData] = useState({ name: "", durationMin: "30", price: "" });
   const [productData, setProductData] = useState({ name: "", price: "", stock: "10", imageUrl: "" });
@@ -49,7 +51,14 @@ export default function AdminPage() {
       setReservations(resRes);
       setHours(resHours);
       setProducts(resProducts);
-      setBusinessData({ name: resBusiness.name, logoUrl: resBusiness.logoUrl || "", primaryColor: resBusiness.primaryColor });
+      setBusinessData({ 
+        name: resBusiness.name, 
+        logoUrl: resBusiness.logoUrl || "", 
+        primaryColor: resBusiness.primaryColor,
+        phone: resBusiness.phone || "",
+        iban: resBusiness.iban || "",
+        expressNumber: resBusiness.expressNumber || ""
+      });
       setIsAuthenticated(true);
     } catch (err) {
       setIsAuthenticated(false);
@@ -70,7 +79,6 @@ export default function AdminPage() {
     } catch (err: any) { showToast(err.message, "error"); } finally { setLoading(false); }
   }
 
-  // ... (handleUpdateProfile, handleCreateService, handleUpdateHours iguais ao anterior) ...
   async function handleUpdateProfile(e: FormEvent) {
     e.preventDefault(); setLoading(true);
     try {
@@ -126,7 +134,6 @@ export default function AdminPage() {
     } catch (err: any) { showToast(err.message, "error"); setUploading(false); } finally { setLoading(false); }
   }
 
-  // NOVO: Apagar Produto
   async function handleDeleteProduct(id: string) {
     if (!confirm("Apagar este produto da loja?")) return;
     setLoading(true);
@@ -165,6 +172,7 @@ export default function AdminPage() {
             <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" className="w-full border border-zinc-300 rounded-lg px-4 py-2 text-sm outline-none" />
             <button type="submit" disabled={loading} className="w-full bg-zinc-900 text-white py-2.5 rounded-lg font-semibold hover:bg-zinc-800 transition-all mt-2">Entrar no Painel</button>
           </form>
+          <Link to={`/${slug}/planos`} className="block text-center mt-6 text-xs text-blue-600 font-bold hover:underline">Pagar Subscrição</Link>
         </div>
       </div>
     );
@@ -185,19 +193,18 @@ export default function AdminPage() {
         </div>
       </header>
       
-      {/* MENU DE NAVEGAÇÃO */}
-      <div className="max-w-5xl mx-auto flex flex-wrap gap-2 mb-8 bg-zinc-100 p-2 rounded-2xl">
-        <button onClick={() => setActiveTab("reservations")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === "reservations" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>Reservas</button>
-        <button onClick={() => setActiveTab("services")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === "services" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>Serviços</button>
-        <button onClick={() => setActiveTab("store")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === "store" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>Loja</button>
-        <button onClick={() => setActiveTab("settings")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === "settings" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>Horário</button>
-        <button onClick={() => setActiveTab("profile")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === "profile" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>Perfil</button>
+      <div className="max-w-5xl mx-auto flex flex-wrap gap-2 mb-8 bg-zinc-100 p-2 rounded-2xl overflow-x-auto">
+        <button onClick={() => setActiveTab("reservations")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === "reservations" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>Reservas</button>
+        <button onClick={() => setActiveTab("services")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === "services" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>Serviços</button>
+        <button onClick={() => setActiveTab("store")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === "store" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>Loja</button>
+        <button onClick={() => setActiveTab("settings")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === "settings" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>Horário</button>
+        <button onClick={() => setActiveTab("profile")} className={`px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${activeTab === "profile" ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900"}`}>Perfil</button>
       </div>
 
       <div className="max-w-5xl mx-auto">
         {activeTab === "reservations" && (
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-            <table className="w-full text-left text-sm">
+          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-x-auto">
+            <table className="w-full text-left text-sm min-w-[600px]">
               <thead className="bg-zinc-50 text-zinc-500 text-xs uppercase border-b border-zinc-200">
                 <tr><th className="px-6 py-4">Data</th><th className="px-6 py-4">Cliente</th><th className="px-6 py-4">Serviço</th><th className="px-6 py-4">Ação</th></tr>
               </thead>
@@ -209,7 +216,6 @@ export default function AdminPage() {
                     <td className="px-6 py-4 text-zinc-600">{r.service.name}</td>
                     <td className="px-6 py-4">
                       {r.status !== "CANCELLED" ? (
-                        // BOTÃO ESTILO PILL (Como pediste)
                         <button onClick={() => handleCancelReservation(r.id)} disabled={loading} className="text-red-600 bg-red-50 hover:bg-red-100 px-4 py-1.5 rounded-full text-xs font-semibold transition-colors disabled:opacity-50">Cancelar</button>
                       ) : (
                         <span className="text-zinc-500 text-xs font-medium bg-zinc-100 px-4 py-1.5 rounded-full">Cancelada</span>
@@ -223,7 +229,6 @@ export default function AdminPage() {
         )}
 
         {activeTab === "services" && (
-           // ... (Formulário e lista de serviços igual ao anterior)
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
              <div className="bg-white p-6 rounded-2xl border border-zinc-200 h-fit shadow-sm">
                <h2 className="font-bold text-lg mb-4 text-zinc-900">Novo Serviço</h2>
@@ -272,7 +277,6 @@ export default function AdminPage() {
                        {p.imageUrl ? <img src={p.imageUrl} className="w-12 h-12 rounded-md object-cover" /> : <div className="w-12 h-12 bg-zinc-200 rounded-md"></div>}
                        <span className="font-medium text-zinc-800">{p.name} - {Number(p.price).toLocaleString("pt-AO")} Kz (Stock: {p.stock})</span>
                     </div>
-                    {/* NOVO BOTÃO DE APAGAR PRODUTO */}
                     <button onClick={() => handleDeleteProduct(p.id)} disabled={loading} className="text-red-500 hover:bg-red-100 p-2 rounded-lg transition-colors">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
@@ -284,28 +288,56 @@ export default function AdminPage() {
         )}
 
         {activeTab === "settings" && (
-          // ... (Igual ao anterior)
           <div className="bg-white p-6 rounded-2xl border border-zinc-200 max-w-sm shadow-sm">
             <h2 className="font-bold text-lg mb-4 text-zinc-900">Horário</h2>
             <form onSubmit={handleUpdateHours} className="space-y-4">
-              <input type="time" required value={hours.openTime} onChange={e => setHours({...hours, openTime: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
-              <input type="time" required value={hours.closeTime} onChange={e => setHours({...hours, closeTime: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Abertura</label>
+                <input type="time" required value={hours.openTime} onChange={e => setHours({...hours, openTime: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Fecho</label>
+                <input type="time" required value={hours.closeTime} onChange={e => setHours({...hours, closeTime: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+              </div>
               <button type="submit" disabled={loading} className="w-full bg-zinc-900 text-white py-2.5 rounded-lg font-semibold">Guardar</button>
             </form>
           </div>
         )}
 
         {activeTab === "profile" && (
-          // ... (Igual ao anterior)
           <div className="bg-white p-6 rounded-2xl border border-zinc-200 max-w-lg shadow-sm">
             <h2 className="font-bold text-lg mb-4 text-zinc-900">Perfil do Negócio</h2>
             <form onSubmit={handleUpdateProfile} className="space-y-4">
-              <input type="text" required value={businessData.name} onChange={e => setBusinessData({...businessData, name: e.target.value})} placeholder="Nome" className="w-full border rounded-lg px-3 py-2" />
-              <input type="url" value={businessData.logoUrl} onChange={e => setBusinessData({...businessData, logoUrl: e.target.value})} placeholder="Link da Logo" className="w-full border rounded-lg px-3 py-2" />
-              <div className="flex gap-3">
-                <input type="color" value={businessData.primaryColor} onChange={e => setBusinessData({...businessData, primaryColor: e.target.value})} className="w-12 h-12 rounded cursor-pointer" />
-                <input type="text" value={businessData.primaryColor} onChange={e => setBusinessData({...businessData, primaryColor: e.target.value})} className="w-32 border rounded-lg px-3 py-2 uppercase font-mono" />
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Nome</label>
+                <input type="text" required value={businessData.name} onChange={e => setBusinessData({...businessData, name: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Link da Logo (URL)</label>
+                <input type="url" value={businessData.logoUrl} onChange={e => setBusinessData({...businessData, logoUrl: e.target.value})} className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Cor Principal</label>
+                <div className="flex items-center gap-3">
+                  <input type="color" value={businessData.primaryColor} onChange={e => setBusinessData({...businessData, primaryColor: e.target.value})} className="w-12 h-12 rounded cursor-pointer border-0 p-0" />
+                  <input type="text" value={businessData.primaryColor} onChange={e => setBusinessData({...businessData, primaryColor: e.target.value})} className="w-32 border rounded-lg px-3 py-2 uppercase font-mono" />
+                </div>
+              </div>
+              
+              {/* NOVOS CAMPOS DE PAGAMENTO E CONTACTO */}
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">WhatsApp de Suporte</label>
+                <input type="text" value={businessData.phone} onChange={e => setBusinessData({...businessData, phone: e.target.value})} placeholder="Ex: 244923000000" className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">IBAN para Pagamentos</label>
+                <input type="text" value={businessData.iban} onChange={e => setBusinessData({...businessData, iban: e.target.value})} placeholder="Ex: AO06 0000..." className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-1">Número Express</label>
+                <input type="text" value={businessData.expressNumber} onChange={e => setBusinessData({...businessData, expressNumber: e.target.value})} placeholder="Ex: 923 111 222" className="w-full border rounded-lg px-3 py-2" />
+              </div>
+
               <button type="submit" disabled={loading} className="w-full text-white py-2.5 rounded-lg font-semibold shadow-sm" style={{ backgroundColor: businessData.primaryColor }}>Guardar Alterações</button>
             </form>
           </div>

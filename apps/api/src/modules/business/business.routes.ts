@@ -5,22 +5,26 @@ import { requireAuth } from "../../middleware/auth.middleware.js";
 
 export const businessRouter = Router();
 
-// Rota Pública (Qualquer cliente vê o nome e a logo)
 businessRouter.get("/info", (req, res) => {
   res.json({
     name: req.business!.name,
     logoUrl: req.business!.logoUrl,
     primaryColor: req.business!.primaryColor,
+    phone: req.business!.phone,             // NOVO
+    iban: req.business!.iban,               // NOVO
+    expressNumber: req.business!.expressNumber, // NOVO
   });
 });
 
-// Rota Privada (Apenas o Admin pode alterar)
 businessRouter.patch("/info", requireAuth, async (req, res, next) => {
   try {
     const schema = z.object({
       name: z.string().min(2),
       logoUrl: z.string().url().optional().or(z.literal("")),
       primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor inválida"),
+      phone: z.string().optional(),
+      iban: z.string().optional(),
+      expressNumber: z.string().optional(),
     });
     
     const data = schema.parse(req.body);
@@ -31,6 +35,9 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
         name: data.name,
         logoUrl: data.logoUrl || null,
         primaryColor: data.primaryColor,
+        phone: data.phone || null,
+        iban: data.iban || null,
+        expressNumber: data.expressNumber || null,
       },
     });
 
