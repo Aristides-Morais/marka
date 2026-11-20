@@ -20,17 +20,3 @@ productRouter.post("/", requireAuth, async (req, res, next) => {
     res.status(201).json(await createProduct(input, req.business!.id));
   } catch (err) { next(err); }
 });
-
-// APAGAR = ESCONDER (soft delete) - não quebra as encomendas
-productRouter.delete("/:id", requireAuth, async (req, res, next) => {
-  try {
-    const updated = await prisma.product.updateMany({
-      where: { id: req.params.id, businessId: req.business!.id },
-      data: { active: false }
-    });
-    if (updated.count === 0) {
-      return res.status(404).json({ error: { message: "Produto não encontrado" } });
-    }
-    res.status(204).send();
-  } catch (err) { next(err); }
-});
