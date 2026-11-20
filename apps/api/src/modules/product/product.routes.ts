@@ -21,14 +21,15 @@ productRouter.post("/", requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// CORRIGIDO: usar deleteMany em vez de delete
+// APAGAR = ESCONDER (soft delete) - não quebra as encomendas
 productRouter.delete("/:id", requireAuth, async (req, res, next) => {
   try {
-    const deleted = await prisma.product.deleteMany({
-      where: { id: req.params.id, businessId: req.business!.id }
+    const updated = await prisma.product.updateMany({
+      where: { id: req.params.id, businessId: req.business!.id },
+      data: { active: false }
     });
-    if (deleted.count === 0) {
-      return res.status(404).json({ message: "Produto não encontrado" });
+    if (updated.count === 0) {
+      return res.status(404).json({ error: { message: "Produto não encontrado" } });
     }
     res.status(204).send();
   } catch (err) { next(err); }
