@@ -16,8 +16,17 @@ const upload = multer({
   },
 });
 
-uploadRouter.post("/", requireAuth, upload.single("file"), (req, res) => {
-  if (!req.file) {
+// Aceita o ficheiro no campo "file" ou "image"
+const receive = upload.fields([
+  { name: "file", maxCount: 1 },
+  { name: "image", maxCount: 1 },
+]);
+
+uploadRouter.post("/", requireAuth, receive, (req, res) => {
+  const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+  const file = files?.file?.[0] ?? files?.image?.[0];
+
+  if (!file) {
     return res.status(400).json({ error: { message: "Ficheiro em falta ou inválido" } });
   }
 
@@ -28,8 +37,9 @@ uploadRouter.post("/", requireAuth, upload.single("file"), (req, res) => {
         console.error("Erro no upload da imagem:", error);
         return res.status(500).json({ error: { message: "Erro ao enviar imagem" } });
       }
-      res.json({ url: result.secure_url });
+      // devolve nos dois formatos, para o frontend funcionar com qualquer um
+      res.json({ url: result.secure_url, imageUrl: result.secure_url });
     }
   );
-  stream.end(req.file.buffer);
+  stream.end(file.buffer);
 });
