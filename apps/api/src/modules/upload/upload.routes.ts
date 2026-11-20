@@ -13,16 +13,20 @@ const storage = multer.diskStorage({
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname) || ".jpg";
     cb(null, `img-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
-  }
+  },
 });
+
 const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 uploadRouter.post("/", upload.single("image"), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: { message: "Nenhuma imagem enviada." } });
-    // O Render serve isto em https://marka-api-45bz.onrender.com/uploads/nome.jpg
-    const url = `/uploads/${req.file.filename}`;
-    // Se o frontend precisar de URL completa, ele junta com a base
+    if (!req.file) {
+      return res.status(400).json({ error: { message: "Nenhuma imagem enviada." } });
+    }
+    // Devolve URL COMPLETA: https://marka-api-45bz.onrender.com/uploads/xxx.jpg
+    // Assim passa na validação do logoUrl
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const url = `${baseUrl}/uploads/${req.file.filename}`;
     res.json({ url });
   } catch (error) {
     console.error("Erro no upload:", error);

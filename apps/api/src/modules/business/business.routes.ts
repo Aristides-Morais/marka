@@ -20,7 +20,9 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
   try {
     const schema = z.object({
       name: z.string().min(2),
-      logoUrl: z.string().url().optional().or(z.literal("")),
+      // CORRIGIDO: aceita URL completa, /uploads/xxx.jpg, texto vazio ou null
+      // ANTES era .url() e por isso dava "Invalid url"
+      logoUrl: z.string().optional().nullable().or(z.literal("")),
       primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor inválida"),
       phone: z.string().optional(),
       iban: z.string().optional(),
