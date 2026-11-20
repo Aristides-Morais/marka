@@ -8,7 +8,8 @@ export const productRouter = Router();
 const productSchema = z.object({
   name: z.string().min(1, "Nome obrigatório"),
   description: z.string().optional().nullable(),
-  price: z.number().min(0),
+  price: z.coerce.number().min(0),
+  stock: z.coerce.number().int().min(0).optional(),
   imageUrl: z.string().optional().nullable(),
   active: z.boolean().optional(),
 });
@@ -35,6 +36,7 @@ productRouter.post("/", requireAuth, async (req, res, next) => {
         name: data.name,
         description: data.description ?? null,
         price: data.price,
+        stock: data.stock ?? 0,
         imageUrl: data.imageUrl ?? null,
         active: data.active ?? true,
         businessId: req.business!.id,
@@ -67,7 +69,7 @@ productRouter.patch("/:id", requireAuth, async (req, res, next) => {
   }
 });
 
-// APAGAR - não apaga mesmo, só esconde (soft-delete)
+// APAGAR - soft-delete
 productRouter.delete("/:id", requireAuth, async (req, res, next) => {
   try {
     const id = String(req.params.id);
