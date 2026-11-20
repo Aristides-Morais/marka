@@ -21,13 +21,15 @@ productRouter.post("/", requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// NOVO: Rota para apagar o produto (Apenas Admin logado)
+// CORRIGIDO: usar deleteMany em vez de delete
 productRouter.delete("/:id", requireAuth, async (req, res, next) => {
   try {
-    // O where garante que o admin só apaga produtos do PRÓPRIO negócio!
-    await prisma.product.delete({
+    const deleted = await prisma.product.deleteMany({
       where: { id: req.params.id, businessId: req.business!.id }
     });
+    if (deleted.count === 0) {
+      return res.status(404).json({ message: "Produto não encontrado" });
+    }
     res.status(204).send();
   } catch (err) { next(err); }
 });
