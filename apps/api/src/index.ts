@@ -10,7 +10,8 @@ import { reservationRouter } from "./modules/reservation/reservation.routes.js";
 import { productRouter } from "./modules/product/product.routes.js";
 import { orderRouter } from "./modules/order/order.routes.js";
 import { businessRouter } from "./modules/business/business.routes.js";
-import { uploadRouter } from "./modules/upload/upload.routes.js"; // <--- NOVO
+import { uploadRouter } from "./modules/upload/upload.routes.js";
+app.use("/api/v1/upload", uploadRouter);
 
 import { errorHandler, notFoundHandler } from "./middleware/error.middleware.js";
 import { tenantMiddleware } from "./middleware/tenant.middleware.js";

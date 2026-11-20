@@ -2,34 +2,32 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
+import { requireAuth } from "../../middleware/auth.middleware.js";
 
 export const uploadRouter = Router();
 
-const uploadDir = path.join(process.cwd(), "public", "uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const dir = path.join(process.cwd(), "public", "uploads");
+fs.mkdirSync(dir, { recursive: true });
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".jpg";
-    cb(null, `img-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: dir,
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+      cb(null, `${Date.now()}-${crypto.randomBytes(6).toString("hex")}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    cb(null, /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype));
   },
 });
 
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
-
-uploadRouter.post("/", upload.single("image"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: { message: "Nenhuma imagem enviada." } });
-    }
-    // Devolve URL COMPLETA: https://marka-api-45bz.onrender.com/uploads/xxx.jpg
-    // Assim passa na validação do logoUrl
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const url = `${baseUrl}/uploads/${req.file.filename}`;
-    res.json({ url });
-  } catch (error) {
-    console.error("Erro no upload:", error);
-    res.status(500).json({ error: { message: "Erro ao enviar imagem" } });
+uploadRouter.post("/", requireAuth, upload.single("file"), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: { message: "Ficheiro em falta ou inválido" } });
   }
+  const base = process.env.PUBLIC_API_URL || "https://marka-api-45bz.onrender.com";
+  res.json({ url: `${base}/uploads/${req.file.filename}` });
 });

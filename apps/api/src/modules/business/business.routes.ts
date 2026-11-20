@@ -10,9 +10,9 @@ businessRouter.get("/info", (req, res) => {
     name: req.business!.name,
     logoUrl: req.business!.logoUrl,
     primaryColor: req.business!.primaryColor,
-    phone: req.business!.phone,             // NOVO
-    iban: req.business!.iban,               // NOVO
-    expressNumber: req.business!.expressNumber, // NOVO
+    phone: req.business!.phone,
+    iban: req.business!.iban,
+    expressNumber: req.business!.expressNumber,
   });
 });
 
@@ -20,17 +20,14 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
   try {
     const schema = z.object({
       name: z.string().min(2),
-      // CORRIGIDO: aceita URL completa, /uploads/xxx.jpg, texto vazio ou null
-      // ANTES era .url() e por isso dava "Invalid url"
-      logoUrl: z.string().optional().nullable().or(z.literal("")),
+      logoUrl: z.string().nullable().optional(),
       primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, "Cor inválida"),
-      phone: z.string().optional(),
-      iban: z.string().optional(),
-      expressNumber: z.string().optional(),
+      phone: z.string().nullable().optional(),
+      iban: z.string().nullable().optional(),
+      expressNumber: z.string().nullable().optional(),
     });
-    
     const data = schema.parse(req.body);
-    
+
     const updated = await prisma.business.update({
       where: { id: req.business!.id },
       data: {
@@ -42,7 +39,8 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
         expressNumber: data.expressNumber || null,
       },
     });
-
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
