@@ -18,8 +18,6 @@ export default function AdminPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [hours, setHours] = useState({ openTime: "08:00", closeTime: "18:00" });
-  
-  // Estado atualizado com os novos campos
   const [businessData, setBusinessData] = useState({ name: "", logoUrl: "", primaryColor: "#1A4D2E", phone: "", iban: "", expressNumber: "" });
 
   const [formData, setFormData] = useState({ name: "", durationMin: "30", price: "" });
@@ -31,6 +29,9 @@ export default function AdminPage() {
 
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  // NOVO: Estado para controlar o Modal de Apagar
+  const [deleteModal, setDeleteModal] = useState<{ type: "product" | "service" | "reservation", id: string } | null>(null);
 
   function showToast(message: string, type: "success" | "error") {
     setToast({ message, type });
@@ -52,12 +53,8 @@ export default function AdminPage() {
       setHours(resHours);
       setProducts(resProducts);
       setBusinessData({ 
-        name: resBusiness.name, 
-        logoUrl: resBusiness.logoUrl || "", 
-        primaryColor: resBusiness.primaryColor,
-        phone: resBusiness.phone || "",
-        iban: resBusiness.iban || "",
-        expressNumber: resBusiness.expressNumber || ""
+        name: resBusiness.name, logoUrl: resBusiness.logoUrl || "", primaryColor: resBusiness.primaryColor,
+        phone: resBusiness.phone || "", iban: resBusiness.iban || "", expressNumber: resBusiness.expressNumber || ""
       });
       setIsAuthenticated(true);
     } catch (err) {
@@ -73,9 +70,7 @@ export default function AdminPage() {
       const data = await apiFetch<{ token: string }>("/api/v1/auth/login", {
         method: "POST", body: JSON.stringify({ email: email.trim(), password }), skipAuth: true, tenant: slug,
       });
-      setAccessToken(data.token);
-      showToast("Login efetuado!", "success");
-      await loadData();
+      setAccessToken(data.token); showToast("Login efetuado!", "success"); await loadData();
     } catch (err: any) { showToast(err.message, "error"); } finally { setLoading(false); }
   }
 
@@ -91,8 +86,7 @@ export default function AdminPage() {
     e.preventDefault(); setLoading(true);
     try {
       await apiFetch("/api/v1/reservations/services", { method: "POST", body: JSON.stringify({ name: formData.name, durationMin: Number(formData.durationMin), price: Number(formData.price) }), tenant: slug });
-      setFormData({ name: "", durationMin: "30", price: "" });
-      await loadData(); showToast("Serviço criado!", "success");
+      setFormData({ name: "", durationMin: "30", price: "" }); await loadData(); showToast("Serviço criado!", "success");
     } catch (err: any) { showToast(err.message, "error"); } finally { setLoading(false); }
   }
 
@@ -106,8 +100,7 @@ export default function AdminPage() {
 
   function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
-      setImagePreview(URL.createObjectURL(e.target.files[0]));
+      setImageFile(e.target.files[0]); setImagePreview(URL.createObjectURL(e.target.files[0]));
     }
   }
 
@@ -134,27 +127,28 @@ export default function AdminPage() {
     } catch (err: any) { showToast(err.message, "error"); setUploading(false); } finally { setLoading(false); }
   }
 
-  async function handleDeleteProduct(id: string) {
-    if (!confirm("Apagar este produto da loja?")) return;
+  // NOVO: Função que executa a ação do Modal
+  async function handleConfirmDelete() {
+    if (!deleteModal) return;
     setLoading(true);
     try {
-      await apiFetch(`/api/v1/products/${id}`, { method: "DELETE", tenant: slug });
-      await loadData(); showToast("Produto apagado.", "success");
-    } catch (err) { showToast("Erro ao apagar produto.", "error"); } finally { setLoading(false); }
-  }
-
-  async function handleDeleteService(id: string) {
-    if (!confirm("Apagar este serviço?")) return;
-    setLoading(true);
-    try { await apiFetch(`/api/v1/reservations/services/${id}`, { method: "DELETE", tenant: slug }); await loadData(); showToast("Serviço apagado.", "success"); } 
-    catch (err) { showToast("Erro ao apagar", "error"); } finally { setLoading(false); }
-  }
-
-  async function handleCancelReservation(id: string) {
-    if (!confirm("Cancelar esta reserva?")) return;
-    setLoading(true);
-    try { await apiFetch(`/api/v1/reservations/${id}/cancel`, { method: "PATCH", tenant: slug }); await loadData(); showToast("Reserva cancelada.", "success"); } 
-    catch (err) { showToast("Erro ao cancelar", "error"); } finally { setLoading(false); }
+      if (deleteModal.type === "product") {
+        await apiFetch(`/api/v1/products/${deleteModal.id}`, { method: "DELETE", tenant: slug });
+        showToast("Produto apagado.", "success");
+      } else if (deleteModal.type === "service") {
+        await apiFetch(`/api/v1/reservations/services/${deleteModal.id}`, { method: "DELETE", tenant: slug });
+        showToast("Serviço apagado.", "success");
+      } else if (deleteModal.type === "reservation") {
+        await apiFetch(`/api/v1/reservations/${deleteModal.id}/cancel`, { method: "PATCH", tenant: slug });
+        showToast("Reserva cancelada.", "success");
+      }
+      await loadData();
+    } catch (err) { 
+      showToast("Erro ao apagar.", "error"); 
+    } finally { 
+      setLoading(false); 
+      setDeleteModal(null); 
+    }
   }
 
   if (!isAuthenticated && !loading) {
@@ -172,7 +166,6 @@ export default function AdminPage() {
             <input type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" className="w-full border border-zinc-300 rounded-lg px-4 py-2 text-sm outline-none" />
             <button type="submit" disabled={loading} className="w-full bg-zinc-900 text-white py-2.5 rounded-lg font-semibold hover:bg-zinc-800 transition-all mt-2">Entrar no Painel</button>
           </form>
-          <Link to={`/${slug}/planos`} className="block text-center mt-6 text-xs text-blue-600 font-bold hover:underline">Pagar Subscrição</Link>
         </div>
       </div>
     );
@@ -182,6 +175,27 @@ export default function AdminPage() {
     <div className="min-h-screen bg-zinc-50 p-4 md:p-8 relative">
       {toast && <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-xl shadow-2xl text-white font-medium ${toast.type === "success" ? "bg-emerald-600" : "bg-red-600"}`}>{toast.message}</div>}
       
+      {/* MODAL DE CONFIRMAÇÃO PROFISSIONAL */}
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-scale-up">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            </div>
+            <h3 className="text-xl font-bold text-center text-gray-900 mb-2">Tem a certeza?</h3>
+            <p className="text-center text-gray-500 text-sm mb-6">
+              Esta ação não pode ser desfeita. O item será removido permanentemente.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteModal(null)} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-semibold hover:bg-gray-200 transition-colors">Cancelar</button>
+              <button onClick={handleConfirmDelete} disabled={loading} className="flex-1 text-white py-2.5 rounded-xl font-semibold transition-colors shadow-md" style={{ backgroundColor: businessData.primaryColor }}>
+                {loading ? "A apagar..." : "Sim, Apagar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 max-w-5xl mx-auto gap-4">
         <div className="flex items-center gap-4">
           {businessData.logoUrl ? <img src={businessData.logoUrl} className="w-12 h-12 rounded-full object-cover" /> : <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl" style={{ backgroundColor: businessData.primaryColor }}>{businessData.name.charAt(0)}</div>}
@@ -216,7 +230,7 @@ export default function AdminPage() {
                     <td className="px-6 py-4 text-zinc-600">{r.service.name}</td>
                     <td className="px-6 py-4">
                       {r.status !== "CANCELLED" ? (
-                        <button onClick={() => handleCancelReservation(r.id)} disabled={loading} className="text-red-600 bg-red-50 hover:bg-red-100 px-4 py-1.5 rounded-full text-xs font-semibold transition-colors disabled:opacity-50">Cancelar</button>
+                        <button onClick={() => setDeleteModal({ type: "reservation", id: r.id })} className="text-red-600 bg-red-50 hover:bg-red-100 px-4 py-1.5 rounded-full text-xs font-semibold transition-colors">Cancelar</button>
                       ) : (
                         <span className="text-zinc-500 text-xs font-medium bg-zinc-100 px-4 py-1.5 rounded-full">Cancelada</span>
                       )}
@@ -245,7 +259,7 @@ export default function AdminPage() {
                  {services.map(s => (
                    <li key={s.id} className="flex justify-between items-center p-3 border border-zinc-100 rounded-xl bg-zinc-50">
                      <span className="font-medium text-zinc-800">{s.name} ({s.durationMin}m) - {Number(s.price).toLocaleString("pt-AO")} Kz</span>
-                     <button onClick={() => handleDeleteService(s.id)} className="text-red-500 hover:bg-red-100 p-2 rounded-lg"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                     <button onClick={() => setDeleteModal({ type: "service", id: s.id })} className="text-red-500 hover:bg-red-100 p-2 rounded-lg"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                    </li>
                  ))}
                </ul>
@@ -277,9 +291,7 @@ export default function AdminPage() {
                        {p.imageUrl ? <img src={p.imageUrl} className="w-12 h-12 rounded-md object-cover" /> : <div className="w-12 h-12 bg-zinc-200 rounded-md"></div>}
                        <span className="font-medium text-zinc-800">{p.name} - {Number(p.price).toLocaleString("pt-AO")} Kz (Stock: {p.stock})</span>
                     </div>
-                    <button onClick={() => handleDeleteProduct(p.id)} disabled={loading} className="text-red-500 hover:bg-red-100 p-2 rounded-lg transition-colors">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    </button>
+                    <button onClick={() => setDeleteModal({ type: "product", id: p.id })} className="text-red-500 hover:bg-red-100 p-2 rounded-lg transition-colors"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                   </li>
                 ))}
               </ul>
@@ -323,8 +335,6 @@ export default function AdminPage() {
                   <input type="text" value={businessData.primaryColor} onChange={e => setBusinessData({...businessData, primaryColor: e.target.value})} className="w-32 border rounded-lg px-3 py-2 uppercase font-mono" />
                 </div>
               </div>
-              
-              {/* NOVOS CAMPOS DE PAGAMENTO E CONTACTO */}
               <div>
                 <label className="block text-sm font-medium text-zinc-700 mb-1">WhatsApp de Suporte</label>
                 <input type="text" value={businessData.phone} onChange={e => setBusinessData({...businessData, phone: e.target.value})} placeholder="Ex: 244923000000" className="w-full border rounded-lg px-3 py-2" />
@@ -337,7 +347,6 @@ export default function AdminPage() {
                 <label className="block text-sm font-medium text-zinc-700 mb-1">Número Express</label>
                 <input type="text" value={businessData.expressNumber} onChange={e => setBusinessData({...businessData, expressNumber: e.target.value})} placeholder="Ex: 923 111 222" className="w-full border rounded-lg px-3 py-2" />
               </div>
-
               <button type="submit" disabled={loading} className="w-full text-white py-2.5 rounded-lg font-semibold shadow-sm" style={{ backgroundColor: businessData.primaryColor }}>Guardar Alterações</button>
             </form>
           </div>
