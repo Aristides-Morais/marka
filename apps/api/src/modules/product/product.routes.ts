@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
-import { prisma } from "../../lib/prisma";
-import { requireAuth } from "../../middleware/auth.middleware";
+import { prisma } from "../../lib/prisma.js";
+import { requireAuth } from "../../middleware/auth.middleware.js";
 
 export const productRouter = Router();
 
@@ -11,7 +11,6 @@ const productSchema = z.object({
   price: z.number().min(0),
   imageUrl: z.string().optional().nullable(),
   active: z.boolean().optional(),
-  categoryId: z.string().optional().nullable(),
 });
 
 // LISTAR - só mostra os ativos
@@ -22,7 +21,9 @@ productRouter.get("/", async (req, res, next) => {
       orderBy: { createdAt: "desc" },
     });
     res.json(products);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 // CRIAR
@@ -36,42 +37,49 @@ productRouter.post("/", requireAuth, async (req, res, next) => {
         price: data.price,
         imageUrl: data.imageUrl ?? null,
         active: data.active ?? true,
-        categoryId: data.categoryId ?? null,
         businessId: req.business!.id,
       },
     });
     res.status(201).json(product);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
 // EDITAR
 productRouter.patch("/:id", requireAuth, async (req, res, next) => {
   try {
+    const id = String(req.params.id);
     const data = productSchema.partial().parse(req.body);
-    const product = await prisma.product.updateMany({
-      where: { id: req.params.id, businessId: req.business!.id },
+    const result = await prisma.product.updateMany({
+      where: { id, businessId: req.business!.id },
       data,
     });
-    if (product.count === 0) {
+    if (result.count === 0) {
       return res.status(404).json({ error: { message: "Produto não encontrado" } });
     }
     const updated = await prisma.product.findFirst({
-      where: { id: req.params.id, businessId: req.business!.id },
+      where: { id, businessId: req.business!.id },
     });
     res.json(updated);
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
 
-// APAGAR - NÃO apaga mesmo, só esconde. Assim não quebra as encomendas.
+// APAGAR - não apaga mesmo, só esconde (soft-delete)
 productRouter.delete("/:id", requireAuth, async (req, res, next) => {
   try {
-    const updated = await prisma.product.updateMany({
-      where: { id: req.params.id, businessId: req.business!.id },
+    const id = String(req.params.id);
+    const result = await prisma.product.updateMany({
+      where: { id, businessId: req.business!.id },
       data: { active: false },
     });
-    if (updated.count === 0) {
+    if (result.count === 0) {
       return res.status(404).json({ error: { message: "Produto não encontrado" } });
     }
     res.status(204).send();
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 });
