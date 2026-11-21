@@ -19,30 +19,35 @@ export default function SuperAdminPage() {
       const data = await apiFetch<Business[]>("/api/v1/super-admin/businesses");
       setBusinesses(data);
     } catch (err) {
-      // Se der erro (ex: 401), limpamos o token antigo e forçamos o login
+      // Se o token for inválido, limpa e força o login
       setAccessToken(null); 
       setIsLoggedIn(false);
     }
   }
 
   useEffect(() => {
-    if (isLoggedIn) loadBusinesses();
+    if (isLoggedIn) {
+      loadBusinesses();
+    }
   }, [isLoggedIn]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    // Limpamos qualquer token antigo antes de tentar o login
+    setAccessToken(null); 
+    
     try {
       const data = await apiFetch<{ token: string }>("/api/v1/super-admin/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
-        skipAuth: true, // Não envia token antigo
+        skipAuth: true,
       });
       setAccessToken(data.token);
       setIsLoggedIn(true);
     } catch (err: any) {
-      setError(err.message);
+      setError("Email ou password incorretos. Verifique as variáveis no Render.");
     } finally {
       setLoading(false);
     }
@@ -85,8 +90,8 @@ export default function SuperAdminPage() {
           </div>
           {error && <div className="bg-red-500/10 text-red-400 text-xs p-3 rounded-lg mb-4">{error}</div>}
           <form onSubmit={handleLogin} className="space-y-4">
-            <input type="email" placeholder="Email de Super Admin" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-zinc-900 text-white border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500" />
-            <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-zinc-900 text-white border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500" />
+            <input type="email" required placeholder="Email de Super Admin" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-zinc-900 text-white border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500" />
+            <input type="password" required placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-zinc-900 text-white border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500" />
             <button type="submit" disabled={loading} className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors">{loading ? "A entrar..." : "Entrar no Sistema"}</button>
           </form>
         </div>
@@ -126,8 +131,8 @@ export default function SuperAdminPage() {
           </div>
         )}
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-          <table className="w-full text-left text-sm">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-x-auto">
+          <table className="w-full text-left text-sm min-w-[600px]">
             <thead className="bg-zinc-950 text-zinc-400 uppercase text-xs">
               <tr>
                 <th className="px-6 py-4">Negócio</th>
