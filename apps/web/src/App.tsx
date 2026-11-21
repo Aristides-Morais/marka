@@ -3,6 +3,12 @@ import ClientPage from "./pages/ClientPage";
 import AdminPage from "./pages/AdminPage";
 import StorePage from "./pages/StorePage";
 import SubscriptionPage from "./pages/SubscriptionPage"; // <--- NOVO
+import SuperAdminPage from "./pages/SuperAdminPage"; // <-- NOVO
+
+// ... dentro do <Routes>
+<Route path="/super-admin" element={<SuperAdminPage />} /> {/* <-- NOVO */}
+<Route path="/:slug" element={<ClientPage />} />
+// ...
 
 export default function App() {
   return (

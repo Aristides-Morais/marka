@@ -12,6 +12,18 @@ import { businessRouter } from "./modules/business/business.routes.js";
 import { uploadRouter } from "./modules/upload/upload.routes.js";
 
 import { errorHandler, notFoundHandler } from "./middleware/error.middleware.js";
+// ... importações anteriores
+import { superAdminRouter } from "./modules/super-admin/super-admin.routes.js"; // <-- NOVO
+
+// ... (rotas de health check)
+
+// O Super Admin não usa o tenantMiddleware
+app.use("/api/v1/super-admin", superAdminRouter); // <-- NOVO
+
+app.use(tenantMiddleware); // <-- O escudo começa aqui
+
+app.use("/api/v1/auth", authRouter);
+// ... resto das rotas
 import { tenantMiddleware } from "./middleware/tenant.middleware.js";
 
 const app = express();
