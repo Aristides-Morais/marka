@@ -8,7 +8,7 @@ type CartItem = Product & { quantity: number };
 export default function StorePage() {
   const { slug } = useParams();
   
-  const [store, setStore] = useState<{ name: string, logoUrl: string, primaryColor: string, phone: string, iban: string, expressNumber: string, products: Product[] } | null>(null);
+  const [store, setStore] = useState<{ name: string, logoUrl: string, primaryColor: string, phone: string, iban: string, expressNumber: string, bankName: string, feedbackPhone: string, products: Product[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false); 
@@ -21,7 +21,6 @@ export default function StorePage() {
 
   useEffect(() => {
     if (!slug) return;
-    
     Promise.all([
       apiFetch<Product[]>("/api/v1/products", { skipAuth: true, tenant: slug }),
       apiFetch<any>("/api/v1/business/info", { skipAuth: true, tenant: slug })
@@ -34,6 +33,8 @@ export default function StorePage() {
           phone: businessData.phone || "",
           iban: businessData.iban || "",
           expressNumber: businessData.expressNumber || "",
+          bankName: businessData.bankName || "", // NOVO
+          feedbackPhone: businessData.feedbackPhone || "", // NOVO
           products: productList.map((p: any) => ({ ...p, price: Number(p.price), stock: Number(p.stock) })) 
         });
         setLoading(false);
@@ -100,24 +101,15 @@ export default function StorePage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               <span className="hidden md:block">Reservas</span>
             </Link>
-
             <div className="flex items-center gap-3 border-l border-gray-200 pl-4 ml-2">
-              {store.logoUrl ? (
-                <img src={store.logoUrl} alt="Logo" className="w-10 h-10 rounded-full object-cover border border-gray-100 shadow-sm" />
-              ) : (
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm" style={{ backgroundColor: store.primaryColor }}>
-                  {store.name.charAt(0)}
-                </div>
-              )}
+              {store.logoUrl ? <img src={store.logoUrl} alt="Logo" className="w-10 h-10 rounded-full object-cover border border-gray-100 shadow-sm" /> : <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm" style={{ backgroundColor: store.primaryColor }}>{store.name.charAt(0)}</div>}
               <span className="text-xl font-extrabold text-gray-900 tracking-tight hidden sm:block">{store.name}</span>
             </div>
           </div>
-
           <div className="hidden md:flex flex-1 max-w-md relative mx-4">
             <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input type="text" placeholder="Procurar produtos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-full pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:bg-white transition-all" style={{ "--tw-ring-color": store.primaryColor } as any} />
           </div>
-
           <div className="flex items-center gap-4">
             <button onClick={() => setIsCartOpen(true)} className="relative text-white p-2.5 rounded-full transition-colors shadow-lg" style={{ backgroundColor: store.primaryColor }}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
@@ -229,31 +221,57 @@ export default function StorePage() {
         )}
       </aside>
 
-      {/* MODAL DE SUCESSO COM DADOS DE PAGAMENTO */}
+      {/* MODAL DE SUCESSO PROFISSIONAL */}
       {isSuccess && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl">
-            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4" style={{ color: store.primaryColor }}><svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Pedido Efetuado!</h2>
-            <p className="text-gray-500 mb-6 text-sm">Para finalizar, efetue o pagamento e envie o comprovativo.</p>
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl">
+            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4" style={{ color: store.primaryColor }}>
+              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Pedido Efetuado!</h2>
+            <p className="text-gray-500 mb-6 text-sm text-center">Para finalizar, efetue o pagamento e envie o comprovativo no WhatsApp.</p>
             
-            <div className="bg-gray-50 p-4 rounded-xl text-left mb-6 border border-gray-100">
-              <p className="text-xs font-bold text-gray-400 uppercase mb-2">Dados para Pagamento</p>
-              <p className="text-sm text-gray-700"><strong>IBAN:</strong> {store.iban || "Não configurado"}</p>
-              <p className="text-sm text-gray-700 mt-1"><strong>Express:</strong> {store.expressNumber || "Não configurado"}</p>
+            {/* DADOS DE PAGAMENTO */}
+            <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200 mb-6">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Dados para Pagamento ({store.bankName || "Transferência"})</h3>
+              
+              <div className="mb-3">
+                <p className="text-xs text-gray-500 mb-1">IBAN</p>
+                <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-2">
+                  <span className="font-mono text-sm text-gray-800 truncate pr-2">{store.iban || "Não configurado"}</span>
+                  <button onClick={() => { navigator.clipboard.writeText(store.iban || ""); alert("IBAN Copiado!"); }} className="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded">Copiar</button>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Express</p>
+                <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-2">
+                  <span className="font-mono text-sm text-gray-800">{store.expressNumber || "Não configurado"}</span>
+                  <button onClick={() => { navigator.clipboard.writeText(store.expressNumber || ""); alert("Express Copiado!"); }} className="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded">Copiar</button>
+                </div>
+              </div>
             </div>
 
+            {/* BOTÃO WHATSAPP */}
             <a 
               href={`https://wa.me/${store.phone?.replace(/\D/g, '')}?text=Olá, acabei de fazer o pedido no valor de ${Number(cartTotal).toLocaleString("pt-AO")} Kz. Vou enviar o comprovativo agora.`}
               target="_blank" rel="noreferrer"
-              className="w-full flex items-center justify-center gap-2 text-white py-3 rounded-xl font-semibold transition-colors mb-3"
+              className="w-full flex items-center justify-center gap-2 text-white py-3 rounded-xl font-semibold transition-colors mb-4 shadow-md"
               style={{ backgroundColor: "#25D366" }}
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               Enviar Comprovativo no WhatsApp
             </a>
-            
-            <button onClick={() => setIsSuccess(false)} className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors">Voltar à Loja</button>
+
+            {/* FEEDBACK / RECLAMAÇÕES */}
+            <div className="flex flex-col items-center gap-3">
+              {store.feedbackPhone && (
+                <a href={`https://wa.me/${store.feedbackPhone?.replace(/\D/g, '')}?text=Olá, gostaria de deixar uma reclamação/sugestão sobre o meu pedido.`} target="_blank" rel="noreferrer" className="text-xs text-gray-500 hover:text-gray-800 underline font-medium">
+                  Reclamações ou Sugestões
+                </a>
+              )}
+              <button onClick={() => setIsSuccess(false)} className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors">Fechar e voltar à loja</button>
+            </div>
           </div>
         </div>
       )}

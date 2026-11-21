@@ -6,39 +6,40 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-// ======================
-// NEGÓCIO (Tenant)
-// ======================
 model Business {
-  id            String   @id @default(cuid())
-  slug          String   @unique
-  name          String
-  logoUrl       String?
-  primaryColor  String   @default("#16a34a")
-  phone         String?   // Usado para contacto e WhatsApp
-  iban          String?   // NOVO: Para pagamentos
-  expressNumber String?   // NOVO: Para pagamentos
-  address       String?
-  openTime      String   @default("08:00")
-  closeTime     String   @default("18:00")
-  modules       String[] @default(["booking"])
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  logoUrl        String?
+  primaryColor   String   @default("#16a34a")
+  phone          String?
+  iban           String?
+  expressNumber  String?
+  bankName       String?
+  feedbackPhone  String?
+  storeBgColor   String?
+  storeBgImage   String?
+  bookingBgColor String?
+  bookingBgImage String?
+  address        String?
+  openTime       String   @default("08:00")
+  closeTime      String   @default("18:00")
+  modules        String[] @default(["booking"])
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
 
-  users         User[]
-  services      Service[]
-  products      Product[]
-  reservations  Reservation[]
-  orders        Order[]
+  users          User[]
+  services       Service[]
+  products       Product[]
+  reservations   Reservation[]
+  orders         Order[]
 
   @@map("businesses")
 }
 
-// ======================
-// UTILIZADORES (Admin do negócio)
-// ======================
 model User {
   id            String   @id @default(cuid())
   email         String
@@ -54,9 +55,6 @@ model User {
   @@map("users")
 }
 
-// ======================
-// SERVIÇOS (Agendamento)
-// ======================
 model Service {
   id            String   @id @default(cuid())
   businessId    String
@@ -73,9 +71,6 @@ model Service {
   @@map("services")
 }
 
-// ======================
-// RESERVAS
-// ======================
 model Reservation {
   id            String   @id @default(cuid())
   businessId    String
@@ -96,9 +91,6 @@ model Reservation {
   @@map("reservations")
 }
 
-// ======================
-// PRODUTOS (Loja)
-// ======================
 model Product {
   id            String   @id @default(cuid())
   businessId    String
@@ -117,9 +109,6 @@ model Product {
   @@map("products")
 }
 
-// ======================
-// PEDIDOS (Loja)
-// ======================
 model Order {
   id            String   @id @default(cuid())
   businessId    String

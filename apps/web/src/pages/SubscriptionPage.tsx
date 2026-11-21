@@ -3,10 +3,11 @@ import { useParams, Link } from "react-router-dom";
 export default function SubscriptionPage() {
   const { slug } = useParams();
   
-  // ⚠️ COLOCA AQUI OS TEUS DADOS REAIS
+  // ⚠️ COLOCA AQUI OS TEUS DADOS REAIS (Os teus dados de recebimento, não do cliente)
   const MEU_WHATSAPP = "244923000000"; 
   const MEU_IBAN = "AO06 0000 0000 0000 0000 0000 0";
   const MEU_EXPRESS = "923 000 000";
+  const MEU_BANCO = "BFA (Banco de Fomento Angola)";
   const PRECO = "15.000 Kz";
 
   return (
@@ -27,6 +28,7 @@ export default function SubscriptionPage() {
 
         <div className="bg-blue-50 p-4 rounded-xl text-sm text-blue-900 mb-6 border border-blue-100">
           <p className="font-bold mb-2">Dados para Pagamento:</p>
+          <p><strong>Banco:</strong> {MEU_BANCO}</p>
           <p><strong>IBAN:</strong> {MEU_IBAN}</p>
           <p><strong>Express:</strong> {MEU_EXPRESS}</p>
           <p className="mt-4 text-xs opacity-80">Após efetuar o pagamento, envie o comprovativo no WhatsApp para ativarmos a sua conta em menos de 5 minutos.</p>
