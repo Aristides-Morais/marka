@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
-import { apiFetch, setAccessToken, getAccessToken } from "../lib/api";
+import { useState } from "react";
+import { apiFetch, setAccessToken } from "../lib/api";
 
 type Business = { id: string; name: string; slug: string; active: boolean; createdAt: string; _count: { users: number; products: number; reservations: number } };
 
 export default function SuperAdminPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(!!getAccessToken());
+  // Forçamos o estado inicial a false para ele pedir sempre o login primeiro
+  const [isLoggedIn, setIsLoggedIn] = useState(false); 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -18,24 +19,20 @@ export default function SuperAdminPage() {
     try {
       const data = await apiFetch<Business[]>("/api/v1/super-admin/businesses");
       setBusinesses(data);
-    } catch (err) {
-      // Se o token for inválido, limpa e força o login
+    } catch (err: any) {
+      // Se falhar, limpamos tudo e voltamos ao login
       setAccessToken(null); 
       setIsLoggedIn(false);
+      setError("Sessão expirada. Faça login novamente.");
     }
   }
-
-  useEffect(() => {
-    if (isLoggedIn) {
-      loadBusinesses();
-    }
-  }, [isLoggedIn]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    // Limpamos qualquer token antigo antes de tentar o login
+    
+    // Limpamos qualquer token lixo que esteja no navegador (ex: da Sara)
     setAccessToken(null); 
     
     try {
@@ -44,8 +41,10 @@ export default function SuperAdminPage() {
         body: JSON.stringify({ email, password }),
         skipAuth: true,
       });
+      
       setAccessToken(data.token);
       setIsLoggedIn(true);
+      await loadBusinesses(); // Carrega os dados SÓ depois do login dar certo
     } catch (err: any) {
       setError("Email ou password incorretos. Verifique as variáveis no Render.");
     } finally {
@@ -80,6 +79,7 @@ export default function SuperAdminPage() {
     }
   }
 
+  // ECRÃ DE LOGIN
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-zinc-900 flex items-center justify-center p-4">
@@ -90,15 +90,36 @@ export default function SuperAdminPage() {
           </div>
           {error && <div className="bg-red-500/10 text-red-400 text-xs p-3 rounded-lg mb-4">{error}</div>}
           <form onSubmit={handleLogin} className="space-y-4">
-            <input type="email" required placeholder="Email de Super Admin" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-zinc-900 text-white border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500" />
-            <input type="password" required placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-zinc-900 text-white border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500" />
-            <button type="submit" disabled={loading} className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors">{loading ? "A entrar..." : "Entrar no Sistema"}</button>
+            <input 
+              type="email" 
+              required 
+              placeholder="Email de Super Admin" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              className="w-full bg-zinc-900 text-white border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500" 
+            />
+            <input 
+              type="password" 
+              required 
+              placeholder="Password" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              className="w-full bg-zinc-900 text-white border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500" 
+            />
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition-colors"
+            >
+              {loading ? "A verificar..." : "Entrar no Sistema"}
+            </button>
           </form>
         </div>
       </div>
     );
   }
 
+  // ECRÃ DO PAINEL (Após login com sucesso)
   return (
     <div className="min-h-screen bg-zinc-950 p-4 md:p-8 text-white font-sans">
       <header className="max-w-6xl mx-auto flex justify-between items-center mb-8">
@@ -106,13 +127,21 @@ export default function SuperAdminPage() {
           <h1 className="text-2xl font-black tracking-tighter">MARKA<span className="text-emerald-500">.</span> ADMIN</h1>
           <p className="text-zinc-400 text-sm">Gestão de Clientes e Subscrições</p>
         </div>
-        <button onClick={() => { setAccessToken(null); setIsLoggedIn(false); }} className="text-sm bg-zinc-800 px-4 py-2 rounded-lg hover:bg-zinc-700">Sair</button>
+        <button 
+          onClick={() => { setAccessToken(null); setIsLoggedIn(false); }} 
+          className="text-sm bg-zinc-800 px-4 py-2 rounded-lg hover:bg-zinc-700 transition-colors"
+        >
+          Sair
+        </button>
       </header>
 
       <main className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Clientes Ativos ({businesses.length})</h2>
-          <button onClick={() => setShowCreate(!showCreate)} className="bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-600 text-sm">
+          <button 
+            onClick={() => setShowCreate(!showCreate)} 
+            className="bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-600 text-sm transition-colors"
+          >
             + Novo Cliente
           </button>
         </div>
