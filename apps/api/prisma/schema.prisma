@@ -36,6 +36,12 @@ model Business {
   reservations   Reservation[]
   orders         Order[]
 
+  fontFamily     String?
+  heroTitle      String?
+  heroSubtitle   String?
+  mapsUrl        String?
+  links          Json?
+
   @@map("businesses")
 }
 

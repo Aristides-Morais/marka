@@ -16,36 +16,52 @@ businessRouter.get("/info", (req, res) => {
     expressNumber: b.expressNumber,
     bankName: b.bankName ?? null,
     feedbackPhone: b.feedbackPhone ?? null,
+    address: b.address ?? null,
     storeBgColor: b.storeBgColor ?? null,
     storeBgImage: b.storeBgImage ?? null,
     bookingBgColor: b.bookingBgColor ?? null,
     bookingBgImage: b.bookingBgImage ?? null,
+    fontFamily: b.fontFamily ?? null,
+    heroTitle: b.heroTitle ?? null,
+    heroSubtitle: b.heroSubtitle ?? null,
+    mapsUrl: b.mapsUrl ?? null,
+    links: Array.isArray(b.links) ? b.links : [],
   });
 });
 
 const hex = z.string().regex(/^#[0-9A-F]{6}$/i, "Cor inválida");
-const optText = z.string().nullable().optional();
+const txt = z.string().nullable().optional();
+const linksSchema = z
+  .array(z.object({ label: z.string().trim().min(1).max(30), url: z.string().trim().min(1).max(500) }))
+  .max(12);
 
 businessRouter.patch("/info", requireAuth, async (req, res, next) => {
   try {
     const schema = z.object({
-      name: z.string().min(2),
-      logoUrl: optText,
-      primaryColor: hex,
-      phone: optText,
-      iban: optText,
-      expressNumber: optText,
-      bankName: optText,
-      feedbackPhone: optText,
+      name: z.string().min(2).optional(),
+      primaryColor: hex.optional(),
+      logoUrl: txt,
+      phone: txt,
+      iban: txt,
+      expressNumber: txt,
+      bankName: txt,
+      feedbackPhone: txt,
       storeBgColor: hex.nullable().optional().or(z.literal("")),
-      storeBgImage: optText,
+      storeBgImage: txt,
       bookingBgColor: hex.nullable().optional().or(z.literal("")),
-      bookingBgImage: optText,
+      bookingBgImage: txt,
+      fontFamily: txt,
+      heroTitle: txt,
+      heroSubtitle: txt,
+      mapsUrl: txt,
+      links: linksSchema.nullable().optional(),
     });
     const data = schema.parse(req.body);
 
-    // undefined = não mexe; vazio = limpa
+    // Perfil: "" limpa o campo
     const val = (v: string | null | undefined) => (v === undefined ? undefined : v || null);
+    // Aparência: "" ignora, null limpa
+    const theme = (v: string | null | undefined) => (v === undefined || v === "" ? undefined : v);
 
     const updated = await prisma.business.update({
       where: { id: req.business!.id },
@@ -58,10 +74,15 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
         expressNumber: val(data.expressNumber),
         bankName: val(data.bankName),
         feedbackPhone: val(data.feedbackPhone),
-        storeBgColor: val(data.storeBgColor),
-        storeBgImage: val(data.storeBgImage),
-        bookingBgColor: val(data.bookingBgColor),
-        bookingBgImage: val(data.bookingBgImage),
+        storeBgColor: theme(data.storeBgColor),
+        storeBgImage: theme(data.storeBgImage),
+        bookingBgColor: theme(data.bookingBgColor),
+        bookingBgImage: theme(data.bookingBgImage),
+        fontFamily: theme(data.fontFamily),
+        heroTitle: theme(data.heroTitle),
+        heroSubtitle: theme(data.heroSubtitle),
+        mapsUrl: theme(data.mapsUrl),
+        links: data.links === undefined ? undefined : data.links ?? [],
       },
     });
     res.json(updated);
