@@ -9,7 +9,6 @@ export default function SuperAdminPage() {
   const [password, setPassword] = useState("");
   const [businesses, setBusinesses] = useState<Business[]>([]);
   
-  // Estados para criar novo negócio
   const [form, setForm] = useState({ name: "", slug: "", adminEmail: "", adminPassword: "" });
   const [showCreate, setShowCreate] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,6 +19,8 @@ export default function SuperAdminPage() {
       const data = await apiFetch<Business[]>("/api/v1/super-admin/businesses");
       setBusinesses(data);
     } catch (err) {
+      // Se der erro (ex: 401), limpamos o token antigo e forçamos o login
+      setAccessToken(null); 
       setIsLoggedIn(false);
     }
   }
@@ -31,11 +32,12 @@ export default function SuperAdminPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setError("");
     try {
       const data = await apiFetch<{ token: string }>("/api/v1/super-admin/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
-        skipAuth: true,
+        skipAuth: true, // Não envia token antigo
       });
       setAccessToken(data.token);
       setIsLoggedIn(true);
