@@ -1,23 +1,33 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useParams, Link } from "react-router-dom";
 import { apiFetch } from "../lib/api";
+import { loadFont, fontStack } from "../lib/theme";
 
 type Product = { id: string; name: string; description: string | null; price: number; stock: number; imageUrl: string | null; };
 type CartItem = Product & { quantity: number };
 
+function isDarkColor(hex: string) {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex || "");
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  const r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return 0.299 * r + 0.587 * g + 0.114 * b < 140;
+}
+
 export default function StorePage() {
   const { slug } = useParams();
-  
-  const [store, setStore] = useState<{ name: string, logoUrl: string, primaryColor: string, phone: string, iban: string, expressNumber: string, bankName: string, feedbackPhone: string, products: Product[] } | null>(null);
+
+  const [store, setStore] = useState<{ name: string, logoUrl: string, primaryColor: string, phone: string, iban: string, expressNumber: string, bankName: string, feedbackPhone: string, bgColor: string, bgImage: string, fontFamily: string, products: Product[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false); 
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({ name: "", phone: "", address: "" });
   const [isSuccess, setIsSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [lastTotal, setLastTotal] = useState(0);
 
   useEffect(() => {
     if (!slug) return;
@@ -26,16 +36,20 @@ export default function StorePage() {
       apiFetch<any>("/api/v1/business/info", { skipAuth: true, tenant: slug })
     ]).then(([productsData, businessData]) => {
         const productList = Array.isArray(productsData) ? productsData : [];
-        setStore({ 
+        loadFont(businessData.fontFamily);
+        setStore({
           name: businessData.name,
           logoUrl: businessData.logoUrl,
           primaryColor: businessData.primaryColor,
           phone: businessData.phone || "",
           iban: businessData.iban || "",
           expressNumber: businessData.expressNumber || "",
-          bankName: businessData.bankName || "", // NOVO
-          feedbackPhone: businessData.feedbackPhone || "", // NOVO
-          products: productList.map((p: any) => ({ ...p, price: Number(p.price), stock: Number(p.stock) })) 
+          bankName: businessData.bankName || "",
+          feedbackPhone: businessData.feedbackPhone || "",
+          bgColor: businessData.storeBgColor || "",
+          bgImage: businessData.storeBgImage || "",
+          fontFamily: businessData.fontFamily || "",
+          products: productList.map((p: any) => ({ ...p, price: Number(p.price), stock: Number(p.stock) }))
         });
         setLoading(false);
       })
@@ -67,7 +81,7 @@ export default function StorePage() {
   function removeFromCart(productId: string) { setCart((prev) => prev.filter((item) => item.id !== productId)); }
 
   const cartSubtotal = cart.reduce((acc, item) => acc + (Number(item.price) * Number(item.quantity)), 0);
-  const deliveryFee = cart.length > 0 ? 1500 : 0; 
+  const deliveryFee = cart.length > 0 ? 1500 : 0;
   const cartTotal = cartSubtotal + deliveryFee;
   const cartItemCount = cart.reduce((acc, item) => acc + Number(item.quantity), 0);
 
@@ -81,6 +95,7 @@ export default function StorePage() {
           items: cart.map((item) => ({ productId: item.id, quantity: Number(item.quantity) })),
         }),
       });
+      setLastTotal(cartTotal);
       setCart([]); setFormData({ name: "", phone: "", address: "" }); setIsCartOpen(false); setIsSuccess(true);
     } catch (err: any) { setErrorMsg(err.message); } finally { setSubmitting(false); }
   }
@@ -90,8 +105,21 @@ export default function StorePage() {
 
   const filteredProducts = store.products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
+  const bgStyle: React.CSSProperties = {
+    backgroundColor: store.bgColor || "#F8F9FA",
+    backgroundImage: store.bgImage ? `url(${store.bgImage})` : undefined,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundAttachment: "fixed",
+    fontFamily: fontStack(store.fontFamily),
+  };
+  const darkBg = !store.bgImage && isDarkColor(store.bgColor);
+  const titleBox = store.bgImage ? "bg-white/85 backdrop-blur rounded-2xl px-4 py-3" : "";
+  const titleColor = darkBg ? "text-white" : "text-gray-900";
+  const countColor = darkBg ? "text-gray-300" : "text-gray-500";
+
   return (
-    <div className="min-h-screen bg-[#F8F9FA] relative font-sans text-gray-800 pb-20 md:pb-0">
+    <div className="min-h-screen relative font-sans text-gray-800 pb-20 md:pb-0" style={bgStyle}>
       {toast && <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 text-white px-6 py-3 rounded-full shadow-2xl text-sm font-medium animate-bounce" style={{ backgroundColor: store.primaryColor }}>{toast}</div>}
 
       <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
@@ -124,9 +152,9 @@ export default function StorePage() {
             <input type="text" placeholder="Procurar produtos..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-white border border-gray-200 rounded-full px-4 py-3 text-sm focus:outline-none focus:ring-2" style={{ "--tw-ring-color": store.primaryColor } as any} />
         </div>
 
-        <div className="flex justify-between items-end mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Produtos em Destaque</h2>
-            <span className="text-sm text-gray-500">{filteredProducts.length} produtos</span>
+        <div className={`flex justify-between items-end mb-6 ${titleBox}`}>
+            <h2 className={`text-2xl font-bold ${store.bgImage ? "text-gray-900" : titleColor}`}>Produtos em Destaque</h2>
+            <span className={`text-sm ${store.bgImage ? "text-gray-500" : countColor}`}>{filteredProducts.length} produtos</span>
         </div>
 
         {filteredProducts.length === 0 ? (
@@ -221,7 +249,6 @@ export default function StorePage() {
         )}
       </aside>
 
-      {/* MODAL DE SUCESSO PROFISSIONAL */}
       {isSuccess && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
           <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl">
@@ -230,11 +257,10 @@ export default function StorePage() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">Pedido Efetuado!</h2>
             <p className="text-gray-500 mb-6 text-sm text-center">Para finalizar, efetue o pagamento e envie o comprovativo no WhatsApp.</p>
-            
-            {/* DADOS DE PAGAMENTO */}
+
             <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200 mb-6">
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Dados para Pagamento ({store.bankName || "Transferência"})</h3>
-              
+
               <div className="mb-3">
                 <p className="text-xs text-gray-500 mb-1">IBAN</p>
                 <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-2">
@@ -252,9 +278,8 @@ export default function StorePage() {
               </div>
             </div>
 
-            {/* BOTÃO WHATSAPP */}
-            <a 
-              href={`https://wa.me/${store.phone?.replace(/\D/g, '')}?text=Olá, acabei de fazer o pedido no valor de ${Number(cartTotal).toLocaleString("pt-AO")} Kz. Vou enviar o comprovativo agora.`}
+            <a
+              href={`https://wa.me/${store.phone?.replace(/\D/g, '')}?text=Olá, acabei de fazer o pedido no valor de ${Number(lastTotal).toLocaleString("pt-AO")} Kz. Vou enviar o comprovativo agora.`}
               target="_blank" rel="noreferrer"
               className="w-full flex items-center justify-center gap-2 text-white py-3 rounded-xl font-semibold transition-colors mb-4 shadow-md"
               style={{ backgroundColor: "#25D366" }}
@@ -263,7 +288,6 @@ export default function StorePage() {
               Enviar Comprovativo no WhatsApp
             </a>
 
-            {/* FEEDBACK / RECLAMAÇÕES */}
             <div className="flex flex-col items-center gap-3">
               {store.feedbackPhone && (
                 <a href={`https://wa.me/${store.feedbackPhone?.replace(/\D/g, '')}?text=Olá, gostaria de deixar uma reclamação/sugestão sobre o meu pedido.`} target="_blank" rel="noreferrer" className="text-xs text-gray-500 hover:text-gray-800 underline font-medium">

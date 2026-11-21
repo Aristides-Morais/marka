@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ChangeEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch, setAccessToken } from "../lib/api";
+import AppearanceTab from "../components/AppearanceTab";
 
 type Service = { id: string; name: string; durationMin: number; price: number };
 type Reservation = { id: string; clientName: string; clientPhone: string; startTime: string; status: string; service: { name: string } };
@@ -8,7 +9,6 @@ type Product = { id: string; name: string; description: string | null; price: nu
 type Tab = "reservations" | "services" | "store" | "settings" | "appearance" | "profile" | "security";
 
 const CORES = ["#16a34a", "#1A4D2E", "#1877F2", "#000000", "#DC2626", "#EA580C", "#DB2777", "#7C3AED", "#EAB308"];
-const FUNDOS = ["#FFFFFF", "#F4F4F5", "#FEF3C7", "#DCFCE7", "#DBEAFE", "#FCE7F3", "#18181B"];
 const EMPTY_PRODUCT = { name: "", description: "", price: "", stock: "10", imageUrl: "" };
 const TAB_LABELS: Record<Tab, string> = {
   reservations: "Reservas",
@@ -19,74 +19,6 @@ const TAB_LABELS: Record<Tab, string> = {
   profile: "Perfil",
   security: "Segurança",
 };
-
-type BgPickerProps = {
-  title: string;
-  color: string;
-  image: string;
-  uploading: boolean;
-  onColor: (c: string) => void;
-  onImageFile: (e: ChangeEvent<HTMLInputElement>) => void;
-  onRemoveImage: () => void;
-  onClear: () => void;
-};
-
-function BgPicker({ title, color, image, uploading, onColor, onImageFile, onRemoveImage, onClear }: BgPickerProps) {
-  const [hex, setHex] = useState(color || "");
-
-  useEffect(() => {
-    setHex(color || "");
-  }, [color]);
-
-  function handleHex(v: string) {
-    let value = v.trim();
-    if (value && !value.startsWith("#")) value = "#" + value;
-    setHex(value);
-    if (/^#[0-9A-Fa-f]{6}$/.test(value)) onColor(value.toUpperCase());
-  }
-
-  const previewStyle = {
-    backgroundColor: color || "#FFFFFF",
-    backgroundImage: image ? `url(${image})` : undefined,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-  } as const;
-
-  return (
-    <div className="border rounded-2xl p-5 space-y-4 bg-white shadow-sm">
-      <h3 className="font-bold text-base">{title}</h3>
-
-      <div className="h-32 rounded-xl border flex items-center justify-center" style={previewStyle}>
-        <span className="bg-white/90 text-xs text-zinc-600 px-3 py-1 rounded-full">Pré-visualização</span>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-2">Cor de fundo (escolhe qualquer cor)</label>
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          {FUNDOS.map((c) => (
-            <button type="button" key={c} onClick={() => onColor(c)} className="w-9 h-9 rounded-full border-2" style={{ backgroundColor: c, borderColor: color === c ? "#000" : "#d4d4d8" }} />
-          ))}
-        </div>
-        <div className="flex items-center gap-3">
-          <input type="color" value={/^#[0-9A-Fa-f]{6}$/.test(color) ? color : "#FFFFFF"} onChange={(e) => onColor(e.target.value.toUpperCase())} className="w-16 h-12 rounded-lg cursor-pointer border border-zinc-300 p-1 bg-white" />
-          <input type="text" value={hex} onChange={(e) => handleHex(e.target.value)} placeholder="#FFFFFF" maxLength={7} className="w-32 border rounded-lg px-3 py-2 text-sm font-mono uppercase" />
-        </div>
-        <p className="text-xs text-zinc-500 mt-1">Clica no quadrado grande para abrir a paleta, ou escreve o código da cor.</p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1">Imagem de fundo (opcional)</label>
-        <input type="file" accept="image/*" onChange={onImageFile} className="w-full text-sm" />
-        {uploading && <p className="text-xs text-zinc-500 mt-1">A enviar imagem...</p>}
-        {image && (
-          <button type="button" onClick={onRemoveImage} className="mt-2 text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded-full font-semibold">Remover imagem</button>
-        )}
-      </div>
-
-      <button type="button" onClick={onClear} className="text-xs text-zinc-700 bg-zinc-100 px-3 py-1.5 rounded-full font-semibold">Repor fundo padrão</button>
-    </div>
-  );
-}
 
 export default function AdminPage() {
   const { slug } = useParams();
@@ -99,18 +31,7 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [hours, setHours] = useState({ openTime: "08:00", closeTime: "18:00" });
   const [businessData, setBusinessData] = useState({
-    name: "",
-    logoUrl: "",
-    primaryColor: "#1A4D2E",
-    phone: "",
-    iban: "",
-    expressNumber: "",
-    bankName: "",
-    feedbackPhone: "",
-    storeBgColor: "",
-    storeBgImage: "",
-    bookingBgColor: "",
-    bookingBgImage: "",
+    name: "", logoUrl: "", primaryColor: "#1A4D2E", phone: "", iban: "", expressNumber: "", bankName: "", feedbackPhone: "",
   });
   const [formData, setFormData] = useState({ name: "", durationMin: "30", price: "" });
   const [productData, setProductData] = useState(EMPTY_PRODUCT);
@@ -120,7 +41,6 @@ export default function AdminPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [bgUploading, setBgUploading] = useState<"store" | "booking" | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [deleteModal, setDeleteModal] = useState<{ type: "product" | "service" | "reservation"; id: string } | null>(null);
@@ -161,10 +81,6 @@ export default function AdminPage() {
         expressNumber: resBusiness.expressNumber || "",
         bankName: resBusiness.bankName || "",
         feedbackPhone: resBusiness.feedbackPhone || "",
-        storeBgColor: resBusiness.storeBgColor || "",
-        storeBgImage: resBusiness.storeBgImage || "",
-        bookingBgColor: resBusiness.bookingBgColor || "",
-        bookingBgImage: resBusiness.bookingBgImage || "",
       });
       setLogoPreview(resBusiness.logoUrl || null);
       setIsAuthenticated(true);
@@ -223,23 +139,6 @@ export default function AdminPage() {
     }
   }
 
-  async function handleSaveAppearance() {
-    setLoading(true);
-    try {
-      await apiFetch("/api/v1/business/info", {
-        method: "PATCH",
-        body: JSON.stringify(businessData),
-        tenant: slug,
-      });
-      showToast("Aparência guardada!", "success");
-      await loadData();
-    } catch (err: any) {
-      showToast(err.message, "error");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function handleUpdateSecurity(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -262,21 +161,6 @@ export default function AdminPage() {
     setBusinessData({ ...businessData, logoUrl: "" });
     setLogoFile(null);
     setLogoPreview(null);
-  }
-
-  async function handleBgImage(kind: "store" | "booking", e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setBgUploading(kind);
-    try {
-      const url = await uploadImage(file);
-      setBusinessData((prev) => (kind === "store" ? { ...prev, storeBgImage: url } : { ...prev, bookingBgImage: url }));
-      showToast("Imagem enviada. Clica em Guardar Aparência.", "success");
-    } catch (err: any) {
-      showToast(err.message || "Erro ao enviar imagem", "error");
-    } finally {
-      setBgUploading(null);
-    }
   }
 
   async function handleCreateService(e: FormEvent) {
@@ -356,7 +240,6 @@ export default function AdminPage() {
         finalImageUrl = await uploadImage(imageFile);
         setUploading(false);
       }
-
       const payload = {
         name: productData.name,
         description: productData.description.trim() || null,
@@ -364,23 +247,13 @@ export default function AdminPage() {
         stock: Number(productData.stock),
         imageUrl: finalImageUrl || null,
       };
-
       if (editingProductId) {
-        await apiFetch(`/api/v1/products/${editingProductId}`, {
-          method: "PATCH",
-          body: JSON.stringify(payload),
-          tenant: slug,
-        });
+        await apiFetch(`/api/v1/products/${editingProductId}`, { method: "PATCH", body: JSON.stringify(payload), tenant: slug });
         showToast("Produto atualizado!", "success");
       } else {
-        await apiFetch("/api/v1/products", {
-          method: "POST",
-          body: JSON.stringify(payload),
-          tenant: slug,
-        });
+        await apiFetch("/api/v1/products", { method: "POST", body: JSON.stringify(payload), tenant: slug });
         showToast("Produto adicionado!", "success");
       }
-
       cancelEditProduct();
       await loadData();
     } catch (err: any) {
@@ -597,40 +470,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {activeTab === "appearance" && (
-          <div className="max-w-2xl space-y-6">
-            <div>
-              <h2 className="font-bold text-lg">Aparência</h2>
-              <p className="text-sm text-zinc-500">Escolhe o fundo da Loja e da página de Marcações. Depois clica em Guardar Aparência.</p>
-            </div>
-
-            <BgPicker
-              title="Fundo da Loja"
-              color={businessData.storeBgColor}
-              image={businessData.storeBgImage}
-              uploading={bgUploading === "store"}
-              onColor={(c) => setBusinessData((p) => ({ ...p, storeBgColor: c }))}
-              onImageFile={(e) => handleBgImage("store", e)}
-              onRemoveImage={() => setBusinessData((p) => ({ ...p, storeBgImage: "" }))}
-              onClear={() => setBusinessData((p) => ({ ...p, storeBgColor: "", storeBgImage: "" }))}
-            />
-
-            <BgPicker
-              title="Fundo das Marcações"
-              color={businessData.bookingBgColor}
-              image={businessData.bookingBgImage}
-              uploading={bgUploading === "booking"}
-              onColor={(c) => setBusinessData((p) => ({ ...p, bookingBgColor: c }))}
-              onImageFile={(e) => handleBgImage("booking", e)}
-              onRemoveImage={() => setBusinessData((p) => ({ ...p, bookingBgImage: "" }))}
-              onClear={() => setBusinessData((p) => ({ ...p, bookingBgColor: "", bookingBgImage: "" }))}
-            />
-
-            <button type="button" onClick={handleSaveAppearance} disabled={loading || bgUploading !== null} className="w-full text-white py-3 rounded-xl font-semibold disabled:opacity-50" style={{ backgroundColor: businessData.primaryColor }}>
-              {loading ? "A guardar..." : "Guardar Aparência"}
-            </button>
-          </div>
-        )}
+        {activeTab === "appearance" && <AppearanceTab slug={slug} onToast={showToast} />}
 
         {activeTab === "profile" && (
           <div className="bg-white p-6 rounded-2xl border max-w-lg shadow-sm">
@@ -662,7 +502,6 @@ export default function AdminPage() {
                   <span className="text-sm font-mono uppercase">{businessData.primaryColor}</span>
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium mb-1">WhatsApp de Suporte</label>
                 <input type="text" value={businessData.phone} onChange={(e) => setBusinessData({ ...businessData, phone: e.target.value })} placeholder="Ex: 244923000000" className="w-full border rounded-lg px-3 py-2" />
@@ -683,7 +522,6 @@ export default function AdminPage() {
                 <label className="block text-sm font-medium mb-1">WhatsApp de Reclamações/Feedback</label>
                 <input type="text" value={businessData.feedbackPhone} onChange={(e) => setBusinessData({ ...businessData, feedbackPhone: e.target.value })} placeholder="Ex: 244923000000" className="w-full border rounded-lg px-3 py-2" />
               </div>
-
               <button type="submit" disabled={loading || uploading} className="w-full text-white py-2.5 rounded-lg font-semibold" style={{ backgroundColor: businessData.primaryColor }}>
                 {uploading ? "A enviar..." : "Guardar Alterações"}
               </button>
