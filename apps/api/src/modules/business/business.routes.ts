@@ -29,14 +29,27 @@ businessRouter.get("/info", (req, res) => {
     heroSubtitle: b.heroSubtitle ?? null,
     mapsUrl: b.mapsUrl ?? null,
     links: Array.isArray(b.links) ? b.links : [],
+    theme: b.theme && typeof b.theme === "object" ? b.theme : {},
   });
 });
 
 const hex = z.string().regex(/^#[0-9A-F]{6}$/i, "Cor inválida");
+const colorOrEmpty = hex.or(z.literal("")).optional();
 const txt = z.string().nullable().optional();
 const linksSchema = z
   .array(z.object({ label: z.string().trim().min(1).max(30), url: z.string().trim().min(1).max(500) }))
   .max(12);
+
+const themeSchema = z.object({
+  headerBg: colorOrEmpty,
+  bannerBg: colorOrEmpty,
+  cardBg: colorOrEmpty,
+  titleColor: colorOrEmpty,
+  subtitleColor: colorOrEmpty,
+  bookingTitleColor: colorOrEmpty,
+  bookingSubtitleColor: colorOrEmpty,
+  headingFont: z.string().max(60).optional(),
+});
 
 businessRouter.patch("/info", requireAuth, async (req, res, next) => {
   try {
@@ -62,6 +75,7 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
       heroSubtitle: txt,
       mapsUrl: txt,
       links: linksSchema.nullable().optional(),
+      theme: themeSchema.nullable().optional(),
     });
     const data = schema.parse(req.body);
 
@@ -94,7 +108,8 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
         heroSubtitle: theme(data.heroSubtitle),
         mapsUrl: theme(data.mapsUrl),
         links: data.links === undefined ? undefined : data.links ?? [],
-      },
+        theme: data.theme === undefined ? undefined : ((data.theme ?? {}) as any),
+      } as any,
     });
     res.json(updated);
   } catch (err) {

@@ -2,12 +2,13 @@ import { useEffect, useState, type FormEvent, type ChangeEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch, setAccessToken } from "../lib/api";
 import AppearanceTab from "../components/AppearanceTab";
+import { prettyName, textOn } from "../lib/theme";
 
 type Service = { id: string; name: string; durationMin: number; price: number };
 type Reservation = { id: string; clientName: string; clientPhone: string; startTime: string; status: string; notes?: string | null; service: { name: string; durationMin?: number } };
 type Product = { id: string; name: string; description: string | null; price: number; stock: number; imageUrl: string | null };
 type Tab = "reservations" | "services" | "store" | "settings" | "appearance" | "profile" | "security";
-type ResFilter = "upcoming" | "today" | "all" | "cancelled";
+type ResFilter = "pending" | "today" | "done" | "all" | "cancelled";
 
 const CORES = ["#16a34a", "#1A4D2E", "#1877F2", "#000000", "#DC2626", "#EA580C", "#DB2777", "#7C3AED", "#EAB308"];
 const EMPTY_PRODUCT = { name: "", description: "", price: "", stock: "10", imageUrl: "" };
@@ -28,16 +29,14 @@ const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("pt-AO", { tim
 const dayNum = (iso: string) => new Date(iso).toLocaleDateString("pt-AO", { timeZone: "UTC", day: "2-digit" });
 const monthShort = (iso: string) => new Date(iso).toLocaleDateString("pt-AO", { timeZone: "UTC", month: "short" });
 
-function waLink(phone: string) {
-  let d = phone.replace(/\D/g, "");
-  if (d.length === 9) d = "244" + d;
-  return `https://wa.me/${d}`;
-}
-
 function todayKey() {
   const n = new Date();
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
 }
+
+const isCancelled = (r: Reservation) => r.status === "CANCELLED";
+const isDone = (r: Reservation) => r.status === "DONE";
+const isPending = (r: Reservation) => !isCancelled(r) && !isDone(r);
 
 export default function AdminPage() {
   const { slug } = useParams();
@@ -64,7 +63,7 @@ export default function AdminPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [deleteModal, setDeleteModal] = useState<{ type: "product" | "service" | "reservation"; id: string } | null>(null);
   const [securityData, setSecurityData] = useState({ currentPassword: "", newEmail: "", newPassword: "" });
-  const [resFilter, setResFilter] = useState<ResFilter>("upcoming");
+  const [resFilter, setResFilter] = useState<ResFilter>("pending");
   const [resSearch, setResSearch] = useState("");
 
   function showToast(message: string, type: "success" | "error") {
@@ -217,6 +216,16 @@ export default function AdminPage() {
     }
   }
 
+  async function setResStatus(id: string, status: "PENDING" | "DONE") {
+    try {
+      await apiFetch(`/api/v1/reservations/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }), tenant: slug });
+      showToast(status === "DONE" ? "Marcada como feita." : "Voltou a pendente.", "success");
+      await loadData();
+    } catch (err: any) {
+      showToast(err.message || "Erro ao atualizar a reserva", "error");
+    }
+  }
+
   function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
     if (e.target.files?.[0]) {
       setImageFile(e.target.files[0]);
@@ -305,33 +314,37 @@ export default function AdminPage() {
 
   // ---- Reservas: contadores e filtros ----
   const today = todayKey();
-  const active = reservations.filter((r) => r.status !== "CANCELLED");
-  const countToday = active.filter((r) => r.startTime.slice(0, 10) === today).length;
-  const countUpcoming = active.filter((r) => r.startTime.slice(0, 10) >= today).length;
-  const countCancelled = reservations.length - active.length;
+  const countToday = reservations.filter((r) => !isCancelled(r) && r.startTime.slice(0, 10) === today).length;
+  const countPending = reservations.filter(isPending).length;
+  const countDone = reservations.filter(isDone).length;
+  const countCancelled = reservations.filter(isCancelled).length;
 
   const visibleReservations = reservations
     .filter((r) => {
-      const day = r.startTime.slice(0, 10);
-      if (resFilter === "cancelled") return r.status === "CANCELLED";
-      if (r.status === "CANCELLED") return resFilter === "all";
-      if (resFilter === "today") return day === today;
-      if (resFilter === "upcoming") return day >= today;
-      return true;
+      if (resFilter === "cancelled") return isCancelled(r);
+      if (resFilter === "all") return true;
+      if (isCancelled(r)) return false;
+      if (resFilter === "today") return r.startTime.slice(0, 10) === today;
+      if (resFilter === "done") return isDone(r);
+      return isPending(r);
     })
     .filter((r) => {
       const q = resSearch.trim().toLowerCase();
       if (!q) return true;
       return r.clientName.toLowerCase().includes(q) || r.clientPhone.includes(q) || r.service.name.toLowerCase().includes(q);
     })
-    .sort((a, b) => (resFilter === "all" || resFilter === "cancelled" ? b.startTime.localeCompare(a.startTime) : a.startTime.localeCompare(b.startTime)));
+    .sort((a, b) => (resFilter === "pending" || resFilter === "today" ? a.startTime.localeCompare(b.startTime) : b.startTime.localeCompare(a.startTime)));
 
   const FILTERS: { id: ResFilter; label: string; count: number }[] = [
-    { id: "upcoming", label: "Próximas", count: countUpcoming },
+    { id: "pending", label: "Pendentes", count: countPending },
     { id: "today", label: "Hoje", count: countToday },
+    { id: "done", label: "Feitas", count: countDone },
     { id: "all", label: "Todas", count: reservations.length },
     { id: "cancelled", label: "Canceladas", count: countCancelled },
   ];
+
+  const primary = businessData.primaryColor;
+  const displayName = prettyName(businessData.name);
 
   if (!isAuthenticated && !loading) {
     return (
@@ -361,11 +374,11 @@ export default function AdminPage() {
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
             <h3 className="text-xl font-bold text-center text-gray-900 mb-2">Tem a certeza?</h3>
             <p className="text-center text-gray-500 text-sm mb-6">
-              {deleteModal.type === "reservation" ? "A reserva será cancelada." : "Esta ação não pode ser desfeita."}
+              {deleteModal.type === "reservation" ? "A reserva será cancelada e o horário fica livre." : "Esta ação não pode ser desfeita."}
             </p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteModal(null)} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-semibold">Voltar</button>
-              <button onClick={handleConfirmDelete} disabled={loading} className="flex-1 text-white py-2.5 rounded-xl font-semibold" style={{ backgroundColor: businessData.primaryColor }}>
+              <button onClick={handleConfirmDelete} disabled={loading} className="flex-1 py-2.5 rounded-xl font-semibold" style={{ backgroundColor: primary, color: textOn(primary) }}>
                 {loading ? "A executar..." : deleteModal.type === "reservation" ? "Sim, Cancelar" : "Sim, Apagar"}
               </button>
             </div>
@@ -376,14 +389,14 @@ export default function AdminPage() {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 max-w-5xl mx-auto gap-4">
         <div className="flex items-center gap-4 min-w-0">
           {logoPreview ? (
-            <img src={logoPreview} className="w-12 h-12 rounded-full object-cover" />
+            <img src={logoPreview} className="w-12 h-12 shrink-0 rounded-full object-cover" />
           ) : (
-            <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xl" style={{ backgroundColor: businessData.primaryColor }}>
-              {businessData.name.charAt(0)}
+            <div className="w-12 h-12 shrink-0 rounded-full flex items-center justify-center font-bold text-xl" style={{ backgroundColor: primary, color: textOn(primary) }}>
+              {displayName.charAt(0)}
             </div>
           )}
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-zinc-900 truncate">{businessData.name}</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-zinc-900 leading-tight break-words" style={{ overflowWrap: "anywhere" }}>{displayName}</h1>
             <p className="text-zinc-500 text-sm">Gestão de Reservas e Loja.</p>
           </div>
         </div>
@@ -404,31 +417,29 @@ export default function AdminPage() {
       <div className="max-w-5xl mx-auto">
         {activeTab === "reservations" && (
           <div className="space-y-5">
-            {/* Contadores */}
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-white rounded-2xl border p-4 shadow-sm">
                 <p className="text-xs text-zinc-500 font-medium">Hoje</p>
-                <p className="text-3xl font-extrabold" style={{ color: businessData.primaryColor }}>{countToday}</p>
+                <p className="text-3xl font-extrabold" style={{ color: primary }}>{countToday}</p>
               </div>
               <div className="bg-white rounded-2xl border p-4 shadow-sm">
-                <p className="text-xs text-zinc-500 font-medium">Próximas</p>
-                <p className="text-3xl font-extrabold text-zinc-900">{countUpcoming}</p>
+                <p className="text-xs text-zinc-500 font-medium">Pendentes</p>
+                <p className="text-3xl font-extrabold text-amber-600">{countPending}</p>
               </div>
               <div className="bg-white rounded-2xl border p-4 shadow-sm">
-                <p className="text-xs text-zinc-500 font-medium">Canceladas</p>
-                <p className="text-3xl font-extrabold text-zinc-400">{countCancelled}</p>
+                <p className="text-xs text-zinc-500 font-medium">Feitas</p>
+                <p className="text-3xl font-extrabold text-emerald-600">{countDone}</p>
               </div>
             </div>
 
-            {/* Filtros e pesquisa */}
             <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
               <div className="flex gap-2 overflow-x-auto">
                 {FILTERS.map((f) => (
                   <button
                     key={f.id}
                     onClick={() => setResFilter(f.id)}
-                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold border ${resFilter === f.id ? "text-white border-transparent" : "bg-white text-zinc-600 border-zinc-200"}`}
-                    style={resFilter === f.id ? { backgroundColor: businessData.primaryColor } : undefined}
+                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold border ${resFilter === f.id ? "border-transparent" : "bg-white text-zinc-600 border-zinc-200"}`}
+                    style={resFilter === f.id ? { backgroundColor: primary, color: textOn(primary) } : undefined}
                   >
                     {f.label} ({f.count})
                   </button>
@@ -442,41 +453,48 @@ export default function AdminPage() {
               />
             </div>
 
-            {/* Lista */}
             {visibleReservations.length === 0 ? (
               <div className="bg-white rounded-2xl border p-10 text-center text-zinc-500">Nenhuma reserva encontrada.</div>
             ) : (
               <div className="space-y-3">
                 {visibleReservations.map((r) => {
-                  const cancelled = r.status === "CANCELLED";
+                  const cancelled = isCancelled(r);
+                  const done = isDone(r);
                   return (
                     <div key={r.id} className={`bg-white rounded-2xl border shadow-sm p-4 flex gap-4 items-center ${cancelled ? "opacity-60" : ""}`}>
-                      <div className="w-16 shrink-0 rounded-xl text-center py-2 text-white" style={{ backgroundColor: cancelled ? "#A1A1AA" : businessData.primaryColor }}>
+                      <div className="w-16 shrink-0 rounded-xl text-center py-2" style={{ backgroundColor: cancelled ? "#A1A1AA" : done ? "#059669" : primary, color: cancelled ? "#FFFFFF" : done ? "#FFFFFF" : textOn(primary) }}>
                         <p className="text-2xl font-extrabold leading-none">{dayNum(r.startTime)}</p>
                         <p className="text-xs uppercase mt-1">{monthShort(r.startTime)}</p>
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-bold text-zinc-900 truncate">{r.clientName}</p>
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${cancelled ? "bg-zinc-100 text-zinc-500" : "bg-emerald-50 text-emerald-700"}`}>
-                            {cancelled ? "Cancelada" : "Confirmada"}
+                          <p className="font-bold text-zinc-900 break-words">{r.clientName}</p>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${cancelled ? "bg-zinc-100 text-zinc-500" : done ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                            {cancelled ? "Cancelada" : done ? "Feita" : "Pendente"}
                           </span>
                         </div>
-                        <p className="text-sm text-zinc-600 truncate">
+                        <p className="text-sm text-zinc-600 break-words">
                           {r.service.name} · <span className="font-semibold">{fmtTime(r.startTime)}</span>
                         </p>
                         <p className="text-xs text-zinc-400">{fmtDate(r.startTime)} · {r.clientPhone}</p>
-                        {r.notes && <p className="text-xs text-zinc-500 mt-1 truncate">📝 {r.notes}</p>}
+                        {r.notes && <p className="text-xs text-zinc-500 mt-1 break-words">📝 {r.notes}</p>}
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                        <a href={waLink(r.clientPhone)} target="_blank" rel="noreferrer" className="text-xs font-semibold text-white px-3 py-2 rounded-full text-center" style={{ backgroundColor: "#25D366" }}>
-                          WhatsApp
-                        </a>
-                        {!cancelled && (
-                          <button onClick={() => setDeleteModal({ type: "reservation", id: r.id })} className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-2 rounded-full">
-                            Cancelar
+                      <div className="flex flex-col gap-2 shrink-0">
+                        {isPending(r) && (
+                          <>
+                            <button onClick={() => setResStatus(r.id, "DONE")} className="text-xs font-semibold text-white bg-emerald-600 px-3 py-2 rounded-full">
+                              ✓ Feita
+                            </button>
+                            <button onClick={() => setDeleteModal({ type: "reservation", id: r.id })} className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-2 rounded-full">
+                              Cancelar
+                            </button>
+                          </>
+                        )}
+                        {done && (
+                          <button onClick={() => setResStatus(r.id, "PENDING")} className="text-xs font-semibold text-zinc-700 bg-zinc-100 px-3 py-2 rounded-full">
+                            Voltar a pendente
                           </button>
                         )}
                       </div>
@@ -503,9 +521,9 @@ export default function AdminPage() {
               <h2 className="font-bold text-lg mb-4">Serviços Ativos</h2>
               <ul className="space-y-3">
                 {services.map((s) => (
-                  <li key={s.id} className="flex justify-between items-center p-3 border rounded-xl bg-zinc-50">
-                    <span>{s.name} ({s.durationMin}m) - {Number(s.price).toLocaleString("pt-AO")} Kz</span>
-                    <button onClick={() => setDeleteModal({ type: "service", id: s.id })} className="text-red-500 p-2">🗑️</button>
+                  <li key={s.id} className="flex justify-between items-center p-3 border rounded-xl bg-zinc-50 gap-2">
+                    <span className="break-words min-w-0">{s.name} ({s.durationMin}m) - {Number(s.price).toLocaleString("pt-AO")} Kz</span>
+                    <button onClick={() => setDeleteModal({ type: "service", id: s.id })} className="text-red-500 p-2 shrink-0">🗑️</button>
                   </li>
                 ))}
               </ul>
@@ -546,7 +564,7 @@ export default function AdminPage() {
                       <div className="flex items-center gap-3 min-w-0">
                         {p.imageUrl ? <img src={p.imageUrl} className="w-12 h-12 rounded-md object-cover shrink-0" /> : <div className="w-12 h-12 bg-zinc-200 rounded-md shrink-0" />}
                         <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{p.name}</p>
+                          <p className="text-sm font-medium break-words">{p.name}</p>
                           <p className="text-xs text-zinc-500">{Number(p.price).toLocaleString("pt-AO")} Kz · Stock: {p.stock}</p>
                           {p.description && <p className="text-xs text-zinc-400 truncate">{p.description}</p>}
                         </div>
@@ -589,6 +607,7 @@ export default function AdminPage() {
               <div>
                 <label className="block text-sm font-medium mb-1">Nome</label>
                 <input type="text" required value={businessData.name} onChange={(e) => setBusinessData({ ...businessData, name: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
+                <p className="text-xs text-zinc-500 mt-1">Dica: escreve o nome com espaços (ex: Sara La Belle) e não com "_".</p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Morada</label>
@@ -615,7 +634,7 @@ export default function AdminPage() {
                   <input type="color" value={businessData.primaryColor} onChange={(e) => setBusinessData({ ...businessData, primaryColor: e.target.value })} className="w-12 h-12 rounded cursor-pointer border-0 p-0" />
                   <span className="text-sm font-mono uppercase">{businessData.primaryColor}</span>
                 </div>
-                <p className="text-xs text-zinc-500 mt-1">Também podes mudar a cor na aba Aparência, com pré-visualização.</p>
+                <p className="text-xs text-zinc-500 mt-1">Para mais cores e letras, usa a aba Aparência.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">WhatsApp de Suporte</label>
@@ -637,7 +656,7 @@ export default function AdminPage() {
                 <label className="block text-sm font-medium mb-1">WhatsApp de Reclamações/Feedback</label>
                 <input type="text" value={businessData.feedbackPhone} onChange={(e) => setBusinessData({ ...businessData, feedbackPhone: e.target.value })} placeholder="Ex: 244923000000" className="w-full border rounded-lg px-3 py-2" />
               </div>
-              <button type="submit" disabled={loading || uploading} className="w-full text-white py-2.5 rounded-lg font-semibold" style={{ backgroundColor: businessData.primaryColor }}>
+              <button type="submit" disabled={loading || uploading} className="w-full py-2.5 rounded-lg font-semibold" style={{ backgroundColor: primary, color: textOn(primary) }}>
                 {uploading ? "A enviar..." : "Guardar Alterações"}
               </button>
             </form>

@@ -1,7 +1,7 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type CSSProperties } from "react";
 import { useParams, Link } from "react-router-dom";
 import { apiFetch } from "../lib/api";
-import { loadFont, fontStack } from "../lib/theme";
+import { fontStack, heroSize, isDark, loadFont, parseExtra, prettyName, textOn, type ExtraTheme } from "../lib/theme";
 
 type Product = { id: string; name: string; description: string | null; price: number; stock: number; imageUrl: string | null };
 type CartItem = Product & { quantity: number };
@@ -22,16 +22,9 @@ type Store = {
   heroTitle: string;
   heroSubtitle: string;
   heroImage: string;
+  extra: ExtraTheme;
   products: Product[];
 };
-
-function isDarkColor(hex: string) {
-  const m = /^#([0-9a-f]{6})$/i.exec(hex || "");
-  if (!m) return false;
-  const n = parseInt(m[1], 16);
-  const r = n >> 16, g = (n >> 8) & 255, b = n & 255;
-  return 0.299 * r + 0.587 * g + 0.114 * b < 140;
-}
 
 export default function StorePage() {
   const { slug } = useParams();
@@ -56,7 +49,9 @@ export default function StorePage() {
     ])
       .then(([productsData, b]) => {
         const productList = Array.isArray(productsData) ? productsData : [];
+        const extra = parseExtra(b.theme);
         loadFont(b.fontFamily);
+        loadFont(extra.headingFont);
         setStore({
           name: b.name,
           logoUrl: b.logoUrl || "",
@@ -73,6 +68,7 @@ export default function StorePage() {
           heroTitle: b.storeHeroTitle || "",
           heroSubtitle: b.storeHeroSubtitle || "",
           heroImage: b.storeHeroImage || "",
+          extra,
           products: productList.map((p: any) => ({ ...p, price: Number(p.price), stock: Number(p.stock) })),
         });
         setLoading(false);
@@ -162,24 +158,41 @@ export default function StorePage() {
   if (!store) return <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] text-red-500 font-bold">Loja não encontrada.</div>;
 
   const primary = store.primaryColor;
+  const ex = store.extra;
+  const displayName = prettyName(store.name);
   const filteredProducts = store.products.filter((p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const bgStyle: React.CSSProperties = {
-    backgroundColor: store.bgColor || "#F8F9FA",
+  const body = fontStack(store.fontFamily);
+  const heading = fontStack(ex.headingFont || store.fontFamily);
+
+  const pageBg = store.bgColor || "#F4F5F7";
+  const bgStyle: CSSProperties = {
+    backgroundColor: pageBg,
     backgroundImage: store.bgImage ? `url(${store.bgImage})` : undefined,
     backgroundSize: "cover",
     backgroundPosition: "center",
     backgroundAttachment: "fixed",
-    fontFamily: fontStack(store.fontFamily),
+    fontFamily: body,
   };
-  const darkBg = !store.bgImage && isDarkColor(store.bgColor);
-  const titleBox = store.bgImage ? "bg-white/85 backdrop-blur rounded-2xl px-4 py-3" : "";
-  const titleColor = store.bgImage ? "text-gray-900" : darkBg ? "text-white" : "text-gray-900";
-  const countColor = store.bgImage ? "text-gray-500" : darkBg ? "text-gray-300" : "text-gray-500";
+  const darkPage = !store.bgImage && isDark(pageBg);
+  const sectionBox = store.bgImage ? "bg-white/85 backdrop-blur rounded-2xl px-4 py-3" : "";
+  const sectionTitle = store.bgImage ? "#111827" : darkPage ? "#FFFFFF" : "#111827";
+  const sectionCount = store.bgImage ? "#6B7280" : darkPage ? "#D1D5DB" : "#6B7280";
 
-  const heroText = store.heroTitle || `Bem-vindo à ${store.name}`;
+  const headerBg = ex.headerBg || "#FFFFFF";
+  const headerText = textOn(headerBg);
+  const cardBg = ex.cardBg || "#FFFFFF";
+  const cardText = textOn(cardBg);
+
+  const bannerCustom = !!ex.bannerBg;
+  const bannerBackground = bannerCustom ? ex.bannerBg : `linear-gradient(135deg, ${primary}1A, #FFFFFF)`;
+  const bannerDark = bannerCustom && isDark(ex.bannerBg);
+  const heroTitleColor = ex.titleColor || (bannerCustom ? textOn(ex.bannerBg) : "#111827");
+  const heroSubColor = ex.subtitleColor || (bannerDark ? "rgba(255,255,255,0.85)" : "#4B5563");
+
+  const heroText = store.heroTitle || `Bem-vindo à ${displayName}`;
   const heroWords = heroText.split(" ");
-  const heroLast = heroWords.length > 1 ? heroWords.pop() : "";
+  const heroLast = !ex.titleColor && heroWords.length > 1 ? heroWords.pop() : "";
   const heroFirst = heroWords.join(" ");
 
   const features = [
@@ -196,16 +209,16 @@ export default function StorePage() {
   return (
     <div className="min-h-screen relative text-gray-800 pb-20 md:pb-0" style={bgStyle}>
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 text-white px-6 py-3 rounded-full shadow-2xl text-sm font-medium animate-bounce" style={{ backgroundColor: primary }}>
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-2xl text-sm font-medium animate-bounce" style={{ backgroundColor: primary, color: textOn(primary) }}>
           {toast}
         </div>
       )}
 
       {/* Cabeçalho */}
-      <header className="bg-white/95 backdrop-blur border-b border-gray-100 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 md:h-20 flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-30 border-b backdrop-blur" style={{ backgroundColor: headerBg, color: headerText, borderColor: "rgba(0,0,0,0.06)" }}>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 min-h-16 md:min-h-20 py-2 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <Link to={`/${slug}`} className="shrink-0 bg-gray-100 hover:bg-gray-200 text-gray-700 w-10 h-10 md:w-auto md:px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors" title="Voltar às reservas">
+            <Link to={`/${slug}`} className="shrink-0 w-10 h-10 md:w-auto md:px-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors" style={{ backgroundColor: "rgba(127,127,127,0.18)", color: headerText }} title="Voltar às reservas">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
@@ -213,14 +226,18 @@ export default function StorePage() {
             </Link>
             <div className="flex items-center gap-2 min-w-0">
               {store.logoUrl ? (
-                <img src={store.logoUrl} alt="Logo" className="w-10 h-10 shrink-0 rounded-full object-cover border border-gray-100 shadow-sm" />
+                <img src={store.logoUrl} alt="Logo" className="w-10 h-10 shrink-0 rounded-full object-cover border border-black/5 shadow-sm" />
               ) : (
-                <div className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm" style={{ backgroundColor: primary }}>
-                  {store.name.charAt(0)}
+                <div className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-lg shadow-sm" style={{ backgroundColor: primary, color: textOn(primary) }}>
+                  {displayName.charAt(0)}
                 </div>
               )}
-              <span title={store.name} className="font-extrabold text-gray-900 tracking-tight truncate max-w-[120px] sm:max-w-[200px] md:max-w-[260px] text-base md:text-lg">
-                {store.name}
+              <span
+                title={displayName}
+                className="font-extrabold tracking-tight leading-tight line-clamp-2 break-words text-sm md:text-lg min-w-0"
+                style={{ fontFamily: heading, overflowWrap: "anywhere" }}
+              >
+                {displayName}
               </span>
             </div>
           </div>
@@ -234,12 +251,12 @@ export default function StorePage() {
               placeholder="Procurar produtos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 rounded-full pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:bg-white transition-all"
+              className="w-full bg-white text-gray-800 border border-gray-200 rounded-full pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 transition-all"
               style={{ "--tw-ring-color": primary } as any}
             />
           </div>
 
-          <button onClick={() => setIsCartOpen(true)} className="relative shrink-0 text-white p-2.5 rounded-full transition-colors shadow-lg" style={{ backgroundColor: primary }}>
+          <button onClick={() => setIsCartOpen(true)} className="relative shrink-0 p-2.5 rounded-full transition-colors shadow-lg" style={{ backgroundColor: primary, color: textOn(primary) }}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
@@ -252,24 +269,26 @@ export default function StorePage() {
 
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-10">
         {/* Banner */}
-        <section className="rounded-3xl overflow-hidden shadow-xl bg-white grid md:grid-cols-2 mb-6">
-          <div className="p-7 md:p-12 flex flex-col justify-center" style={{ background: `linear-gradient(135deg, ${primary}1A, #FFFFFF)` }}>
-            <h1 className="text-3xl md:text-5xl font-extrabold leading-tight text-gray-900">
+        <section className="rounded-3xl overflow-hidden shadow-xl grid md:grid-cols-2 mb-6" style={{ background: bannerBackground }}>
+          <div className="p-7 md:p-12 flex flex-col justify-center min-w-0">
+            <h1 className="font-extrabold leading-tight break-words" style={{ color: heroTitleColor, fontFamily: heading, fontSize: heroSize(heroText), overflowWrap: "anywhere" }}>
               {heroFirst} {heroLast && <span style={{ color: primary }}>{heroLast}</span>}
             </h1>
-            <p className="mt-4 text-gray-600 text-base md:text-lg">{store.heroSubtitle || "Descobre os nossos produtos e faz o teu pedido em poucos cliques."}</p>
-            <button onClick={goToProducts} className="mt-6 self-start text-white font-semibold px-7 py-3 rounded-full shadow-lg hover:opacity-90 transition-opacity" style={{ backgroundColor: primary }}>
+            <p className="mt-4 text-base md:text-lg" style={{ color: heroSubColor }}>
+              {store.heroSubtitle || "Descobre os nossos produtos e faz o teu pedido em poucos cliques."}
+            </p>
+            <button onClick={goToProducts} className="mt-6 self-start font-semibold px-7 py-3 rounded-full shadow-lg hover:opacity-90 transition-opacity" style={{ backgroundColor: primary, color: textOn(primary) }}>
               Ver produtos
             </button>
           </div>
           {store.heroImage ? (
             <img src={store.heroImage} alt="" className="w-full h-56 md:h-full min-h-[240px] object-cover" />
           ) : (
-            <div className="min-h-[200px] md:min-h-[320px] flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${primary}, ${primary}99)` }}>
+            <div className="min-h-[180px] md:min-h-[320px] flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${primary}, ${primary}99)` }}>
               {store.logoUrl ? (
-                <img src={store.logoUrl} alt="" className="w-36 h-36 md:w-48 md:h-48 rounded-full object-cover border-4 border-white/40 shadow-2xl" />
+                <img src={store.logoUrl} alt="" className="w-32 h-32 md:w-48 md:h-48 rounded-full object-cover border-4 border-white/40 shadow-2xl" />
               ) : (
-                <span className="text-white/90 font-extrabold text-8xl">{store.name.charAt(0)}</span>
+                <span className="font-extrabold text-8xl" style={{ color: textOn(primary) }}>{displayName.charAt(0)}</span>
               )}
             </div>
           )}
@@ -278,19 +297,19 @@ export default function StorePage() {
         {/* Vantagens */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
           {features.map((f) => (
-            <div key={f.title} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
+            <div key={f.title} className="rounded-2xl p-4 shadow-sm border border-black/5 flex items-center gap-3" style={{ backgroundColor: cardBg, color: cardText }}>
               <span className="text-2xl w-11 h-11 shrink-0 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${primary}1A` }}>
                 {f.icon}
               </span>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-gray-900 leading-tight">{f.title}</p>
-                <p className="text-xs text-gray-500 leading-tight mt-0.5">{f.text}</p>
+                <p className="text-sm font-bold leading-tight">{f.title}</p>
+                <p className="text-xs leading-tight mt-0.5 opacity-60">{f.text}</p>
               </div>
             </div>
           ))}
         </section>
 
-        {/* Produtos */}
+        {/* Pesquisa (telemóvel) */}
         <div className="md:hidden relative mb-6">
           <input
             type="text"
@@ -302,9 +321,9 @@ export default function StorePage() {
           />
         </div>
 
-        <div id="produtos" className={`flex justify-between items-end mb-6 scroll-mt-24 ${titleBox}`}>
-          <h2 className={`text-2xl font-bold ${titleColor}`}>Destaques para você</h2>
-          <span className={`text-sm ${countColor}`}>{filteredProducts.length} produtos</span>
+        <div id="produtos" className={`flex justify-between items-end mb-6 scroll-mt-24 ${sectionBox}`}>
+          <h2 className="text-2xl font-bold" style={{ color: sectionTitle, fontFamily: heading }}>Destaques para você</h2>
+          <span className="text-sm" style={{ color: sectionCount }}>{filteredProducts.length} produtos</span>
         </div>
 
         {filteredProducts.length === 0 ? (
@@ -315,8 +334,8 @@ export default function StorePage() {
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {filteredProducts.map((product) => (
-              <div key={product.id} className="bg-white rounded-3xl p-3 md:p-4 shadow-sm border border-gray-100 flex flex-col group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
-                <div className="aspect-square bg-[#F3F4F6] rounded-2xl relative overflow-hidden mb-4">
+              <div key={product.id} className="rounded-3xl p-3 md:p-4 shadow-sm border border-black/5 flex flex-col group hover:shadow-2xl hover:-translate-y-1 transition-all duration-300" style={{ backgroundColor: cardBg, color: cardText }}>
+                <div className="aspect-square bg-black/5 rounded-2xl relative overflow-hidden mb-4">
                   {product.imageUrl ? (
                     <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
@@ -329,17 +348,17 @@ export default function StorePage() {
                   )}
                 </div>
                 <div className="flex-1 flex flex-col px-1">
-                  <h3 className="font-semibold text-gray-900 text-sm md:text-base line-clamp-1 mb-1">{product.name}</h3>
-                  {product.description && <p className="text-xs text-gray-400 mb-3 line-clamp-2">{product.description}</p>}
-                  <div className="mt-auto flex items-center justify-between pt-2">
+                  <h3 className="font-semibold text-sm md:text-base line-clamp-2 break-words mb-1" style={{ fontFamily: heading }}>{product.name}</h3>
+                  {product.description && <p className="text-xs mb-3 line-clamp-2 opacity-60">{product.description}</p>}
+                  <div className="mt-auto flex items-center justify-between pt-2 gap-2">
                     <span className="text-lg md:text-xl font-extrabold" style={{ color: primary }}>
                       {Number(product.price).toLocaleString("pt-AO")} Kz
                     </span>
                     <button
                       onClick={() => addToCart(product)}
                       disabled={product.stock === 0}
-                      className="text-white w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full flex items-center justify-center disabled:opacity-50 transition-colors shadow-md"
-                      style={{ backgroundColor: primary }}
+                      className="w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-2 rounded-full flex items-center justify-center disabled:opacity-50 transition-colors shadow-md shrink-0"
+                      style={{ backgroundColor: primary, color: textOn(primary) }}
                     >
                       <span className="hidden md:block text-sm font-medium">Adicionar</span>
                       <svg className="w-5 h-5 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -354,7 +373,7 @@ export default function StorePage() {
         )}
 
         {(store.address || store.phone) && (
-          <footer className={`mt-12 text-center text-sm ${store.bgImage ? "bg-white/85 rounded-2xl py-4 text-gray-600" : darkBg ? "text-gray-300" : "text-gray-500"}`}>
+          <footer className={`mt-12 text-center text-sm ${store.bgImage ? "bg-white/85 rounded-2xl py-4 text-gray-600" : darkPage ? "text-gray-300" : "text-gray-500"}`}>
             {store.address && <p>📍 {store.address}</p>}
             {store.phone && <p className="mt-1">📞 {store.phone}</p>}
           </footer>
@@ -388,7 +407,7 @@ export default function StorePage() {
                 </svg>
               </div>
               <p className="text-gray-500 font-medium mb-6">O teu carrinho está vazio.</p>
-              <button onClick={() => setIsCartOpen(false)} className="text-white px-6 py-2.5 rounded-full font-medium transition-colors" style={{ backgroundColor: primary }}>
+              <button onClick={() => setIsCartOpen(false)} className="px-6 py-2.5 rounded-full font-medium transition-colors" style={{ backgroundColor: primary, color: textOn(primary) }}>
                 Começar a comprar
               </button>
             </div>
@@ -398,10 +417,10 @@ export default function StorePage() {
                 <div className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden flex-shrink-0">
                   {item.imageUrl ? <img src={item.imageUrl} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-100"></div>}
                 </div>
-                <div className="flex-1 flex flex-col justify-between">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-gray-900 text-sm">{item.name}</h4>
+                <div className="flex-1 flex flex-col justify-between min-w-0">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0">
+                      <h4 className="font-semibold text-gray-900 text-sm break-words">{item.name}</h4>
                       <p className="text-xs text-gray-400 mt-1">{Number(item.price).toLocaleString("pt-AO")} Kz / un</p>
                     </div>
                     <button onClick={() => removeFromCart(item.id)} className="text-gray-400 hover:text-red-500 transition-colors">
@@ -442,7 +461,7 @@ export default function StorePage() {
               <input required placeholder="O teu nome completo" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2" style={{ "--tw-ring-color": primary } as any} />
               <input required placeholder="Telefone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2" style={{ "--tw-ring-color": primary } as any} />
               <input required placeholder="Endereço de entrega" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2" style={{ "--tw-ring-color": primary } as any} />
-              <button type="submit" disabled={submitting} className="w-full text-white py-4 rounded-xl font-bold text-base transition-colors disabled:opacity-50 shadow-lg mt-2" style={{ backgroundColor: primary }}>
+              <button type="submit" disabled={submitting} className="w-full py-4 rounded-xl font-bold text-base transition-colors disabled:opacity-50 shadow-lg mt-2" style={{ backgroundColor: primary, color: textOn(primary) }}>
                 {submitting ? "A processar..." : "Finalizar Compra"}
               </button>
             </form>

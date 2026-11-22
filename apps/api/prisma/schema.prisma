@@ -24,6 +24,7 @@ model Business {
   storeHeroTitle    String?
   storeHeroSubtitle String?
   storeHeroImage    String?
+  theme          Json?
   bookingBgColor String?
   bookingBgImage String?
   address        String?
