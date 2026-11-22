@@ -4,9 +4,10 @@ import { apiFetch, setAccessToken } from "../lib/api";
 import AppearanceTab from "../components/AppearanceTab";
 
 type Service = { id: string; name: string; durationMin: number; price: number };
-type Reservation = { id: string; clientName: string; clientPhone: string; startTime: string; status: string; service: { name: string } };
+type Reservation = { id: string; clientName: string; clientPhone: string; startTime: string; status: string; notes?: string | null; service: { name: string; durationMin?: number } };
 type Product = { id: string; name: string; description: string | null; price: number; stock: number; imageUrl: string | null };
 type Tab = "reservations" | "services" | "store" | "settings" | "appearance" | "profile" | "security";
+type ResFilter = "upcoming" | "today" | "all" | "cancelled";
 
 const CORES = ["#16a34a", "#1A4D2E", "#1877F2", "#000000", "#DC2626", "#EA580C", "#DB2777", "#7C3AED", "#EAB308"];
 const EMPTY_PRODUCT = { name: "", description: "", price: "", stock: "10", imageUrl: "" };
@@ -20,6 +21,24 @@ const TAB_LABELS: Record<Tab, string> = {
   security: "Segurança",
 };
 
+// A hora é guardada como o cliente a escolheu (em UTC), por isso mostramos em UTC
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("pt-AO", { timeZone: "UTC", weekday: "short", day: "2-digit", month: "short", year: "numeric" });
+const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("pt-AO", { timeZone: "UTC", hour: "2-digit", minute: "2-digit" });
+const dayNum = (iso: string) => new Date(iso).toLocaleDateString("pt-AO", { timeZone: "UTC", day: "2-digit" });
+const monthShort = (iso: string) => new Date(iso).toLocaleDateString("pt-AO", { timeZone: "UTC", month: "short" });
+
+function waLink(phone: string) {
+  let d = phone.replace(/\D/g, "");
+  if (d.length === 9) d = "244" + d;
+  return `https://wa.me/${d}`;
+}
+
+function todayKey() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+}
+
 export default function AdminPage() {
   const { slug } = useParams();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -31,7 +50,7 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [hours, setHours] = useState({ openTime: "08:00", closeTime: "18:00" });
   const [businessData, setBusinessData] = useState({
-    name: "", logoUrl: "", primaryColor: "#1A4D2E", phone: "", iban: "", expressNumber: "", bankName: "", feedbackPhone: "",
+    name: "", logoUrl: "", primaryColor: "#1A4D2E", phone: "", iban: "", expressNumber: "", bankName: "", feedbackPhone: "", address: "",
   });
   const [formData, setFormData] = useState({ name: "", durationMin: "30", price: "" });
   const [productData, setProductData] = useState(EMPTY_PRODUCT);
@@ -45,6 +64,8 @@ export default function AdminPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [deleteModal, setDeleteModal] = useState<{ type: "product" | "service" | "reservation"; id: string } | null>(null);
   const [securityData, setSecurityData] = useState({ currentPassword: "", newEmail: "", newPassword: "" });
+  const [resFilter, setResFilter] = useState<ResFilter>("upcoming");
+  const [resSearch, setResSearch] = useState("");
 
   function showToast(message: string, type: "success" | "error") {
     setToast({ message, type });
@@ -81,6 +102,7 @@ export default function AdminPage() {
         expressNumber: resBusiness.expressNumber || "",
         bankName: resBusiness.bankName || "",
         feedbackPhone: resBusiness.feedbackPhone || "",
+        address: resBusiness.address || "",
       });
       setLogoPreview(resBusiness.logoUrl || null);
       setIsAuthenticated(true);
@@ -271,15 +293,45 @@ export default function AdminPage() {
       if (deleteModal.type === "product") await apiFetch(`/api/v1/products/${deleteModal.id}`, { method: "DELETE", tenant: slug });
       else if (deleteModal.type === "service") await apiFetch(`/api/v1/reservations/services/${deleteModal.id}`, { method: "DELETE", tenant: slug });
       else if (deleteModal.type === "reservation") await apiFetch(`/api/v1/reservations/${deleteModal.id}/cancel`, { method: "PATCH", tenant: slug });
-      showToast("Apagado com sucesso.", "success");
+      showToast("Feito com sucesso.", "success");
       await loadData();
     } catch {
-      showToast("Erro ao apagar.", "error");
+      showToast("Erro ao executar a ação.", "error");
     } finally {
       setLoading(false);
       setDeleteModal(null);
     }
   }
+
+  // ---- Reservas: contadores e filtros ----
+  const today = todayKey();
+  const active = reservations.filter((r) => r.status !== "CANCELLED");
+  const countToday = active.filter((r) => r.startTime.slice(0, 10) === today).length;
+  const countUpcoming = active.filter((r) => r.startTime.slice(0, 10) >= today).length;
+  const countCancelled = reservations.length - active.length;
+
+  const visibleReservations = reservations
+    .filter((r) => {
+      const day = r.startTime.slice(0, 10);
+      if (resFilter === "cancelled") return r.status === "CANCELLED";
+      if (r.status === "CANCELLED") return resFilter === "all";
+      if (resFilter === "today") return day === today;
+      if (resFilter === "upcoming") return day >= today;
+      return true;
+    })
+    .filter((r) => {
+      const q = resSearch.trim().toLowerCase();
+      if (!q) return true;
+      return r.clientName.toLowerCase().includes(q) || r.clientPhone.includes(q) || r.service.name.toLowerCase().includes(q);
+    })
+    .sort((a, b) => (resFilter === "all" || resFilter === "cancelled" ? b.startTime.localeCompare(a.startTime) : a.startTime.localeCompare(b.startTime)));
+
+  const FILTERS: { id: ResFilter; label: string; count: number }[] = [
+    { id: "upcoming", label: "Próximas", count: countUpcoming },
+    { id: "today", label: "Hoje", count: countToday },
+    { id: "all", label: "Todas", count: reservations.length },
+    { id: "cancelled", label: "Canceladas", count: countCancelled },
+  ];
 
   if (!isAuthenticated && !loading) {
     return (
@@ -308,11 +360,13 @@ export default function AdminPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
             <h3 className="text-xl font-bold text-center text-gray-900 mb-2">Tem a certeza?</h3>
-            <p className="text-center text-gray-500 text-sm mb-6">Esta ação não pode ser desfeita.</p>
+            <p className="text-center text-gray-500 text-sm mb-6">
+              {deleteModal.type === "reservation" ? "A reserva será cancelada." : "Esta ação não pode ser desfeita."}
+            </p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteModal(null)} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-semibold">Cancelar</button>
+              <button onClick={() => setDeleteModal(null)} className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl font-semibold">Voltar</button>
               <button onClick={handleConfirmDelete} disabled={loading} className="flex-1 text-white py-2.5 rounded-xl font-semibold" style={{ backgroundColor: businessData.primaryColor }}>
-                {loading ? "A apagar..." : "Sim, Apagar"}
+                {loading ? "A executar..." : deleteModal.type === "reservation" ? "Sim, Cancelar" : "Sim, Apagar"}
               </button>
             </div>
           </div>
@@ -320,7 +374,7 @@ export default function AdminPage() {
       )}
 
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 max-w-5xl mx-auto gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0">
           {logoPreview ? (
             <img src={logoPreview} className="w-12 h-12 rounded-full object-cover" />
           ) : (
@@ -328,8 +382,8 @@ export default function AdminPage() {
               {businessData.name.charAt(0)}
             </div>
           )}
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900">{businessData.name}</h1>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-zinc-900 truncate">{businessData.name}</h1>
             <p className="text-zinc-500 text-sm">Gestão de Reservas e Loja.</p>
           </div>
         </div>
@@ -349,32 +403,88 @@ export default function AdminPage() {
 
       <div className="max-w-5xl mx-auto">
         {activeTab === "reservations" && (
-          <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-x-auto">
-            <table className="w-full text-left text-sm min-w-[600px]">
-              <thead className="bg-zinc-50 text-zinc-500 text-xs uppercase border-b">
-                <tr><th className="px-6 py-4">Data</th><th className="px-6 py-4">Cliente</th><th className="px-6 py-4">Serviço</th><th className="px-6 py-4">Ação</th></tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {reservations.length === 0 ? (
-                  <tr><td colSpan={4} className="px-6 py-8 text-center text-zinc-500">Nenhuma reserva agendada.</td></tr>
-                ) : (
-                  reservations.map((r) => (
-                    <tr key={r.id}>
-                      <td className="px-6 py-4">{new Date(r.startTime).toLocaleString("pt-AO")}</td>
-                      <td className="px-6 py-4">{r.clientName}</td>
-                      <td className="px-6 py-4">{r.service.name}</td>
-                      <td className="px-6 py-4">
-                        {r.status !== "CANCELLED" ? (
-                          <button onClick={() => setDeleteModal({ type: "reservation", id: r.id })} className="text-red-600 bg-red-50 px-4 py-1.5 rounded-full text-xs font-semibold">Cancelar</button>
-                        ) : (
-                          <span className="text-zinc-500 text-xs bg-zinc-100 px-4 py-1.5 rounded-full">Cancelada</span>
+          <div className="space-y-5">
+            {/* Contadores */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-white rounded-2xl border p-4 shadow-sm">
+                <p className="text-xs text-zinc-500 font-medium">Hoje</p>
+                <p className="text-3xl font-extrabold" style={{ color: businessData.primaryColor }}>{countToday}</p>
+              </div>
+              <div className="bg-white rounded-2xl border p-4 shadow-sm">
+                <p className="text-xs text-zinc-500 font-medium">Próximas</p>
+                <p className="text-3xl font-extrabold text-zinc-900">{countUpcoming}</p>
+              </div>
+              <div className="bg-white rounded-2xl border p-4 shadow-sm">
+                <p className="text-xs text-zinc-500 font-medium">Canceladas</p>
+                <p className="text-3xl font-extrabold text-zinc-400">{countCancelled}</p>
+              </div>
+            </div>
+
+            {/* Filtros e pesquisa */}
+            <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+              <div className="flex gap-2 overflow-x-auto">
+                {FILTERS.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setResFilter(f.id)}
+                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold border ${resFilter === f.id ? "text-white border-transparent" : "bg-white text-zinc-600 border-zinc-200"}`}
+                    style={resFilter === f.id ? { backgroundColor: businessData.primaryColor } : undefined}
+                  >
+                    {f.label} ({f.count})
+                  </button>
+                ))}
+              </div>
+              <input
+                value={resSearch}
+                onChange={(e) => setResSearch(e.target.value)}
+                placeholder="Pesquisar cliente, telefone ou serviço..."
+                className="w-full md:w-72 border rounded-full px-4 py-2 text-sm bg-white"
+              />
+            </div>
+
+            {/* Lista */}
+            {visibleReservations.length === 0 ? (
+              <div className="bg-white rounded-2xl border p-10 text-center text-zinc-500">Nenhuma reserva encontrada.</div>
+            ) : (
+              <div className="space-y-3">
+                {visibleReservations.map((r) => {
+                  const cancelled = r.status === "CANCELLED";
+                  return (
+                    <div key={r.id} className={`bg-white rounded-2xl border shadow-sm p-4 flex gap-4 items-center ${cancelled ? "opacity-60" : ""}`}>
+                      <div className="w-16 shrink-0 rounded-xl text-center py-2 text-white" style={{ backgroundColor: cancelled ? "#A1A1AA" : businessData.primaryColor }}>
+                        <p className="text-2xl font-extrabold leading-none">{dayNum(r.startTime)}</p>
+                        <p className="text-xs uppercase mt-1">{monthShort(r.startTime)}</p>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-bold text-zinc-900 truncate">{r.clientName}</p>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${cancelled ? "bg-zinc-100 text-zinc-500" : "bg-emerald-50 text-emerald-700"}`}>
+                            {cancelled ? "Cancelada" : "Confirmada"}
+                          </span>
+                        </div>
+                        <p className="text-sm text-zinc-600 truncate">
+                          {r.service.name} · <span className="font-semibold">{fmtTime(r.startTime)}</span>
+                        </p>
+                        <p className="text-xs text-zinc-400">{fmtDate(r.startTime)} · {r.clientPhone}</p>
+                        {r.notes && <p className="text-xs text-zinc-500 mt-1 truncate">📝 {r.notes}</p>}
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                        <a href={waLink(r.clientPhone)} target="_blank" rel="noreferrer" className="text-xs font-semibold text-white px-3 py-2 rounded-full text-center" style={{ backgroundColor: "#25D366" }}>
+                          WhatsApp
+                        </a>
+                        {!cancelled && (
+                          <button onClick={() => setDeleteModal({ type: "reservation", id: r.id })} className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-2 rounded-full">
+                            Cancelar
+                          </button>
                         )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -481,6 +591,10 @@ export default function AdminPage() {
                 <input type="text" required value={businessData.name} onChange={(e) => setBusinessData({ ...businessData, name: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
               </div>
               <div>
+                <label className="block text-sm font-medium mb-1">Morada</label>
+                <input type="text" value={businessData.address} onChange={(e) => setBusinessData({ ...businessData, address: e.target.value })} placeholder="Ex: Talatona, Luanda" className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
                 <label className="block text-sm font-medium mb-1">Logo do Negócio</label>
                 <input type="file" accept="image/*" onChange={handleLogoChange} className="w-full text-sm" />
                 {logoPreview && (
@@ -501,6 +615,7 @@ export default function AdminPage() {
                   <input type="color" value={businessData.primaryColor} onChange={(e) => setBusinessData({ ...businessData, primaryColor: e.target.value })} className="w-12 h-12 rounded cursor-pointer border-0 p-0" />
                   <span className="text-sm font-mono uppercase">{businessData.primaryColor}</span>
                 </div>
+                <p className="text-xs text-zinc-500 mt-1">Também podes mudar a cor na aba Aparência, com pré-visualização.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">WhatsApp de Suporte</label>

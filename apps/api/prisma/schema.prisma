@@ -21,6 +21,9 @@ model Business {
   feedbackPhone  String?
   storeBgColor   String?
   storeBgImage   String?
+  storeHeroTitle    String?
+  storeHeroSubtitle String?
+  storeHeroImage    String?
   bookingBgColor String?
   bookingBgImage String?
   address        String?

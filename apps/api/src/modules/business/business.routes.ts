@@ -19,6 +19,9 @@ businessRouter.get("/info", (req, res) => {
     address: b.address ?? null,
     storeBgColor: b.storeBgColor ?? null,
     storeBgImage: b.storeBgImage ?? null,
+    storeHeroTitle: b.storeHeroTitle ?? null,
+    storeHeroSubtitle: b.storeHeroSubtitle ?? null,
+    storeHeroImage: b.storeHeroImage ?? null,
     bookingBgColor: b.bookingBgColor ?? null,
     bookingBgImage: b.bookingBgImage ?? null,
     fontFamily: b.fontFamily ?? null,
@@ -46,8 +49,12 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
       expressNumber: txt,
       bankName: txt,
       feedbackPhone: txt,
+      address: txt,
       storeBgColor: hex.nullable().optional().or(z.literal("")),
       storeBgImage: txt,
+      storeHeroTitle: txt,
+      storeHeroSubtitle: txt,
+      storeHeroImage: txt,
       bookingBgColor: hex.nullable().optional().or(z.literal("")),
       bookingBgImage: txt,
       fontFamily: txt,
@@ -60,8 +67,8 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
 
     // Perfil: "" limpa o campo
     const val = (v: string | null | undefined) => (v === undefined ? undefined : v || null);
-    // Aparência: "" ignora, null limpa
-    const theme = (v: string | null | undefined) => (v === undefined || v === "" ? undefined : v);
+    // Aparência: undefined ignora, ""/null limpa
+    const theme = (v: string | null | undefined) => (v === undefined ? undefined : v || null);
 
     const updated = await prisma.business.update({
       where: { id: req.business!.id },
@@ -74,8 +81,12 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
         expressNumber: val(data.expressNumber),
         bankName: val(data.bankName),
         feedbackPhone: val(data.feedbackPhone),
+        address: val(data.address),
         storeBgColor: theme(data.storeBgColor),
         storeBgImage: theme(data.storeBgImage),
+        storeHeroTitle: theme(data.storeHeroTitle),
+        storeHeroSubtitle: theme(data.storeHeroSubtitle),
+        storeHeroImage: theme(data.storeHeroImage),
         bookingBgColor: theme(data.bookingBgColor),
         bookingBgImage: theme(data.bookingBgImage),
         fontFamily: theme(data.fontFamily),
