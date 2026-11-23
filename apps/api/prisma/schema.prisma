@@ -34,6 +34,9 @@ type           String   @default("loja")
   modules        String[] @default(["booking"])
   active         Boolean  @default(true)
   createdAt      DateTime @default(now())
+template       String @default("comercio")
+secondaryColor String @default("#F2A900")
+accentColor    String @default("#F7F9FC")
 
   users          User[]
   services       Service[]

@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import { z } from "zod";
 import { timingSafeEqual } from "node:crypto";
@@ -8,6 +7,25 @@ import { signToken, verifyToken } from "../../lib/jwt.js";
 import { env } from "../../config/env.js";
 
 export const superAdminRouter = Router();
+
+const hexColorSchema = z.string().regex(
+  /^#[0-9A-Fa-f]{6}$/,
+  "A cor deve estar no formato HEX, por exemplo #173B67."
+);
+
+const templateSchema = z.enum([
+  "restaurante",
+  "comercio",
+  "beleza",
+  "hotel",
+  "saude",
+  "imobiliario",
+  "automovel",
+  "educacao",
+  "eventos",
+  "servicos",
+  "institucional",
+]);
 
 function safeCompare(a: string, b: string): boolean {
   const bufferA = Buffer.from(a);
@@ -28,7 +46,7 @@ function requireSuperAdmin(req: any, res: any, next: any) {
 
   if (!token) {
     return res.status(401).json({
-      error: "Acesso negado. Token em falta."
+      error: "Acesso negado. Token em falta.",
     });
   }
 
@@ -41,14 +59,14 @@ function requireSuperAdmin(req: any, res: any, next: any) {
       decoded.businessId !== "system"
     ) {
       return res.status(403).json({
-        error: "Acesso reservado ao Super Admin."
+        error: "Acesso reservado ao Super Admin.",
       });
     }
 
     next();
   } catch {
     return res.status(401).json({
-      error: "Token inválido ou expirado."
+      error: "Token inválido ou expirado.",
     });
   }
 }
@@ -57,31 +75,24 @@ superAdminRouter.post("/login", async (req, res, next) => {
   try {
     const schema = z.object({
       email: z.string().trim().email(),
-      password: z.string().min(1)
+      password: z.string().min(1),
     });
 
     const { email, password } = schema.parse(req.body);
 
     if (!env.SUPER_ADMIN_EMAIL || !env.SUPER_ADMIN_PASSWORD) {
       res.status(503).json({
-        error: "O acesso do Super Admin não está configurado."
+        error: "O acesso do Super Admin não está configurado.",
       });
       return;
     }
 
-    const validEmail = safeCompare(
-      email,
-      env.SUPER_ADMIN_EMAIL
-    );
-
-    const validPassword = safeCompare(
-      password,
-      env.SUPER_ADMIN_PASSWORD
-    );
+    const validEmail = safeCompare(email, env.SUPER_ADMIN_EMAIL);
+    const validPassword = safeCompare(password, env.SUPER_ADMIN_PASSWORD);
 
     if (!validEmail || !validPassword) {
       res.status(401).json({
-        error: "Credenciais de Super Admin inválidas."
+        error: "Credenciais de Super Admin inválidas.",
       });
       return;
     }
@@ -90,7 +101,7 @@ superAdminRouter.post("/login", async (req, res, next) => {
       sub: "super-admin",
       email: env.SUPER_ADMIN_EMAIL,
       role: "SUPER_ADMIN",
-      businessId: "system"
+      businessId: "system",
     });
 
     res.json({ token });
@@ -110,11 +121,11 @@ superAdminRouter.get(
             select: {
               users: true,
               products: true,
-              reservations: true
-            }
-          }
+              reservations: true,
+            },
+          },
         },
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
       });
 
       res.json(businesses);
@@ -129,20 +140,73 @@ superAdminRouter.patch(
   requireSuperAdmin,
   async (req, res, next) => {
     try {
+      const id = String(req.params.id);
+
       const business = await prisma.business.findUnique({
-        where: { id: String(req.params.id) }
+        where: { id },
       });
 
       if (!business) {
         res.status(404).json({
-          error: "Negócio não encontrado."
+          error: "Negócio não encontrado.",
         });
         return;
       }
 
       const updated = await prisma.business.update({
         where: { id: business.id },
-        data: { active: !business.active }
+        data: { active: !business.active },
+      });
+
+      res.json(updated);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * Actualizar nome, actividade, template e cores de um negócio existente.
+ * O slug e as contas de administrador não são alterados por esta rota.
+ */
+superAdminRouter.patch(
+  "/businesses/:id",
+  requireSuperAdmin,
+  async (req, res, next) => {
+    try {
+      const schema = z.object({
+        name: z.string().trim().min(2).max(120).optional(),
+        type: z.string().trim().min(2).max(80).optional(),
+        template: templateSchema.optional(),
+        primaryColor: hexColorSchema.optional(),
+        secondaryColor: hexColorSchema.optional(),
+        accentColor: hexColorSchema.optional(),
+      }).strict();
+
+      const data = schema.parse(req.body);
+      const id = String(req.params.id);
+
+      const existing = await prisma.business.findUnique({
+        where: { id },
+      });
+
+      if (!existing) {
+        res.status(404).json({
+          error: "Negócio não encontrado.",
+        });
+        return;
+      }
+
+      if (Object.keys(data).length === 0) {
+        res.status(400).json({
+          error: "Não foram enviados dados para actualizar.",
+        });
+        return;
+      }
+
+      const updated = await prisma.business.update({
+        where: { id },
+        data,
       });
 
       res.json(updated);
@@ -158,7 +222,7 @@ superAdminRouter.post(
   async (req, res, next) => {
     try {
       const schema = z.object({
-        name: z.string().trim().min(2),
+        name: z.string().trim().min(2).max(120),
         slug: z.string()
           .trim()
           .toLowerCase()
@@ -167,19 +231,33 @@ superAdminRouter.post(
             "O slug só pode conter letras minúsculas, números e hífen."
           ),
         adminEmail: z.string().trim().email(),
-        adminPassword: z.string().min(8)
+        adminPassword: z.string().min(8),
+        type: z.string().trim().min(2).max(80).default("loja"),
+        template: templateSchema.default("comercio"),
+        primaryColor: hexColorSchema.default("#173B67"),
+        secondaryColor: hexColorSchema.default("#F2A900"),
+        accentColor: hexColorSchema.default("#F7F9FC"),
       });
 
-      const { name, slug, adminEmail, adminPassword } =
-        schema.parse(req.body);
+      const {
+        name,
+        slug,
+        adminEmail,
+        adminPassword,
+        type,
+        template,
+        primaryColor,
+        secondaryColor,
+        accentColor,
+      } = schema.parse(req.body);
 
       const existing = await prisma.business.findUnique({
-        where: { slug }
+        where: { slug },
       });
 
       if (existing) {
         res.status(409).json({
-          error: "Este link já está a ser utilizado."
+          error: "Este link já está a ser utilizado.",
         });
         return;
       }
@@ -190,17 +268,21 @@ superAdminRouter.post(
         data: {
           name,
           slug,
-          primaryColor: "#1A4D2E",
+          type,
+          template,
+          primaryColor,
+          secondaryColor,
+          accentColor,
           active: true,
           users: {
             create: {
               name: `Admin ${name}`,
               email: adminEmail,
               passwordHash,
-              role: "ADMIN"
-            }
-          }
-        }
+              role: "ADMIN",
+            },
+          },
+        },
       });
 
       res.status(201).json(newBusiness);
