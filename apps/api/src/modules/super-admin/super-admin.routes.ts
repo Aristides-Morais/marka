@@ -27,6 +27,8 @@ const templateSchema = z.enum([
   "institucional",
 ]);
 
+const DEFAULT_MODULES = ["website", "store", "booking"];
+
 function safeCompare(a: string, b: string): boolean {
   const bufferA = Buffer.from(a);
   const bufferB = Buffer.from(b);
@@ -71,6 +73,7 @@ function requireSuperAdmin(req: any, res: any, next: any) {
   }
 }
 
+// LOGIN DO SUPER ADMIN
 superAdminRouter.post("/login", async (req, res, next) => {
   try {
     const schema = z.object({
@@ -110,6 +113,7 @@ superAdminRouter.post("/login", async (req, res, next) => {
   }
 });
 
+// LISTAR NEGÓCIOS
 superAdminRouter.get(
   "/businesses",
   requireSuperAdmin,
@@ -135,6 +139,7 @@ superAdminRouter.get(
   }
 );
 
+// ACTIVAR OU DESACTIVAR NEGÓCIO
 superAdminRouter.patch(
   "/businesses/:id/toggle",
   requireSuperAdmin,
@@ -165,10 +170,7 @@ superAdminRouter.patch(
   }
 );
 
-/**
- * Actualizar nome, actividade, template e cores de um negócio existente.
- * O slug e as contas de administrador não são alterados por esta rota.
- */
+// ACTUALIZAR DADOS DO NEGÓCIO
 superAdminRouter.patch(
   "/businesses/:id",
   requireSuperAdmin,
@@ -216,6 +218,7 @@ superAdminRouter.patch(
   }
 );
 
+// CRIAR NEGÓCIO COM WEBSITE, LOJA E RESERVAS
 superAdminRouter.post(
   "/businesses",
   requireSuperAdmin,
@@ -262,7 +265,30 @@ superAdminRouter.post(
         return;
       }
 
+      const existingAdmin = await prisma.user.findFirst({
+        where: {
+          email: adminEmail,
+        },
+      });
+
+      if (existingAdmin) {
+        res.status(409).json({
+          error: "Este email já está associado a uma conta.",
+        });
+        return;
+      }
+
       const passwordHash = await hashPassword(adminPassword);
+
+      const initialContent = {
+        heroTitle: name,
+        heroSubtitle: `Bem-vindo à ${name}.`,
+        buttonText: "Conhecer a loja",
+        description: `Conheça a ${name} e descubra os nossos produtos e serviços.`,
+        aboutTitle: `Sobre ${name}`,
+        aboutText: `Conheça melhor a ${name}. Estamos aqui para lhe oferecer a melhor experiência.`,
+        gallery: [],
+      };
 
       const newBusiness = await prisma.business.create({
         data: {
@@ -274,6 +300,11 @@ superAdminRouter.post(
           secondaryColor,
           accentColor,
           active: true,
+
+          // Todos os negócios começam com os três módulos.
+          modules: DEFAULT_MODULES,
+
+          // Criar automaticamente a conta de administrador.
           users: {
             create: {
               name: `Admin ${name}`,
@@ -282,10 +313,33 @@ superAdminRouter.post(
               role: "ADMIN",
             },
           },
+
+          // Criar e publicar o website inicial.
+          siteContent: {
+            create: {
+              draft: initialContent as any,
+              published: initialContent as any,
+              isPublished: true,
+              publishedAt: new Date(),
+            },
+          },
+        },
+        include: {
+          _count: {
+            select: {
+              users: true,
+              products: true,
+              reservations: true,
+            },
+          },
         },
       });
 
-      res.status(201).json(newBusiness);
+      res.status(201).json({
+        message: "Negócio criado com Website, Loja e Reservas.",
+        business: newBusiness,
+        modules: DEFAULT_MODULES,
+      });
     } catch (err) {
       next(err);
     }
@@ -293,11 +347,11 @@ superAdminRouter.post(
 );
 
 /**
- * Gestão global dos conteúdos dos sites pelo Super Admin.
- * Estas rotas ficam protegidas pelo token SUPER_ADMIN.
+ * GESTÃO GLOBAL DOS WEBSITES
+ * Todas estas rotas são protegidas pelo token SUPER_ADMIN.
  */
 
-// Consultar os conteúdos de um negócio.
+// CONSULTAR CONTEÚDO DO WEBSITE
 superAdminRouter.get(
   "/businesses/:id/site-content",
   requireSuperAdmin,
@@ -307,11 +361,17 @@ superAdminRouter.get(
 
       const business = await prisma.business.findUnique({
         where: { id: businessId },
-        select: { id: true, name: true, slug: true },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
       });
 
       if (!business) {
-        res.status(404).json({ error: "Negócio não encontrado." });
+        res.status(404).json({
+          error: "Negócio não encontrado.",
+        });
         return;
       }
 
@@ -331,13 +391,14 @@ superAdminRouter.get(
   }
 );
 
-// Guardar o rascunho.
+// GUARDAR RASCUNHO
 superAdminRouter.put(
   "/businesses/:id/site-content/draft",
   requireSuperAdmin,
   async (req, res, next) => {
     try {
       const businessId = String(req.params.id);
+
       const schema = z.object({
         content: z.record(z.string(), z.unknown()),
       });
@@ -350,7 +411,9 @@ superAdminRouter.put(
       });
 
       if (!business) {
-        res.status(404).json({ error: "Negócio não encontrado." });
+        res.status(404).json({
+          error: "Negócio não encontrado.",
+        });
         return;
       }
 
@@ -376,7 +439,7 @@ superAdminRouter.put(
   }
 );
 
-// Publicar o rascunho.
+// PUBLICAR WEBSITE
 superAdminRouter.post(
   "/businesses/:id/site-content/publish",
   requireSuperAdmin,
@@ -415,7 +478,7 @@ superAdminRouter.post(
   }
 );
 
-// Retirar a publicação sem apagar o conteúdo.
+// RETIRAR PUBLICAÇÃO SEM APAGAR CONTEÚDO
 superAdminRouter.post(
   "/businesses/:id/site-content/unpublish",
   requireSuperAdmin,
@@ -425,7 +488,9 @@ superAdminRouter.post(
 
       const result = await prisma.siteContent.updateMany({
         where: { businessId },
-        data: { isPublished: false },
+        data: {
+          isPublished: false,
+        },
       });
 
       if (result.count === 0) {

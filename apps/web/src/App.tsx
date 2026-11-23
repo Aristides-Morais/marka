@@ -1,4 +1,6 @@
+
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import WebsitePage from "./pages/WebsitePage";
 import ClientPage from "./pages/ClientPage";
 import AdminPage from "./pages/AdminPage";
 import StorePage from "./pages/StorePage";
@@ -9,15 +11,20 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Redireciona a raiz para um negócio padrão */}
         <Route path="/" element={<Navigate to="/sara" replace />} />
-        
-        {/* Rota Secreta do Fundador */}
+
         <Route path="/super-admin" element={<SuperAdminPage />} />
 
-        {/* Rotas Dinâmicas por Negócio */}
-        <Route path="/:slug" element={<ClientPage />} />
+        {/* Website principal */}
+        <Route path="/:slug" element={<WebsitePage />} />
+
+        {/* Loja */}
         <Route path="/:slug/loja" element={<StorePage />} />
+
+        {/* Reservas */}
+        <Route path="/:slug/reservas" element={<ClientPage />} />
+
+        {/* Administração e planos */}
         <Route path="/:slug/admin" element={<AdminPage />} />
         <Route path="/:slug/planos" element={<SubscriptionPage />} />
       </Routes>

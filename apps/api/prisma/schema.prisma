@@ -31,7 +31,7 @@ model Business {
   address           String?
   openTime          String   @default("08:00")
   closeTime         String   @default("18:00")
-  modules           String[] @default(["booking"])
+  modules           String[] @default(["Website", "store", "booking"])
   active            Boolean  @default(true)
   createdAt         DateTime @default(now())
   template          String   @default("comercio")
