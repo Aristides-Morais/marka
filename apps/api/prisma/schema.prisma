@@ -12,6 +12,7 @@ model Business {
   id             String   @id @default(cuid())
   slug           String   @unique
   name           String
+type           String   @default("loja")
   logoUrl        String?
   primaryColor   String   @default("#16a34a")
   phone          String?
