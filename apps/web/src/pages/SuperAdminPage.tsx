@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { apiFetch, setAccessToken } from "../lib/api";
+import SiteContentEditor from "./SiteContentEditor";
 
 type Business = {
   id: string;
@@ -44,111 +45,141 @@ const initialForm: BusinessForm = {
 };
 
 const businessTypes = [
-  { label: "Alimentação", items: [
-    ["restaurante", "Restaurante", "restaurante"],
-    ["bar", "Bar", "restaurante"],
-    ["pastelaria", "Pastelaria", "restaurante"],
-    ["padaria", "Padaria", "restaurante"],
-    ["pizzaria", "Pizzaria", "restaurante"],
-    ["cafeteria", "Cafetaria", "restaurante"],
-    ["churrasqueira", "Churrasqueira", "restaurante"],
-    ["geladaria", "Geladaria", "restaurante"],
-    ["catering", "Catering", "restaurante"],
-    ["lanchonete", "Lanchonete", "restaurante"],
-  ]},
-  { label: "Comércio", items: [
-    ["supermercado", "Supermercado", "comercio"],
-    ["minimercado", "Minimercado", "comercio"],
-    ["loja", "Loja geral", "comercio"],
-    ["loja-online", "Loja online", "comercio"],
-    ["boutique", "Boutique", "comercio"],
-    ["roupas", "Loja de roupa", "comercio"],
-    ["calcados", "Loja de calçado", "comercio"],
-    ["eletronica", "Loja de electrónica", "comercio"],
-    ["informatica", "Loja de informática", "comercio"],
-    ["moveis", "Loja de móveis", "comercio"],
-    ["decoracao", "Decoração e artigos para casa", "comercio"],
-    ["cosmeticos", "Cosméticos e perfumaria", "comercio"],
-    ["florista", "Florista", "comercio"],
-    ["papelaria", "Papelaria", "comercio"],
-    ["livraria", "Livraria", "comercio"],
-    ["acessorios", "Acessórios", "comercio"],
-    ["joalharia", "Joalharia", "comercio"],
-    ["pet-shop", "Pet shop", "comercio"],
-    ["materiais-construcao", "Materiais de construção", "comercio"],
-    ["farmacia", "Farmácia", "comercio"],
-  ]},
-  { label: "Beleza e bem-estar", items: [
-    ["barbearia", "Barbearia", "beleza"],
-    ["salao", "Salão de beleza", "beleza"],
-    ["unhas", "Estúdio de unhas", "beleza"],
-    ["estetica", "Estética", "beleza"],
-    ["spa", "Spa", "beleza"],
-    ["maquilhagem", "Maquilhagem", "beleza"],
-    ["tatuagem", "Estúdio de tatuagem", "beleza"],
-    ["massagens", "Massagens", "beleza"],
-  ]},
-  { label: "Turismo e alojamento", items: [
-    ["hotel", "Hotel", "hotel"],
-    ["hospedaria", "Hospedaria", "hotel"],
-    ["guesthouse", "Guesthouse", "hotel"],
-    ["alojamento", "Alojamento local", "hotel"],
-    ["agencia-viagens", "Agência de viagens", "servicos"],
-    ["turismo", "Turismo", "servicos"],
-    ["rent-a-car", "Rent-a-car", "automovel"],
-  ]},
-  { label: "Saúde", items: [
-    ["clinica", "Clínica", "saude"],
-    ["consultorio", "Consultório", "saude"],
-    ["laboratorio", "Laboratório", "saude"],
-    ["optica", "Óptica", "saude"],
-    ["dentista", "Clínica dentária", "saude"],
-    ["fisioterapia", "Fisioterapia", "saude"],
-    ["veterinaria", "Veterinária", "saude"],
-  ]},
-  { label: "Imobiliário e construção", items: [
-    ["imobiliaria", "Agência imobiliária", "imobiliario"],
-    ["construcao", "Construção civil", "imobiliario"],
-    ["arquitetura", "Arquitectura", "imobiliario"],
-    ["gestao-imoveis", "Gestão de imóveis", "imobiliario"],
-    ["canalizacao", "Canalização", "servicos"],
-    ["eletricidade", "Electricidade", "servicos"],
-    ["manutencao", "Manutenção", "servicos"],
-  ]},
-  { label: "Automóvel", items: [
-    ["oficina", "Oficina automóvel", "automovel"],
-    ["mecanica", "Mecânica", "automovel"],
-    ["eletricista-auto", "Electricista auto", "automovel"],
-    ["lavagem-auto", "Lavagem automóvel", "automovel"],
-    ["pneus", "Pneus", "automovel"],
-    ["pecas-auto", "Peças automóveis", "automovel"],
-  ]},
-  { label: "Educação", items: [
-    ["escola", "Escola", "educacao"],
-    ["colegio", "Colégio", "educacao"],
-    ["universidade", "Universidade", "educacao"],
-    ["centro-formacao", "Centro de formação", "educacao"],
-    ["explicacoes", "Centro de explicações", "educacao"],
-    ["cursos", "Cursos profissionais", "educacao"],
-  ]},
-  { label: "Eventos e criatividade", items: [
-    ["fotografia", "Fotografia", "eventos"],
-    ["video", "Produção de vídeo", "eventos"],
-    ["decoracao-eventos", "Decoração de eventos", "eventos"],
-    ["salao-festas", "Salão de festas", "eventos"],
-    ["dj", "DJ", "eventos"],
-    ["organizacao-eventos", "Organização de eventos", "eventos"],
-  ]},
-  { label: "Serviços profissionais", items: [
-    ["advocacia", "Advocacia", "servicos"],
-    ["contabilidade", "Contabilidade", "servicos"],
-    ["consultoria", "Consultoria", "servicos"],
-    ["informatica-servicos", "Serviços de informática", "servicos"],
-    ["marketing", "Marketing e publicidade", "servicos"],
-    ["limpeza", "Limpeza", "servicos"],
-    ["seguranca", "Segurança", "servicos"],
-    ["transporte", "Transportes", "servicos"],
-  ]},
+  {
+    label: "Alimentação",
+    items: [
+      ["restaurante", "Restaurante", "restaurante"],
+      ["bar", "Bar", "restaurante"],
+      ["pastelaria", "Pastelaria", "restaurante"],
+      ["padaria", "Padaria", "restaurante"],
+      ["pizzaria", "Pizzaria", "restaurante"],
+      ["cafeteria", "Cafetaria", "restaurante"],
+      ["churrasqueira", "Churrasqueira", "restaurante"],
+      ["geladaria", "Geladaria", "restaurante"],
+      ["catering", "Catering", "restaurante"],
+      ["lanchonete", "Lanchonete", "restaurante"],
+    ],
+  },
+  {
+    label: "Comércio",
+    items: [
+      ["supermercado", "Supermercado", "comercio"],
+      ["minimercado", "Minimercado", "comercio"],
+      ["loja", "Loja geral", "comercio"],
+      ["loja-online", "Loja online", "comercio"],
+      ["boutique", "Boutique", "comercio"],
+      ["roupas", "Loja de roupa", "comercio"],
+      ["calcados", "Loja de calçado", "comercio"],
+      ["eletronica", "Loja de electrónica", "comercio"],
+      ["informatica", "Loja de informática", "comercio"],
+      ["moveis", "Loja de móveis", "comercio"],
+      ["decoracao", "Decoração e artigos para casa", "comercio"],
+      ["cosmeticos", "Cosméticos e perfumaria", "comercio"],
+      ["florista", "Florista", "comercio"],
+      ["papelaria", "Papelaria", "comercio"],
+      ["livraria", "Livraria", "comercio"],
+      ["acessorios", "Acessórios", "comercio"],
+      ["joalharia", "Joalharia", "comercio"],
+      ["pet-shop", "Pet shop", "comercio"],
+      ["materiais-construcao", "Materiais de construção", "comercio"],
+      ["farmacia", "Farmácia", "comercio"],
+    ],
+  },
+  {
+    label: "Beleza e bem-estar",
+    items: [
+      ["barbearia", "Barbearia", "beleza"],
+      ["salao", "Salão de beleza", "beleza"],
+      ["unhas", "Estúdio de unhas", "beleza"],
+      ["estetica", "Estética", "beleza"],
+      ["spa", "Spa", "beleza"],
+      ["maquilhagem", "Maquilhagem", "beleza"],
+      ["tatuagem", "Estúdio de tatuagem", "beleza"],
+      ["massagens", "Massagens", "beleza"],
+    ],
+  },
+  {
+    label: "Turismo e alojamento",
+    items: [
+      ["hotel", "Hotel", "hotel"],
+      ["hospedaria", "Hospedaria", "hotel"],
+      ["guesthouse", "Guesthouse", "hotel"],
+      ["alojamento", "Alojamento local", "hotel"],
+      ["agencia-viagens", "Agência de viagens", "servicos"],
+      ["turismo", "Turismo", "servicos"],
+      ["rent-a-car", "Rent-a-car", "automovel"],
+    ],
+  },
+  {
+    label: "Saúde",
+    items: [
+      ["clinica", "Clínica", "saude"],
+      ["consultorio", "Consultório", "saude"],
+      ["laboratorio", "Laboratório", "saude"],
+      ["optica", "Óptica", "saude"],
+      ["dentista", "Clínica dentária", "saude"],
+      ["fisioterapia", "Fisioterapia", "saude"],
+      ["veterinaria", "Veterinária", "saude"],
+    ],
+  },
+  {
+    label: "Imobiliário e construção",
+    items: [
+      ["imobiliaria", "Agência imobiliária", "imobiliario"],
+      ["construcao", "Construção civil", "imobiliario"],
+      ["arquitetura", "Arquitectura", "imobiliario"],
+      ["gestao-imoveis", "Gestão de imóveis", "imobiliario"],
+      ["canalizacao", "Canalização", "servicos"],
+      ["eletricidade", "Electricidade", "servicos"],
+      ["manutencao", "Manutenção", "servicos"],
+    ],
+  },
+  {
+    label: "Automóvel",
+    items: [
+      ["oficina", "Oficina automóvel", "automovel"],
+      ["mecanica", "Mecânica", "automovel"],
+      ["eletricista-auto", "Electricista auto", "automovel"],
+      ["lavagem-auto", "Lavagem automóvel", "automovel"],
+      ["pneus", "Pneus", "automovel"],
+      ["pecas-auto", "Peças automóveis", "automovel"],
+    ],
+  },
+  {
+    label: "Educação",
+    items: [
+      ["escola", "Escola", "educacao"],
+      ["colegio", "Colégio", "educacao"],
+      ["universidade", "Universidade", "educacao"],
+      ["centro-formacao", "Centro de formação", "educacao"],
+      ["explicacoes", "Centro de explicações", "educacao"],
+      ["cursos", "Cursos profissionais", "educacao"],
+    ],
+  },
+  {
+    label: "Eventos e criatividade",
+    items: [
+      ["fotografia", "Fotografia", "eventos"],
+      ["video", "Produção de vídeo", "eventos"],
+      ["decoracao-eventos", "Decoração de eventos", "eventos"],
+      ["salao-festas", "Salão de festas", "eventos"],
+      ["dj", "DJ", "eventos"],
+      ["organizacao-eventos", "Organização de eventos", "eventos"],
+    ],
+  },
+  {
+    label: "Serviços profissionais",
+    items: [
+      ["advocacia", "Advocacia", "servicos"],
+      ["contabilidade", "Contabilidade", "servicos"],
+      ["consultoria", "Consultoria", "servicos"],
+      ["informatica-servicos", "Serviços de informática", "servicos"],
+      ["marketing", "Marketing e publicidade", "servicos"],
+      ["limpeza", "Limpeza", "servicos"],
+      ["seguranca", "Segurança", "servicos"],
+      ["transporte", "Transportes", "servicos"],
+    ],
+  },
 ];
 
 const templates = [
@@ -233,6 +264,7 @@ function getRecommendedTemplate(type: string) {
     const item = group.items.find((entry) => entry[0] === type);
     if (item) return item[2];
   }
+
   return "comercio";
 }
 
@@ -241,6 +273,7 @@ function getBusinessLabel(type: string) {
     const item = group.items.find((entry) => entry[0] === type);
     if (item) return item[1];
   }
+
   return type;
 }
 
@@ -256,9 +289,14 @@ export default function SuperAdminPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [contentBusiness, setContentBusiness] = useState<Business | null>(null);
+
   async function loadBusinesses() {
     try {
-      const data = await apiFetch<Business[]>("/api/v1/super-admin/businesses");
+      const data = await apiFetch<Business[]>(
+        "/api/v1/super-admin/businesses"
+      );
+
       setBusinesses(data);
     } catch {
       setAccessToken(null);
@@ -269,22 +307,29 @@ export default function SuperAdminPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+
     setLoading(true);
     setError("");
     setAccessToken(null);
 
     try {
-      const data = await apiFetch<{ token: string }>("/api/v1/super-admin/login", {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-        skipAuth: true,
-      });
+      const data = await apiFetch<{ token: string }>(
+        "/api/v1/super-admin/login",
+        {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+          skipAuth: true,
+        }
+      );
 
       setAccessToken(data.token);
       setIsLoggedIn(true);
+
       await loadBusinesses();
     } catch {
-      setError("Email ou password incorrectos. Verifique as variáveis no Render.");
+      setError(
+        "Email ou password incorrectos. Verifique as variáveis no Render."
+      );
     } finally {
       setLoading(false);
     }
@@ -295,6 +340,7 @@ export default function SuperAdminPage() {
       await apiFetch(`/api/v1/super-admin/businesses/${id}/toggle`, {
         method: "PATCH",
       });
+
       await loadBusinesses();
     } catch {
       alert("Erro ao alterar estado do negócio.");
@@ -310,6 +356,7 @@ export default function SuperAdminPage() {
 
   function startEdit(business: Business) {
     setEditingId(business.id);
+
     setForm({
       name: business.name,
       slug: business.slug,
@@ -321,6 +368,7 @@ export default function SuperAdminPage() {
       secondaryColor: business.secondaryColor || "#F2A900",
       accentColor: business.accentColor || "#F7F9FC",
     });
+
     setError("");
     setShowCreate(true);
   }
@@ -335,6 +383,7 @@ export default function SuperAdminPage() {
 
   function applyPreset(index: string) {
     const preset = colorPresets[Number(index)];
+
     if (!preset) return;
 
     setForm((current) => ({
@@ -347,6 +396,7 @@ export default function SuperAdminPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+
     setLoading(true);
     setError("");
 
@@ -363,18 +413,21 @@ export default function SuperAdminPage() {
             accentColor: form.accentColor,
           }),
         });
+
         alert("Configurações do negócio actualizadas com sucesso!");
       } else {
         await apiFetch("/api/v1/super-admin/businesses", {
           method: "POST",
           body: JSON.stringify(form),
         });
+
         alert("Negócio criado com sucesso!");
       }
 
       setShowCreate(false);
       setEditingId(null);
       setForm(initialForm);
+
       await loadBusinesses();
     } catch (err: any) {
       setError(err?.message || "Não foi possível guardar as alterações.");
@@ -391,7 +444,10 @@ export default function SuperAdminPage() {
             <h1 className="text-3xl font-black text-white tracking-tighter">
               MARKA<span className="text-emerald-500">.</span>
             </h1>
-            <p className="text-zinc-400 text-sm mt-1">Painel do Fundador</p>
+
+            <p className="text-zinc-400 text-sm mt-1">
+              Painel do Fundador
+            </p>
           </div>
 
           {error && (
@@ -409,6 +465,7 @@ export default function SuperAdminPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-zinc-900 text-white border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"
             />
+
             <input
               type="password"
               required
@@ -417,6 +474,7 @@ export default function SuperAdminPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-zinc-900 text-white border border-zinc-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500"
             />
+
             <button
               type="submit"
               disabled={loading}
@@ -437,10 +495,12 @@ export default function SuperAdminPage() {
           <h1 className="text-2xl font-black tracking-tighter">
             MARKA<span className="text-emerald-500">.</span> ADMIN
           </h1>
+
           <p className="text-zinc-400 text-sm">
             Gestão de Clientes, Templates e Identidade Visual
           </p>
         </div>
+
         <button
           onClick={() => {
             setAccessToken(null);
@@ -457,6 +517,7 @@ export default function SuperAdminPage() {
           <h2 className="text-xl font-bold">
             Negócios registados ({businesses.length})
           </h2>
+
           <button
             onClick={startCreate}
             className="bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-emerald-600 text-sm transition-colors"
@@ -471,6 +532,7 @@ export default function SuperAdminPage() {
               <h3 className="font-bold text-lg">
                 {editingId ? "Editar Negócio" : "Criar Novo Negócio"}
               </h3>
+
               <button
                 type="button"
                 onClick={() => {
@@ -490,20 +552,31 @@ export default function SuperAdminPage() {
               </div>
             )}
 
-            <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form
+              onSubmit={handleSave}
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+            >
               <div>
-                <label className="block text-xs text-zinc-400 mb-2">Nome do negócio</label>
+                <label className="block text-xs text-zinc-400 mb-2">
+                  Nome do negócio
+                </label>
+
                 <input
                   required
                   placeholder="Nome do Negócio"
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, name: e.target.value })
+                  }
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-emerald-500 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-zinc-400 mb-2">Slug / Link</label>
+                <label className="block text-xs text-zinc-400 mb-2">
+                  Slug / Link
+                </label>
+
                 <input
                   required
                   disabled={Boolean(editingId)}
@@ -512,7 +585,10 @@ export default function SuperAdminPage() {
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      slug: e.target.value.toLowerCase().trim().replace(/\s+/g, "-"),
+                      slug: e.target.value
+                        .toLowerCase()
+                        .trim()
+                        .replace(/\s+/g, "-"),
                     })
                   }
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:border-emerald-500 outline-none disabled:opacity-50"
@@ -520,7 +596,10 @@ export default function SuperAdminPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-zinc-400 mb-2">Actividade do negócio</label>
+                <label className="block text-xs text-zinc-400 mb-2">
+                  Actividade do negócio
+                </label>
+
                 <select
                   value={form.type}
                   onChange={(e) => changeType(e.target.value)}
@@ -539,14 +618,21 @@ export default function SuperAdminPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-zinc-400 mb-2">Template visual</label>
+                <label className="block text-xs text-zinc-400 mb-2">
+                  Template visual
+                </label>
+
                 <select
                   value={form.template}
-                  onChange={(e) => setForm({ ...form, template: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, template: e.target.value })
+                  }
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm"
                 >
                   {templates.map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -554,26 +640,36 @@ export default function SuperAdminPage() {
               {!editingId && (
                 <>
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-2">Email do administrador</label>
+                    <label className="block text-xs text-zinc-400 mb-2">
+                      Email do administrador
+                    </label>
+
                     <input
                       required
                       type="email"
                       placeholder="Email do Admin"
                       value={form.adminEmail}
-                      onChange={(e) => setForm({ ...form, adminEmail: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, adminEmail: e.target.value })
+                      }
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs text-zinc-400 mb-2">Password do administrador</label>
+                    <label className="block text-xs text-zinc-400 mb-2">
+                      Password do administrador
+                    </label>
+
                     <input
                       required
                       type="password"
                       minLength={8}
                       placeholder="Mínimo 8 caracteres"
                       value={form.adminPassword}
-                      onChange={(e) => setForm({ ...form, adminPassword: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, adminPassword: e.target.value })
+                      }
                       className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm"
                     />
                   </div>
@@ -582,19 +678,28 @@ export default function SuperAdminPage() {
 
               <div className="md:col-span-2 border-t border-zinc-800 pt-5 mt-2">
                 <h4 className="font-bold mb-1">Identidade visual</h4>
+
                 <p className="text-xs text-zinc-400 mb-4">
                   Escolha uma combinação ou personalize as três cores.
                 </p>
 
-                <label className="block text-xs text-zinc-400 mb-2">Combinações recomendadas</label>
+                <label className="block text-xs text-zinc-400 mb-2">
+                  Combinações recomendadas
+                </label>
+
                 <select
                   defaultValue=""
                   onChange={(e) => applyPreset(e.target.value)}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm mb-5"
                 >
-                  <option value="">Escolher combinação de cores...</option>
+                  <option value="">
+                    Escolher combinação de cores...
+                  </option>
+
                   {colorPresets.map((preset, index) => (
-                    <option key={preset.name} value={index}>{preset.name}</option>
+                    <option key={preset.name} value={index}>
+                      {preset.name}
+                    </option>
                   ))}
                 </select>
 
@@ -604,20 +709,37 @@ export default function SuperAdminPage() {
                     ["Cor secundária", "secondaryColor"],
                     ["Cor de destaque", "accentColor"],
                   ] as const).map(([label, key]) => (
-                    <div key={key} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
-                      <label className="block text-xs text-zinc-300 mb-3">{label}</label>
+                    <div
+                      key={key}
+                      className="bg-zinc-950 border border-zinc-800 rounded-xl p-4"
+                    >
+                      <label className="block text-xs text-zinc-300 mb-3">
+                        {label}
+                      </label>
+
                       <div className="flex items-center gap-3 mb-3">
                         <input
                           type="color"
                           value={form[key]}
-                          onChange={(e) => setForm({ ...form, [key]: e.target.value.toUpperCase() })}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              [key]: e.target.value.toUpperCase(),
+                            })
+                          }
                           className="w-12 h-10 bg-transparent border-0 cursor-pointer"
                         />
+
                         <input
                           value={form[key]}
                           maxLength={7}
                           pattern="^#[0-9A-Fa-f]{6}$"
-                          onChange={(e) => setForm({ ...form, [key]: e.target.value.toUpperCase() })}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              [key]: e.target.value.toUpperCase(),
+                            })
+                          }
                           className="min-w-0 w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm font-mono"
                         />
                       </div>
@@ -628,10 +750,19 @@ export default function SuperAdminPage() {
                 <div className="mt-5 rounded-xl overflow-hidden border border-zinc-700">
                   <div
                     className="p-5"
-                    style={{ backgroundColor: form.accentColor, color: form.primaryColor }}
+                    style={{
+                      backgroundColor: form.accentColor,
+                      color: form.primaryColor,
+                    }}
                   >
-                    <div className="text-lg font-black">{form.name || "Nome do negócio"}</div>
-                    <div className="text-sm mt-1">Pré-visualização das cores do site</div>
+                    <div className="text-lg font-black">
+                      {form.name || "Nome do negócio"}
+                    </div>
+
+                    <div className="text-sm mt-1">
+                      Pré-visualização das cores do site
+                    </div>
+
                     <button
                       type="button"
                       className="mt-4 px-4 py-2 rounded-lg text-sm font-bold"
@@ -643,6 +774,7 @@ export default function SuperAdminPage() {
                     >
                       Exemplo de botão
                     </button>
+
                     <div
                       className="mt-3 h-2 rounded-full"
                       style={{ backgroundColor: form.secondaryColor }}
@@ -679,52 +811,84 @@ export default function SuperAdminPage() {
                 <th className="px-6 py-4">Acções</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-zinc-800">
               {businesses.map((business) => (
-                <tr key={business.id} className="hover:bg-zinc-800/50">
+                <tr
+                  key={business.id}
+                  className="hover:bg-zinc-800/50"
+                >
                   <td className="px-6 py-4">
                     <div className="font-medium">{business.name}</div>
-                    <div className="text-xs text-zinc-500">/{business.slug}</div>
+                    <div className="text-xs text-zinc-500">
+                      /{business.slug}
+                    </div>
                   </td>
+
                   <td className="px-6 py-4 text-zinc-300">
                     {getBusinessLabel(business.type || "loja")}
                   </td>
-                  <td className="px-6 py-4 text-zinc-400">{business.template || "comercio"}</td>
+
+                  <td className="px-6 py-4 text-zinc-400">
+                    {business.template || "comercio"}
+                  </td>
+
                   <td className="px-6 py-4">
                     <div className="flex gap-1">
-                      {[business.primaryColor, business.secondaryColor, business.accentColor].map(
-                        (color, index) => (
-                          <span
-                            key={index}
-                            title={color}
-                            className="w-6 h-6 rounded-md border border-white/20"
-                            style={{ backgroundColor: color || "#777777" }}
-                          />
-                        )
-                      )}
+                      {[
+                        business.primaryColor,
+                        business.secondaryColor,
+                        business.accentColor,
+                      ].map((color, index) => (
+                        <span
+                          key={index}
+                          title={color}
+                          className="w-6 h-6 rounded-md border border-white/20"
+                          style={{
+                            backgroundColor: color || "#777777",
+                          }}
+                        />
+                      ))}
                     </div>
                   </td>
+
                   <td className="px-6 py-4 text-xs text-zinc-400">
-                    {business._count.reservations} reservas | {business._count.products} produtos
+                    {business._count.reservations} reservas |{" "}
+                    {business._count.products} produtos
                   </td>
+
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      business.active
-                        ? "bg-emerald-500/10 text-emerald-400"
-                        : "bg-red-500/10 text-red-400"
-                    }`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        business.active
+                          ? "bg-emerald-500/10 text-emerald-400"
+                          : "bg-red-500/10 text-red-400"
+                      }`}
+                    >
                       {business.active ? "Activo" : "Bloqueado"}
                     </span>
                   </td>
+
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button
+                        type="button"
+                        onClick={() => setContentBusiness(business)}
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                      >
+                        Editar site
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => startEdit(business)}
                         className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
                       >
                         Editar
                       </button>
+
                       <button
+                        type="button"
                         onClick={() => toggleBusiness(business.id)}
                         className={`text-xs font-bold px-3 py-1.5 rounded-lg ${
                           business.active
@@ -738,9 +902,13 @@ export default function SuperAdminPage() {
                   </td>
                 </tr>
               ))}
+
               {businesses.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-zinc-500">
+                  <td
+                    colSpan={7}
+                    className="px-6 py-10 text-center text-zinc-500"
+                  >
                     Ainda não existem negócios registados.
                   </td>
                 </tr>
@@ -749,6 +917,13 @@ export default function SuperAdminPage() {
           </table>
         </div>
       </main>
+
+      {contentBusiness && (
+        <SiteContentEditor
+          business={contentBusiness}
+          onClose={() => setContentBusiness(null)}
+        />
+      )}
     </div>
   );
 }

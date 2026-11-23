@@ -291,3 +291,156 @@ superAdminRouter.post(
     }
   }
 );
+
+/**
+ * Gestão global dos conteúdos dos sites pelo Super Admin.
+ * Estas rotas ficam protegidas pelo token SUPER_ADMIN.
+ */
+
+// Consultar os conteúdos de um negócio.
+superAdminRouter.get(
+  "/businesses/:id/site-content",
+  requireSuperAdmin,
+  async (req, res, next) => {
+    try {
+      const businessId = String(req.params.id);
+
+      const business = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { id: true, name: true, slug: true },
+      });
+
+      if (!business) {
+        res.status(404).json({ error: "Negócio não encontrado." });
+        return;
+      }
+
+      const siteContent = await prisma.siteContent.findUnique({
+        where: { businessId },
+      });
+
+      res.json({
+        business,
+        content: siteContent?.draft ?? {},
+        isPublished: siteContent?.isPublished ?? false,
+        publishedAt: siteContent?.publishedAt ?? null,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Guardar o rascunho.
+superAdminRouter.put(
+  "/businesses/:id/site-content/draft",
+  requireSuperAdmin,
+  async (req, res, next) => {
+    try {
+      const businessId = String(req.params.id);
+      const schema = z.object({
+        content: z.record(z.string(), z.unknown()),
+      });
+
+      const { content } = schema.parse(req.body);
+
+      const business = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { id: true },
+      });
+
+      if (!business) {
+        res.status(404).json({ error: "Negócio não encontrado." });
+        return;
+      }
+
+      const saved = await prisma.siteContent.upsert({
+        where: { businessId },
+        create: {
+          businessId,
+          draft: content as any,
+        },
+        update: {
+          draft: content as any,
+        },
+      });
+
+      res.json({
+        message: "Rascunho guardado com sucesso.",
+        content: saved.draft,
+        isPublished: saved.isPublished,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Publicar o rascunho.
+superAdminRouter.post(
+  "/businesses/:id/site-content/publish",
+  requireSuperAdmin,
+  async (req, res, next) => {
+    try {
+      const businessId = String(req.params.id);
+
+      const current = await prisma.siteContent.findUnique({
+        where: { businessId },
+      });
+
+      if (!current) {
+        res.status(400).json({
+          error: "Guarde primeiro os conteúdos do site.",
+        });
+        return;
+      }
+
+      const published = await prisma.siteContent.update({
+        where: { businessId },
+        data: {
+          published: current.draft as any,
+          isPublished: true,
+          publishedAt: new Date(),
+        },
+      });
+
+      res.json({
+        message: "Site publicado com sucesso.",
+        isPublished: published.isPublished,
+        publishedAt: published.publishedAt,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Retirar a publicação sem apagar o conteúdo.
+superAdminRouter.post(
+  "/businesses/:id/site-content/unpublish",
+  requireSuperAdmin,
+  async (req, res, next) => {
+    try {
+      const businessId = String(req.params.id);
+
+      const result = await prisma.siteContent.updateMany({
+        where: { businessId },
+        data: { isPublished: false },
+      });
+
+      if (result.count === 0) {
+        res.status(404).json({
+          error: "Este negócio ainda não tem conteúdos guardados.",
+        });
+        return;
+      }
+
+      res.json({
+        message: "Publicação desactivada.",
+        isPublished: false,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);

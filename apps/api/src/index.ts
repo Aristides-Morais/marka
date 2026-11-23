@@ -14,6 +14,7 @@ import { superAdminRouter } from "./modules/super-admin/super-admin.routes.js"; 
 
 import { errorHandler, notFoundHandler } from "./middleware/error.middleware.js";
 import { tenantMiddleware } from "./middleware/tenant.middleware.js";
+import { siteContentRouter } from "./modules/site-content/site-content.routes.js";
 
 // 1. Cria a app PRIMEIRO
 const app = express();
@@ -43,6 +44,7 @@ app.use("/api/v1/products", productRouter);
 app.use("/api/v1/orders", orderRouter);
 app.use("/api/v1/business", businessRouter);
 app.use("/api/v1/upload", uploadRouter);
+app.use("/api/v1/site-content", siteContentRouter);
 
 // 7. Gestão de Erros
 app.use(notFoundHandler);
