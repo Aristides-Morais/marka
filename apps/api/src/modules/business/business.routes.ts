@@ -9,6 +9,8 @@ businessRouter.get("/info", (req, res) => {
   const b = req.business as any;
   res.json({
     name: b.name,
+    type: b.type ?? null,
+    template: b.template ?? null,
     logoUrl: b.logoUrl,
     primaryColor: b.primaryColor,
     phone: b.phone,
