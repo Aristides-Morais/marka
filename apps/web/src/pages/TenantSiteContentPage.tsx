@@ -1,4 +1,3 @@
-
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -8,40 +7,32 @@ import {
   setTenantSlug,
   uploadImage,
 } from "../lib/api";
-
-type SiteContent = {
-  heroTitle?: string;
-  heroSubtitle?: string;
-  buttonText?: string;
-  heroImage?: string;
-  description?: string;
-  aboutTitle?: string;
-  aboutText?: string;
-  gallery?: string[];
-  servicesTitle?: string;
-  galleryTitle?: string;
-  contactTitle?: string;
-  visualIdentity?: Record<string, string>;
-};
+import type { SiteContent, Testimonial, FaqItem, BlogPost } from "../lib/siteContent";
 
 const inputClass =
   "w-full rounded-xl border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-700";
-
 const labelClass =
   "mb-2 block text-xs font-bold uppercase tracking-wide text-zinc-600";
+const sectionClass =
+  "rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm";
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 export default function TenantSiteContentPage() {
   const { slug = "" } = useParams();
 
-  const [authenticated, setAuthenticated] = useState(
-    Boolean(getAccessToken())
-  );
+  const [authenticated, setAuthenticated] = useState(Boolean(getAccessToken()));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [content, setContent] = useState<SiteContent>({});
   const [jsonText, setJsonText] = useState("{}");
   const [businessName, setBusinessName] = useState(slug);
+  const [tab, setTab] = useState<
+    "home" | "about" | "testimonials" | "faq" | "blog" | "legal" | "seo" | "json"
+  >("home");
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -54,45 +45,41 @@ export default function TenantSiteContentPage() {
 
   const identity = content.visualIdentity || {};
 
+  function syncJson(next: SiteContent) {
+    setJsonText(JSON.stringify(next, null, 2));
+  }
+
   function updateContent(patch: Partial<SiteContent>) {
     setContent((old) => {
       const next = { ...old, ...patch };
-      setJsonText(JSON.stringify(next, null, 2));
+      syncJson(next);
       return next;
     });
   }
 
   function updateIdentity(patch: Record<string, string>) {
     updateContent({
-      visualIdentity: {
-        ...(content.visualIdentity || {}),
-        ...patch,
-      },
+      visualIdentity: { ...(content.visualIdentity || {}), ...patch },
     });
   }
 
   async function loadContent() {
     setLoading(true);
     setError("");
-
     try {
       const [draft, business] = await Promise.all([
-        apiFetch<{
-          content?: SiteContent;
-          isPublished?: boolean;
-        }>("/api/v1/site-content/draft", {
-          tenant: slug,
-        }),
+        apiFetch<{ content?: SiteContent; isPublished?: boolean }>(
+          "/api/v1/site-content/draft",
+          { tenant: slug }
+        ),
         apiFetch<{ name: string }>("/api/v1/business/info", {
           skipAuth: true,
           tenant: slug,
         }),
       ]);
-
       const data = draft.content || {};
-
       setContent(data);
-      setJsonText(JSON.stringify(data, null, 2));
+      syncJson(data);
       setPublished(Boolean(draft.isPublished));
       setBusinessName(business.name);
       setAuthenticated(true);
@@ -111,31 +98,20 @@ export default function TenantSiteContentPage() {
 
   useEffect(() => {
     setTenantSlug(slug);
-
-    if (getAccessToken()) {
-      void loadContent();
-    }
+    if (getAccessToken()) void loadContent();
   }, [slug]);
 
   async function handleLogin(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
     setError("");
-
     try {
-      const result = await apiFetch<{ token: string }>(
-        "/api/v1/auth/login",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            email: email.trim(),
-            password,
-          }),
-          skipAuth: true,
-          tenant: slug,
-        }
-      );
-
+      const result = await apiFetch<{ token: string }>("/api/v1/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim(), password }),
+        skipAuth: true,
+        tenant: slug,
+      });
       setAccessToken(result.token);
       setTenantSlug(slug);
       setAuthenticated(true);
@@ -148,649 +124,705 @@ export default function TenantSiteContentPage() {
   }
 
   async function saveDraft() {
-    let parsed: SiteContent;
-
-    try {
-      parsed = JSON.parse(jsonText);
-
-      if (
-        !parsed ||
-        typeof parsed !== "object" ||
-        Array.isArray(parsed)
-      ) {
-        throw new Error("Formato inválido");
-      }
-    } catch {
-      setError("O conteúdo JSON não é válido.");
-      return;
-    }
-
     setSaving(true);
-    setError("");
     setNotice("");
-
+    setError("");
     try {
+      let payload = content;
+      if (tab === "json") {
+        payload = JSON.parse(jsonText) as SiteContent;
+        setContent(payload);
+      }
       await apiFetch("/api/v1/site-content/draft", {
         method: "PUT",
-        body: JSON.stringify({ content: parsed }),
+        body: JSON.stringify({ content: payload }),
         tenant: slug,
       });
-
-      setContent(parsed);
-      setJsonText(JSON.stringify(parsed, null, 2));
-      setNotice("Rascunho guardado com sucesso.");
+      setNotice("Rascunho guardado.");
     } catch (err: any) {
-      setError(err?.message || "Não foi possível guardar.");
+      setError(err?.message || "Erro ao guardar.");
     } finally {
       setSaving(false);
     }
   }
 
-  async function publishWebsite() {
+  async function publish() {
     setSaving(true);
-    setError("");
     setNotice("");
-
+    setError("");
     try {
+      await saveDraft();
       await apiFetch("/api/v1/site-content/publish", {
         method: "POST",
         tenant: slug,
       });
-
       setPublished(true);
-      setNotice("Website publicado com sucesso.");
+      setNotice("Site publicado.");
     } catch (err: any) {
-      setError(err?.message || "Guarde primeiro o rascunho.");
+      setError(err?.message || "Erro ao publicar.");
     } finally {
       setSaving(false);
     }
   }
 
-  async function unpublishWebsite() {
-    const confirmed = window.confirm(
-      "Pretende retirar a publicação do website? O conteúdo será mantido."
-    );
-
-    if (!confirmed) return;
-
+  async function unpublish() {
     setSaving(true);
-    setError("");
-    setNotice("");
-
     try {
       await apiFetch("/api/v1/site-content/unpublish", {
         method: "POST",
         tenant: slug,
       });
-
       setPublished(false);
-      setNotice("Publicação retirada. O conteúdo continua guardado.");
+      setNotice("Publicação desactivada.");
     } catch (err: any) {
-      setError(err?.message || "Não foi possível retirar a publicação.");
+      setError(err?.message || "Erro ao despublicar.");
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleHeroUpload(file?: File) {
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setError("Selecciona um ficheiro de imagem.");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError("A imagem não pode ultrapassar 5 MB.");
-      return;
-    }
-
+  async function onHeroFile(file: File) {
     setUploadingHero(true);
-    setError("");
-    setNotice("");
-
     try {
-      const url = await uploadImage(file, slug);
+      const url = await uploadImage(file);
       updateContent({ heroImage: url });
-      setNotice("Imagem principal carregada. Guarda o rascunho.");
     } catch (err: any) {
-      setError(err?.message || "Não foi possível carregar a imagem.");
+      setError(err?.message || "Falha no upload.");
     } finally {
       setUploadingHero(false);
     }
   }
 
-  async function handleGalleryUpload(files: FileList | null) {
+  async function onGalleryFiles(files: FileList | null) {
     if (!files?.length) return;
-
-    const selected = Array.from(files);
-
-    if (selected.some((file) => !file.type.startsWith("image/"))) {
-      setError("Todos os ficheiros devem ser imagens.");
-      return;
-    }
-
-    if (selected.some((file) => file.size > 5 * 1024 * 1024)) {
-      setError("Cada imagem deve ter no máximo 5 MB.");
-      return;
-    }
-
     setUploadingGallery(true);
-    setError("");
-    setNotice("");
-
     try {
-      const urls = await Promise.all(
-        selected.map((file) => uploadImage(file, slug))
-      );
-
-      updateContent({
-        gallery: [...(content.gallery || []), ...urls],
-      });
-
-      setNotice(
-        `${urls.length} imagem(ns) carregada(s). Guarda o rascunho.`
-      );
+      const urls: string[] = [];
+      for (const f of Array.from(files)) {
+        urls.push(await uploadImage(f));
+      }
+      updateContent({ gallery: [...(content.gallery || []), ...urls] });
     } catch (err: any) {
-      setError(err?.message || "Não foi possível carregar a galeria.");
+      setError(err?.message || "Falha no upload da galeria.");
     } finally {
       setUploadingGallery(false);
     }
   }
 
-  function previewDraft() {
-    try {
-      const parsed: SiteContent = JSON.parse(jsonText);
-
-      if (
-        !parsed ||
-        typeof parsed !== "object" ||
-        Array.isArray(parsed)
-      ) {
-        throw new Error("Formato inválido");
-      }
-
-      localStorage.setItem(
-        `marka_site_preview_${slug}`,
-        JSON.stringify(parsed)
-      );
-
-      window.open(`/${slug}?preview=1`, "_blank", "noopener,noreferrer");
-    } catch {
-      setError("Corrige o JSON antes de pré-visualizar.");
-    }
+  /* ——— helpers listas ——— */
+  function setTestimonials(list: Testimonial[]) {
+    updateContent({ testimonials: list });
   }
-
-  function removeGalleryImage(index: number) {
-    updateContent({
-      gallery: (content.gallery || []).filter(
-        (_image, imageIndex) => imageIndex !== index
-      ),
-    });
+  function setFaq(list: FaqItem[]) {
+    updateContent({ faq: list });
+  }
+  function setPosts(list: BlogPost[]) {
+    updateContent({ posts: list });
   }
 
   if (!authenticated) {
     return (
-      <main className="grid min-h-screen place-items-center bg-zinc-100 p-4">
+      <div className="min-h-screen bg-zinc-50 px-4 py-16">
         <form
           onSubmit={handleLogin}
-          className="w-full max-w-sm rounded-3xl border bg-white p-7 shadow-sm"
+          className="mx-auto max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm"
         >
-          <p className="text-xs font-bold uppercase tracking-[.2em] text-zinc-500">
-            MARKA-KANDA · {slug}
-          </p>
-
-          <h1 className="mt-3 text-2xl font-black text-zinc-900">
-            Editor do website
-          </h1>
-
-          <p className="mt-2 text-sm text-zinc-500">
-            Entre com as credenciais de administrador desta empresa.
-          </p>
-
-          {error && (
-            <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">
-              {error}
-            </p>
-          )}
-
-          <label className={`${labelClass} mt-5`}>Email</label>
+          <h2 className="mb-2 text-xl font-semibold">Editor do website</h2>
+          <p className="mb-6 text-sm text-zinc-500">/{slug}</p>
+          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+          <label className={labelClass}>Email</label>
+          <input className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} />
+          <label className={`${labelClass} mt-4`}>Password</label>
           <input
-            className={inputClass}
-            type="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-
-          <label className={`${labelClass} mt-4`}>Palavra-passe</label>
-          <input
-            className={inputClass}
             type="password"
-            required
+            className={inputClass}
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
           />
-
           <button
+            type="submit"
             disabled={loading}
-            className="mt-5 w-full rounded-xl bg-zinc-900 px-4 py-3 font-bold text-white disabled:opacity-50"
+            className="mt-6 w-full rounded-xl bg-zinc-900 py-3 text-sm font-semibold text-white"
           >
-            {loading ? "A entrar..." : "Entrar"}
+            {loading ? "A entrar…" : "Entrar"}
           </button>
-
-          <Link
-            to={`/${slug}`}
-            className="mt-4 block text-center text-sm text-zinc-500"
-          >
-            Voltar ao website
-          </Link>
         </form>
-      </main>
+      </div>
     );
   }
 
+  const tabs: { id: typeof tab; label: string }[] = [
+    { id: "home", label: "Home" },
+    { id: "about", label: "Sobre" },
+    { id: "testimonials", label: "Depoimentos" },
+    { id: "faq", label: "FAQ" },
+    { id: "blog", label: "Blog" },
+    { id: "legal", label: "Legal" },
+    { id: "seo", label: "SEO / Cores" },
+    { id: "json", label: "JSON" },
+  ];
+
   return (
-    <main className="min-h-screen bg-zinc-100 px-4 py-7 md:px-8">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div className="min-h-screen bg-zinc-50 pb-20">
+      <header className="border-b border-zinc-200 bg-white">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[.2em] text-zinc-500">
-              MARKA-KANDA · EDITOR
+            <p className="text-xs font-bold uppercase tracking-wide text-zinc-500">
+              Editor do site
             </p>
-            <h1 className="mt-1 text-2xl font-black text-zinc-900">
-              {businessName}
-            </h1>
-            <p className="text-sm text-zinc-500">
-              Personalize o website da sua empresa.
-            </p>
+            <h1 className="text-lg font-semibold text-zinc-900">{businessName}</h1>
           </div>
-
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={previewDraft}
-              className="rounded-xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white"
-            >
-              Pré-visualizar
-            </button>
-
             <Link
               to={`/${slug}`}
               target="_blank"
-              className="rounded-xl border bg-white px-4 py-3 text-sm font-bold text-zinc-700"
+              className="rounded-lg border border-zinc-300 px-3 py-2 text-xs font-semibold"
             >
-              Website público ↗
+              Ver site
             </Link>
-
             <button
               type="button"
-              onClick={() => {
-                setAccessToken(null);
-                setAuthenticated(false);
-              }}
-              className="rounded-xl border border-red-200 bg-white px-4 py-3 text-sm font-bold text-red-600"
+              onClick={saveDraft}
+              disabled={saving}
+              className="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white"
             >
-              Sair
+              {saving ? "A guardar…" : "Guardar rascunho"}
             </button>
+            <button
+              type="button"
+              onClick={publish}
+              disabled={saving}
+              className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white"
+            >
+              Publicar
+            </button>
+            {published && (
+              <button
+                type="button"
+                onClick={unpublish}
+                className="rounded-lg border border-zinc-300 px-3 py-2 text-xs font-semibold"
+              >
+                Despublicar
+              </button>
+            )}
           </div>
-        </header>
-
-        {error && (
-          <p className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </p>
-        )}
-
-        {notice && (
-          <p className="mb-4 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">
-            {notice}
-          </p>
-        )}
-
-        <section className="mb-5 rounded-2xl border bg-white p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-bold">Estado do website</h2>
-              <p className="text-sm text-zinc-500">
-                {published
-                  ? "Actualmente publicado"
-                  : "Ainda não está publicado"}
-              </p>
-            </div>
-
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-bold ${
-                published
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-amber-100 text-amber-800"
+        </div>
+        <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 pb-3">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold ${
+                tab === t.id ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-600"
               }`}
             >
-              {published ? "PUBLICADO" : "RASCUNHO"}
-            </span>
-          </div>
-        </section>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </header>
 
-        {loading ? (
-          <p className="py-10 text-center">A carregar...</p>
-        ) : (
-          <>
-            <section className="mb-5 rounded-2xl border bg-white p-5 md:p-7">
-              <h2 className="mb-1 text-lg font-bold">
-                Apresentação principal
+      <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
+        {notice && (
+          <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>
+        )}
+        {error && (
+          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        )}
+        {loading && <p className="text-sm text-zinc-500">A carregar…</p>}
+
+        {/* HOME */}
+        {tab === "home" && (
+          <div className="space-y-6">
+            <div className={sectionClass}>
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-zinc-500">
+                Hero
               </h2>
-              <p className="mb-5 text-sm text-zinc-500">
-                Título, subtítulo, botão e imagem de destaque.
-              </p>
+              <label className={labelClass}>Título</label>
+              <input
+                className={inputClass}
+                value={content.heroTitle || ""}
+                onChange={(e) => updateContent({ heroTitle: e.target.value })}
+              />
+              <label className={`${labelClass} mt-4`}>Subtítulo</label>
+              <textarea
+                className={inputClass}
+                rows={3}
+                value={content.heroSubtitle || ""}
+                onChange={(e) => updateContent({ heroSubtitle: e.target.value })}
+              />
+              <label className={`${labelClass} mt-4`}>Texto do botão</label>
+              <input
+                className={inputClass}
+                value={content.buttonText || ""}
+                onChange={(e) => updateContent({ buttonText: e.target.value })}
+              />
+              <label className={`${labelClass} mt-4`}>Imagem hero (URL ou upload)</label>
+              <input
+                className={inputClass}
+                value={content.heroImage || ""}
+                onChange={(e) => updateContent({ heroImage: e.target.value })}
+              />
+              <input
+                type="file"
+                accept="image/*"
+                className="mt-2 text-sm"
+                disabled={uploadingHero}
+                onChange={(e) => e.target.files?.[0] && onHeroFile(e.target.files[0])}
+              />
+            </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <label>
-                  <span className={labelClass}>Título principal</span>
-                  <input
-                    className={inputClass}
-                    value={content.heroTitle || ""}
-                    onChange={(event) =>
-                      updateContent({ heroTitle: event.target.value })
-                    }
-                    placeholder="Título do website"
-                  />
-                </label>
+            <div className={sectionClass}>
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-zinc-500">
+                Títulos de secção
+              </h2>
+              <label className={labelClass}>Título serviços</label>
+              <input
+                className={inputClass}
+                value={content.servicesTitle || ""}
+                onChange={(e) => updateContent({ servicesTitle: e.target.value })}
+              />
+              <label className={`${labelClass} mt-4`}>Título galeria</label>
+              <input
+                className={inputClass}
+                value={content.galleryTitle || ""}
+                onChange={(e) => updateContent({ galleryTitle: e.target.value })}
+              />
+              <label className={`${labelClass} mt-4`}>Título contactos</label>
+              <input
+                className={inputClass}
+                value={content.contactTitle || ""}
+                onChange={(e) => updateContent({ contactTitle: e.target.value })}
+              />
+              <label className={`${labelClass} mt-4`}>Intro contactos</label>
+              <textarea
+                className={inputClass}
+                rows={2}
+                value={content.contactIntro || ""}
+                onChange={(e) => updateContent({ contactIntro: e.target.value })}
+              />
+              <label className={`${labelClass} mt-4`}>Horário</label>
+              <input
+                className={inputClass}
+                value={content.hours || ""}
+                onChange={(e) => updateContent({ hours: e.target.value })}
+              />
+            </div>
 
-                <label>
-                  <span className={labelClass}>Subtítulo</span>
-                  <input
-                    className={inputClass}
-                    value={content.heroSubtitle || ""}
-                    onChange={(event) =>
-                      updateContent({ heroSubtitle: event.target.value })
-                    }
-                    placeholder="Uma frase sobre o negócio"
-                  />
-                </label>
-
-                <label>
-                  <span className={labelClass}>Texto do botão</span>
-                  <input
-                    className={inputClass}
-                    value={content.buttonText || ""}
-                    onChange={(event) =>
-                      updateContent({ buttonText: event.target.value })
-                    }
-                    placeholder="Marcar horário"
-                  />
-                </label>
-
-                <label>
-                  <span className={labelClass}>URL da imagem principal</span>
-                  <input
-                    className={inputClass}
-                    value={content.heroImage || ""}
-                    onChange={(event) =>
-                      updateContent({ heroImage: event.target.value })
-                    }
-                    placeholder="https://..."
-                  />
-                </label>
-
-                <label className="md:col-span-2">
-                  <span className={labelClass}>Carregar imagem principal</span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    disabled={uploadingHero}
-                    className={inputClass}
-                    onChange={(event) => {
-                      void handleHeroUpload(event.target.files?.[0]);
-                      event.currentTarget.value = "";
-                    }}
-                  />
-                  <span className="mt-1 block text-xs text-zinc-500">
-                    Máximo de 5 MB. A imagem será enviada para o Cloudinary.
-                  </span>
-                  {uploadingHero && (
-                    <span className="mt-2 block text-sm text-zinc-500">
-                      A carregar imagem...
-                    </span>
-                  )}
-                </label>
-
-                {content.heroImage && (
-                  <div className="md:col-span-2">
-                    <img
-                      src={content.heroImage}
-                      alt="Imagem principal"
-                      className="h-52 w-full rounded-xl object-cover"
-                    />
+            <div className={sectionClass}>
+              <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-zinc-500">
+                Galeria
+              </h2>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={uploadingGallery}
+                onChange={(e) => onGalleryFiles(e.target.files)}
+              />
+              <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {(content.gallery || []).map((url, i) => (
+                  <div key={url + i} className="relative">
+                    <img src={url} alt="" className="h-24 w-full rounded-lg object-cover" />
+                    <button
+                      type="button"
+                      className="absolute right-1 top-1 rounded bg-black/70 px-1.5 text-xs text-white"
+                      onClick={() =>
+                        updateContent({
+                          gallery: (content.gallery || []).filter((_, idx) => idx !== i),
+                        })
+                      }
+                    >
+                      ×
+                    </button>
                   </div>
-                )}
-
-                <label className="md:col-span-2">
-                  <span className={labelClass}>Texto sobre a empresa</span>
-                  <textarea
-                    className={inputClass}
-                    rows={4}
-                    value={content.description || ""}
-                    onChange={(event) =>
-                      updateContent({ description: event.target.value })
-                    }
-                    placeholder="Apresente a sua empresa aos visitantes..."
-                  />
-                </label>
-              </div>
-            </section>
-
-            <section className="mb-5 rounded-2xl border bg-white p-5 md:p-7">
-              <h2 className="mb-1 text-lg font-bold">Identidade visual</h2>
-              <p className="mb-5 text-sm text-zinc-500">
-                Escolha as cores da sua marca.
-              </p>
-
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                {[
-                  ["primaryColor", "Cor principal", "#512638"],
-                  ["secondaryColor", "Cor secundária", "#B99A75"],
-                  ["background", "Fundo", "#F8F4EF"],
-                  ["surface", "Fundo dos cartões", "#FFFFFF"],
-                  ["text", "Texto", "#35232B"],
-                  ["muted", "Texto secundário", "#817078"],
-                  ["border", "Linhas e bordas", "#E7DDD5"],
-                ].map(([key, label, fallback]) => (
-                  <label key={key}>
-                    <span className={labelClass}>{label}</span>
-                    <div className="flex items-center gap-3 rounded-xl border p-2">
-                      <input
-                        aria-label={label}
-                        type="color"
-                        value={identity[key] || fallback}
-                        onChange={(event) =>
-                          updateIdentity({ [key]: event.target.value })
-                        }
-                        className="h-10 w-12 cursor-pointer border-0 bg-transparent"
-                      />
-                      <span className="text-xs font-mono text-zinc-500">
-                        {identity[key] || fallback}
-                      </span>
-                    </div>
-                  </label>
                 ))}
               </div>
-            </section>
-
-            <section className="mb-5 rounded-2xl border bg-white p-5 md:p-7">
-              <h2 className="mb-1 text-lg font-bold">
-                Galeria de fotografias
-              </h2>
-              <p className="mb-4 text-sm text-zinc-500">
-                Carregue fotografias ou coloque um endereço de imagem por linha.
-              </p>
-
-              <label className="mb-4 block">
-                <span className={labelClass}>Carregar fotografias</span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  multiple
-                  disabled={uploadingGallery}
-                  className={inputClass}
-                  onChange={(event) => {
-                    void handleGalleryUpload(event.target.files);
-                    event.currentTarget.value = "";
-                  }}
-                />
-                <span className="mt-1 block text-xs text-zinc-500">
-                  Cada imagem pode ter até 5 MB.
-                </span>
-                {uploadingGallery && (
-                  <span className="mt-2 block text-sm text-zinc-500">
-                    A carregar fotografias...
-                  </span>
-                )}
-              </label>
-
-              <textarea
-                className={`${inputClass} font-mono text-xs`}
-                rows={5}
-                value={
-                  Array.isArray(content.gallery)
-                    ? content.gallery.join("\n")
-                    : ""
-                }
-                onChange={(event) =>
-                  updateContent({
-                    gallery: event.target.value
-                      .split("\n")
-                      .map((value) => value.trim())
-                      .filter(Boolean),
-                  })
-                }
-                placeholder={"https://.../foto1.jpg\nhttps://.../foto2.jpg"}
-              />
-
-              {Array.isArray(content.gallery) &&
-                content.gallery.length > 0 && (
-                  <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-                    {content.gallery.map((url, index) => (
-                      <div key={`${url}-${index}`} className="relative">
-                        <img
-                          src={url}
-                          alt={`Fotografia ${index + 1}`}
-                          className="h-36 w-full rounded-xl object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeGalleryImage(index)}
-                          className="absolute right-2 top-2 rounded-lg bg-black/70 px-3 py-1 text-xs font-bold text-white"
-                        >
-                          Remover
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-            </section>
-
-            <section className="mb-5 rounded-2xl border bg-white p-5 md:p-7">
-              <h2 className="mb-1 text-lg font-bold">
-                Títulos das secções
-              </h2>
-
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <label>
-                  <span className={labelClass}>Título dos serviços</span>
-                  <input
-                    className={inputClass}
-                    value={content.servicesTitle || ""}
-                    onChange={(event) =>
-                      updateContent({ servicesTitle: event.target.value })
-                    }
-                    placeholder="Os nossos serviços"
-                  />
-                </label>
-
-                <label>
-                  <span className={labelClass}>Título da galeria</span>
-                  <input
-                    className={inputClass}
-                    value={content.galleryTitle || ""}
-                    onChange={(event) =>
-                      updateContent({ galleryTitle: event.target.value })
-                    }
-                    placeholder="Os nossos trabalhos"
-                  />
-                </label>
-
-                <label className="md:col-span-2">
-                  <span className={labelClass}>Título dos contactos</span>
-                  <input
-                    className={inputClass}
-                    value={content.contactTitle || ""}
-                    onChange={(event) =>
-                      updateContent({ contactTitle: event.target.value })
-                    }
-                    placeholder="Vamos conversar?"
-                  />
-                </label>
-              </div>
-            </section>
-
-            <section className="mb-5 rounded-2xl border bg-white p-5 md:p-7">
-              <h2 className="mb-1 text-lg font-bold">
-                Conteúdo avançado (JSON)
-              </h2>
-              <p className="mb-4 text-sm text-zinc-500">
-                Configurações adicionais. Altera esta área apenas se souberes
-                o que estás a modificar.
-              </p>
-
-              <textarea
-                className={`${inputClass} font-mono text-xs`}
-                rows={14}
-                spellCheck={false}
-                value={jsonText}
-                onChange={(event) => setJsonText(event.target.value)}
-              />
-            </section>
-          </>
+            </div>
+          </div>
         )}
 
-        <div className="sticky bottom-3 flex flex-wrap gap-3 rounded-2xl border bg-white/95 p-3 shadow-lg backdrop-blur">
-          <button
-            type="button"
-            disabled={saving || loading}
-            onClick={() => void saveDraft()}
-            className="rounded-xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
-          >
-            {saving ? "A guardar..." : "Guardar rascunho"}
-          </button>
+        {/* ABOUT */}
+        {tab === "about" && (
+          <div className={sectionClass}>
+            <label className={labelClass}>Título</label>
+            <input
+              className={inputClass}
+              value={content.aboutTitle || ""}
+              onChange={(e) => updateContent({ aboutTitle: e.target.value })}
+            />
+            <label className={`${labelClass} mt-4`}>Texto</label>
+            <textarea
+              className={inputClass}
+              rows={6}
+              value={content.aboutText || content.description || ""}
+              onChange={(e) =>
+                updateContent({ aboutText: e.target.value, description: e.target.value })
+              }
+            />
+            <label className={`${labelClass} mt-4`}>Missão</label>
+            <textarea
+              className={inputClass}
+              rows={2}
+              value={content.aboutMission || ""}
+              onChange={(e) => updateContent({ aboutMission: e.target.value })}
+            />
+            <label className={`${labelClass} mt-4`}>Visão</label>
+            <textarea
+              className={inputClass}
+              rows={2}
+              value={content.aboutVision || ""}
+              onChange={(e) => updateContent({ aboutVision: e.target.value })}
+            />
+            <label className={`${labelClass} mt-4`}>
+              Valores (um por linha)
+            </label>
+            <textarea
+              className={inputClass}
+              rows={4}
+              value={(content.aboutValues || []).join("\n")}
+              onChange={(e) =>
+                updateContent({
+                  aboutValues: e.target.value
+                    .split("\n")
+                    .map((s) => s.trim())
+                    .filter(Boolean),
+                })
+              }
+            />
+          </div>
+        )}
 
-          <button
-            type="button"
-            disabled={saving || loading}
-            onClick={previewDraft}
-            className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-bold text-zinc-800 disabled:opacity-50"
-          >
-            Pré-visualizar
-          </button>
+        {/* TESTIMONIALS */}
+        {tab === "testimonials" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className={labelClass}>Título da secção</label>
+              <button
+                type="button"
+                className="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white"
+                onClick={() =>
+                  setTestimonials([
+                    ...(content.testimonials || []),
+                    { id: uid(), name: "", text: "", role: "", rating: 5 },
+                  ])
+                }
+              >
+                + Depoimento
+              </button>
+            </div>
+            <input
+              className={inputClass}
+              value={content.testimonialsTitle || ""}
+              onChange={(e) => updateContent({ testimonialsTitle: e.target.value })}
+            />
+            {(content.testimonials || []).map((t, i) => (
+              <div key={t.id} className={sectionClass}>
+                <div className="mb-2 flex justify-between">
+                  <span className="text-xs font-bold text-zinc-500">#{i + 1}</span>
+                  <button
+                    type="button"
+                    className="text-xs text-red-600"
+                    onClick={() =>
+                      setTestimonials((content.testimonials || []).filter((x) => x.id !== t.id))
+                    }
+                  >
+                    Remover
+                  </button>
+                </div>
+                <input
+                  className={inputClass}
+                  placeholder="Nome"
+                  value={t.name}
+                  onChange={(e) => {
+                    const list = [...(content.testimonials || [])];
+                    list[i] = { ...t, name: e.target.value };
+                    setTestimonials(list);
+                  }}
+                />
+                <input
+                  className={`${inputClass} mt-2`}
+                  placeholder="Cargo / contexto"
+                  value={t.role || ""}
+                  onChange={(e) => {
+                    const list = [...(content.testimonials || [])];
+                    list[i] = { ...t, role: e.target.value };
+                    setTestimonials(list);
+                  }}
+                />
+                <textarea
+                  className={`${inputClass} mt-2`}
+                  rows={3}
+                  placeholder="Texto"
+                  value={t.text}
+                  onChange={(e) => {
+                    const list = [...(content.testimonials || [])];
+                    list[i] = { ...t, text: e.target.value };
+                    setTestimonials(list);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
-          <button
-            type="button"
-            disabled={saving || loading}
-            onClick={() => void publishWebsite()}
-            className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
-          >
-            Publicar website
-          </button>
+        {/* FAQ */}
+        {tab === "faq" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <input
+                className={inputClass}
+                placeholder="Título FAQ"
+                value={content.faqTitle || ""}
+                onChange={(e) => updateContent({ faqTitle: e.target.value })}
+              />
+              <button
+                type="button"
+                className="ml-2 shrink-0 rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white"
+                onClick={() =>
+                  setFaq([...(content.faq || []), { id: uid(), question: "", answer: "" }])
+                }
+              >
+                + Pergunta
+              </button>
+            </div>
+            {(content.faq || []).map((f, i) => (
+              <div key={f.id} className={sectionClass}>
+                <div className="mb-2 flex justify-end">
+                  <button
+                    type="button"
+                    className="text-xs text-red-600"
+                    onClick={() => setFaq((content.faq || []).filter((x) => x.id !== f.id))}
+                  >
+                    Remover
+                  </button>
+                </div>
+                <input
+                  className={inputClass}
+                  placeholder="Pergunta"
+                  value={f.question}
+                  onChange={(e) => {
+                    const list = [...(content.faq || [])];
+                    list[i] = { ...f, question: e.target.value };
+                    setFaq(list);
+                  }}
+                />
+                <textarea
+                  className={`${inputClass} mt-2`}
+                  rows={3}
+                  placeholder="Resposta"
+                  value={f.answer}
+                  onChange={(e) => {
+                    const list = [...(content.faq || [])];
+                    list[i] = { ...f, answer: e.target.value };
+                    setFaq(list);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
-          <button
-            type="button"
-            disabled={saving || loading || !published}
-            onClick={() => void unpublishWebsite()}
-            className="rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-bold text-red-600 disabled:opacity-50"
-          >
-            Retirar publicação
-          </button>
-        </div>
+        {/* BLOG */}
+        {tab === "blog" && (
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <input
+                className={inputClass}
+                placeholder="Título do blog"
+                value={content.blogTitle || ""}
+                onChange={(e) => updateContent({ blogTitle: e.target.value })}
+              />
+              <button
+                type="button"
+                className="shrink-0 rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white"
+                onClick={() =>
+                  setPosts([
+                    ...(content.posts || []),
+                    {
+                      id: uid(),
+                      title: "Novo artigo",
+                      slug: `artigo-${uid()}`,
+                      excerpt: "",
+                      body: "",
+                    },
+                  ])
+                }
+              >
+                + Artigo
+              </button>
+            </div>
+            {(content.posts || []).map((p, i) => (
+              <div key={p.id} className={sectionClass}>
+                <div className="mb-2 flex justify-end">
+                  <button
+                    type="button"
+                    className="text-xs text-red-600"
+                    onClick={() => setPosts((content.posts || []).filter((x) => x.id !== p.id))}
+                  >
+                    Remover
+                  </button>
+                </div>
+                <input
+                  className={inputClass}
+                  placeholder="Título"
+                  value={p.title}
+                  onChange={(e) => {
+                    const list = [...(content.posts || [])];
+                    list[i] = { ...p, title: e.target.value };
+                    setPosts(list);
+                  }}
+                />
+                <input
+                  className={`${inputClass} mt-2`}
+                  placeholder="slug-url"
+                  value={p.slug}
+                  onChange={(e) => {
+                    const list = [...(content.posts || [])];
+                    list[i] = { ...p, slug: e.target.value };
+                    setPosts(list);
+                  }}
+                />
+                <textarea
+                  className={`${inputClass} mt-2`}
+                  rows={2}
+                  placeholder="Resumo"
+                  value={p.excerpt}
+                  onChange={(e) => {
+                    const list = [...(content.posts || [])];
+                    list[i] = { ...p, excerpt: e.target.value };
+                    setPosts(list);
+                  }}
+                />
+                <textarea
+                  className={`${inputClass} mt-2`}
+                  rows={5}
+                  placeholder="Corpo do artigo"
+                  value={p.body}
+                  onChange={(e) => {
+                    const list = [...(content.posts || [])];
+                    list[i] = { ...p, body: e.target.value };
+                    setPosts(list);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* LEGAL */}
+        {tab === "legal" && (
+          <div className="space-y-6">
+            <div className={sectionClass}>
+              <label className={labelClass}>Título privacidade</label>
+              <input
+                className={inputClass}
+                value={content.privacyTitle || ""}
+                onChange={(e) => updateContent({ privacyTitle: e.target.value })}
+              />
+              <label className={`${labelClass} mt-4`}>Texto privacidade</label>
+              <textarea
+                className={inputClass}
+                rows={8}
+                value={content.privacyBody || ""}
+                onChange={(e) => updateContent({ privacyBody: e.target.value })}
+              />
+            </div>
+            <div className={sectionClass}>
+              <label className={labelClass}>Título termos</label>
+              <input
+                className={inputClass}
+                value={content.termsTitle || ""}
+                onChange={(e) => updateContent({ termsTitle: e.target.value })}
+              />
+              <label className={`${labelClass} mt-4`}>Texto termos</label>
+              <textarea
+                className={inputClass}
+                rows={8}
+                value={content.termsBody || ""}
+                onChange={(e) => updateContent({ termsBody: e.target.value })}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* SEO + CORES */}
+        {tab === "seo" && (
+          <div className="space-y-6">
+            <div className={sectionClass}>
+              <h2 className="mb-3 text-sm font-bold uppercase text-zinc-500">Cores</h2>
+              {(
+                [
+                  ["primaryColor", "Principal"],
+                  ["secondaryColor", "Secundária"],
+                  ["background", "Fundo"],
+                  ["text", "Texto"],
+                ] as const
+              ).map(([key, label]) => (
+                <div key={key} className="mb-3 flex items-center gap-3">
+                  <label className="w-28 text-xs font-semibold text-zinc-600">{label}</label>
+                  <input
+                    type="color"
+                    value={identity[key] || "#512638"}
+                    onChange={(e) => updateIdentity({ [key]: e.target.value })}
+                  />
+                  <input
+                    className={inputClass}
+                    value={identity[key] || ""}
+                    onChange={(e) => updateIdentity({ [key]: e.target.value })}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className={sectionClass}>
+              <h2 className="mb-3 text-sm font-bold uppercase text-zinc-500">SEO Home</h2>
+              <input
+                className={inputClass}
+                placeholder="Title"
+                value={content.seo?.home?.title || ""}
+                onChange={(e) =>
+                  updateContent({
+                    seo: {
+                      ...content.seo,
+                      home: { ...content.seo?.home, title: e.target.value },
+                    },
+                  })
+                }
+              />
+              <textarea
+                className={`${inputClass} mt-2`}
+                rows={2}
+                placeholder="Meta description"
+                value={content.seo?.home?.description || ""}
+                onChange={(e) =>
+                  updateContent({
+                    seo: {
+                      ...content.seo,
+                      home: { ...content.seo?.home, description: e.target.value },
+                    },
+                  })
+                }
+              />
+            </div>
+          </div>
+        )}
+
+        {/* JSON */}
+        {tab === "json" && (
+          <div className={sectionClass}>
+            <p className="mb-2 text-xs text-zinc-500">
+              Edição avançada. Guarda com o separador JSON activo para aplicar este texto.
+            </p>
+            <textarea
+              className={`${inputClass} font-mono text-xs`}
+              rows={24}
+              value={jsonText}
+              onChange={(e) => setJsonText(e.target.value)}
+            />
+          </div>
+        )}
       </div>
-    </main>
+    </div>
   );
 }
