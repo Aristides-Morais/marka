@@ -13,22 +13,12 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/sara" replace />} />
-
         <Route path="/super-admin" element={<SuperAdminPage />} />
-        <Route
-          path="/super-admin/modulos"
-          element={<BusinessModulesPage />}
-        />
-
-        <Route
-          path="/:slug/admin/website"
-          element={<TenantSiteContentPage />}
-        />
-
+        <Route path="/super-admin/modulos" element={<BusinessModulesPage />} />
+        <Route path="/:slug/admin/website" element={<TenantSiteContentPage />} />
         <Route path="/:slug" element={<ModuleAwareWebsitePage />} />
         <Route path="/:slug/loja" element={<StorePage />} />
         <Route path="/:slug/reservas" element={<ClientPage />} />
-
         <Route path="/:slug/admin" element={<AdminPage />} />
         <Route path="/:slug/planos" element={<SubscriptionPage />} />
       </Routes>

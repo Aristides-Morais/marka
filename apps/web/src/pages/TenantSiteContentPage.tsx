@@ -1,3 +1,4 @@
+
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -5,6 +6,7 @@ import {
   getAccessToken,
   setAccessToken,
   setTenantSlug,
+  uploadImage,
 } from "../lib/api";
 
 type SiteContent = {
@@ -34,20 +36,23 @@ export default function TenantSiteContentPage() {
   const [authenticated, setAuthenticated] = useState(
     Boolean(getAccessToken())
   );
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [content, setContent] = useState<SiteContent>({});
   const [jsonText, setJsonText] = useState("{}");
-
   const [businessName, setBusinessName] = useState(slug);
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingHero, setUploadingHero] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   const [published, setPublished] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+
+  const identity = content.visualIdentity || {};
 
   function updateContent(patch: Partial<SiteContent>) {
     setContent((old) => {
@@ -58,11 +63,9 @@ export default function TenantSiteContentPage() {
   }
 
   function updateIdentity(patch: Record<string, string>) {
-    const identity = content.visualIdentity || {};
-
     updateContent({
       visualIdentity: {
-        ...identity,
+        ...(content.visualIdentity || {}),
         ...patch,
       },
     });
@@ -80,7 +83,6 @@ export default function TenantSiteContentPage() {
         }>("/api/v1/site-content/draft", {
           tenant: slug,
         }),
-
         apiFetch<{ name: string }>("/api/v1/business/info", {
           skipAuth: true,
           tenant: slug,
@@ -93,7 +95,6 @@ export default function TenantSiteContentPage() {
       setJsonText(JSON.stringify(data, null, 2));
       setPublished(Boolean(draft.isPublished));
       setBusinessName(business.name);
-
       setAuthenticated(true);
       setTenantSlug(slug);
     } catch (err: any) {
@@ -101,9 +102,7 @@ export default function TenantSiteContentPage() {
         setAuthenticated(false);
         setAccessToken(null);
       } else {
-        setError(
-          err?.message || "Não foi possível carregar o conteúdo."
-        );
+        setError(err?.message || "Não foi possível carregar o conteúdo.");
       }
     } finally {
       setLoading(false);
@@ -114,13 +113,12 @@ export default function TenantSiteContentPage() {
     setTenantSlug(slug);
 
     if (getAccessToken()) {
-      loadContent();
+      void loadContent();
     }
   }, [slug]);
 
   async function handleLogin(event: FormEvent) {
     event.preventDefault();
-
     setLoading(true);
     setError("");
 
@@ -141,7 +139,6 @@ export default function TenantSiteContentPage() {
       setAccessToken(result.token);
       setTenantSlug(slug);
       setAuthenticated(true);
-
       await loadContent();
     } catch (err: any) {
       setError(err?.message || "Credenciais inválidas.");
@@ -175,15 +172,12 @@ export default function TenantSiteContentPage() {
     try {
       await apiFetch("/api/v1/site-content/draft", {
         method: "PUT",
-        body: JSON.stringify({
-          content: parsed,
-        }),
+        body: JSON.stringify({ content: parsed }),
         tenant: slug,
       });
 
       setContent(parsed);
       setJsonText(JSON.stringify(parsed, null, 2));
-
       setNotice("Rascunho guardado com sucesso.");
     } catch (err: any) {
       setError(err?.message || "Não foi possível guardar.");
@@ -206,9 +200,7 @@ export default function TenantSiteContentPage() {
       setPublished(true);
       setNotice("Website publicado com sucesso.");
     } catch (err: any) {
-      setError(
-        err?.message || "Guarde primeiro o rascunho."
-      );
+      setError(err?.message || "Guarde primeiro o rascunho.");
     } finally {
       setSaving(false);
     }
@@ -232,19 +224,110 @@ export default function TenantSiteContentPage() {
       });
 
       setPublished(false);
-      setNotice(
-        "Publicação retirada. O conteúdo continua guardado."
-      );
+      setNotice("Publicação retirada. O conteúdo continua guardado.");
     } catch (err: any) {
-      setError(
-        err?.message || "Não foi possível retirar a publicação."
-      );
+      setError(err?.message || "Não foi possível retirar a publicação.");
     } finally {
       setSaving(false);
     }
   }
 
-  const identity = content.visualIdentity || {};
+  async function handleHeroUpload(file?: File) {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Selecciona um ficheiro de imagem.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("A imagem não pode ultrapassar 5 MB.");
+      return;
+    }
+
+    setUploadingHero(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const url = await uploadImage(file, slug);
+      updateContent({ heroImage: url });
+      setNotice("Imagem principal carregada. Guarda o rascunho.");
+    } catch (err: any) {
+      setError(err?.message || "Não foi possível carregar a imagem.");
+    } finally {
+      setUploadingHero(false);
+    }
+  }
+
+  async function handleGalleryUpload(files: FileList | null) {
+    if (!files?.length) return;
+
+    const selected = Array.from(files);
+
+    if (selected.some((file) => !file.type.startsWith("image/"))) {
+      setError("Todos os ficheiros devem ser imagens.");
+      return;
+    }
+
+    if (selected.some((file) => file.size > 5 * 1024 * 1024)) {
+      setError("Cada imagem deve ter no máximo 5 MB.");
+      return;
+    }
+
+    setUploadingGallery(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const urls = await Promise.all(
+        selected.map((file) => uploadImage(file, slug))
+      );
+
+      updateContent({
+        gallery: [...(content.gallery || []), ...urls],
+      });
+
+      setNotice(
+        `${urls.length} imagem(ns) carregada(s). Guarda o rascunho.`
+      );
+    } catch (err: any) {
+      setError(err?.message || "Não foi possível carregar a galeria.");
+    } finally {
+      setUploadingGallery(false);
+    }
+  }
+
+  function previewDraft() {
+    try {
+      const parsed: SiteContent = JSON.parse(jsonText);
+
+      if (
+        !parsed ||
+        typeof parsed !== "object" ||
+        Array.isArray(parsed)
+      ) {
+        throw new Error("Formato inválido");
+      }
+
+      localStorage.setItem(
+        `marka_site_preview_${slug}`,
+        JSON.stringify(parsed)
+      );
+
+      window.open(`/${slug}?preview=1`, "_blank", "noopener,noreferrer");
+    } catch {
+      setError("Corrige o JSON antes de pré-visualizar.");
+    }
+  }
+
+  function removeGalleryImage(index: number) {
+    updateContent({
+      gallery: (content.gallery || []).filter(
+        (_image, imageIndex) => imageIndex !== index
+      ),
+    });
+  }
 
   if (!authenticated) {
     return (
@@ -271,10 +354,7 @@ export default function TenantSiteContentPage() {
             </p>
           )}
 
-          <label className={`${labelClass} mt-5`}>
-            Email
-          </label>
-
+          <label className={`${labelClass} mt-5`}>Email</label>
           <input
             className={inputClass}
             type="email"
@@ -283,10 +363,7 @@ export default function TenantSiteContentPage() {
             onChange={(event) => setEmail(event.target.value)}
           />
 
-          <label className={`${labelClass} mt-4`}>
-            Palavra-passe
-          </label>
-
+          <label className={`${labelClass} mt-4`}>Palavra-passe</label>
           <input
             className={inputClass}
             type="password"
@@ -297,7 +374,7 @@ export default function TenantSiteContentPage() {
 
           <button
             disabled={loading}
-            className="mt-5 w-full rounded-xl bg-zinc-900 px-4 py-3 font-bold text-white"
+            className="mt-5 w-full rounded-xl bg-zinc-900 px-4 py-3 font-bold text-white disabled:opacity-50"
           >
             {loading ? "A entrar..." : "Entrar"}
           </button>
@@ -321,26 +398,33 @@ export default function TenantSiteContentPage() {
             <p className="text-xs font-bold uppercase tracking-[.2em] text-zinc-500">
               MARKA-KANDA · EDITOR
             </p>
-
             <h1 className="mt-1 text-2xl font-black text-zinc-900">
               {businessName}
             </h1>
-
             <p className="text-sm text-zinc-500">
-              Edite o conteúdo do website da sua empresa.
+              Personalize o website da sua empresa.
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={previewDraft}
+              className="rounded-xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white"
+            >
+              Pré-visualizar
+            </button>
+
             <Link
               to={`/${slug}`}
               target="_blank"
               className="rounded-xl border bg-white px-4 py-3 text-sm font-bold text-zinc-700"
             >
-              Ver website ↗
+              Website público ↗
             </Link>
 
             <button
+              type="button"
               onClick={() => {
                 setAccessToken(null);
                 setAuthenticated(false);
@@ -367,10 +451,7 @@ export default function TenantSiteContentPage() {
         <section className="mb-5 rounded-2xl border bg-white p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold">
-                Estado do website
-              </h2>
-
+              <h2 className="text-lg font-bold">Estado do website</h2>
               <p className="text-sm text-zinc-500">
                 {published
                   ? "Actualmente publicado"
@@ -398,104 +479,108 @@ export default function TenantSiteContentPage() {
               <h2 className="mb-1 text-lg font-bold">
                 Apresentação principal
               </h2>
-
               <p className="mb-5 text-sm text-zinc-500">
-                Título, descrição e imagem de destaque.
+                Título, subtítulo, botão e imagem de destaque.
               </p>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label>
-                  <span className={labelClass}>
-                    Título principal
-                  </span>
-
+                  <span className={labelClass}>Título principal</span>
                   <input
                     className={inputClass}
                     value={content.heroTitle || ""}
                     onChange={(event) =>
-                      updateContent({
-                        heroTitle: event.target.value,
-                      })
+                      updateContent({ heroTitle: event.target.value })
                     }
                     placeholder="Título do website"
                   />
                 </label>
 
                 <label>
-                  <span className={labelClass}>
-                    Subtítulo
-                  </span>
-
+                  <span className={labelClass}>Subtítulo</span>
                   <input
                     className={inputClass}
                     value={content.heroSubtitle || ""}
                     onChange={(event) =>
-                      updateContent({
-                        heroSubtitle: event.target.value,
-                      })
+                      updateContent({ heroSubtitle: event.target.value })
                     }
                     placeholder="Uma frase sobre o negócio"
                   />
                 </label>
 
                 <label>
-                  <span className={labelClass}>
-                    Texto do botão
-                  </span>
-
+                  <span className={labelClass}>Texto do botão</span>
                   <input
                     className={inputClass}
                     value={content.buttonText || ""}
                     onChange={(event) =>
-                      updateContent({
-                        buttonText: event.target.value,
-                      })
+                      updateContent({ buttonText: event.target.value })
                     }
                     placeholder="Marcar horário"
                   />
                 </label>
 
                 <label>
-                  <span className={labelClass}>
-                    URL da imagem principal
-                  </span>
-
+                  <span className={labelClass}>URL da imagem principal</span>
                   <input
                     className={inputClass}
                     value={content.heroImage || ""}
                     onChange={(event) =>
-                      updateContent({
-                        heroImage: event.target.value,
-                      })
+                      updateContent({ heroImage: event.target.value })
                     }
                     placeholder="https://..."
                   />
                 </label>
 
                 <label className="md:col-span-2">
-                  <span className={labelClass}>
-                    Texto sobre a empresa
+                  <span className={labelClass}>Carregar imagem principal</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    disabled={uploadingHero}
+                    className={inputClass}
+                    onChange={(event) => {
+                      void handleHeroUpload(event.target.files?.[0]);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                  <span className="mt-1 block text-xs text-zinc-500">
+                    Máximo de 5 MB. A imagem será enviada para o Cloudinary.
                   </span>
+                  {uploadingHero && (
+                    <span className="mt-2 block text-sm text-zinc-500">
+                      A carregar imagem...
+                    </span>
+                  )}
+                </label>
 
+                {content.heroImage && (
+                  <div className="md:col-span-2">
+                    <img
+                      src={content.heroImage}
+                      alt="Imagem principal"
+                      className="h-52 w-full rounded-xl object-cover"
+                    />
+                  </div>
+                )}
+
+                <label className="md:col-span-2">
+                  <span className={labelClass}>Texto sobre a empresa</span>
                   <textarea
                     className={inputClass}
                     rows={4}
                     value={content.description || ""}
                     onChange={(event) =>
-                      updateContent({
-                        description: event.target.value,
-                      })
+                      updateContent({ description: event.target.value })
                     }
+                    placeholder="Apresente a sua empresa aos visitantes..."
                   />
                 </label>
               </div>
             </section>
 
             <section className="mb-5 rounded-2xl border bg-white p-5 md:p-7">
-              <h2 className="mb-1 text-lg font-bold">
-                Identidade visual
-              </h2>
-
+              <h2 className="mb-1 text-lg font-bold">Identidade visual</h2>
               <p className="mb-5 text-sm text-zinc-500">
                 Escolha as cores da sua marca.
               </p>
@@ -512,20 +597,16 @@ export default function TenantSiteContentPage() {
                 ].map(([key, label, fallback]) => (
                   <label key={key}>
                     <span className={labelClass}>{label}</span>
-
                     <div className="flex items-center gap-3 rounded-xl border p-2">
                       <input
                         aria-label={label}
                         type="color"
                         value={identity[key] || fallback}
                         onChange={(event) =>
-                          updateIdentity({
-                            [key]: event.target.value,
-                          })
+                          updateIdentity({ [key]: event.target.value })
                         }
                         className="h-10 w-12 cursor-pointer border-0 bg-transparent"
                       />
-
                       <span className="text-xs font-mono text-zinc-500">
                         {identity[key] || fallback}
                       </span>
@@ -539,14 +620,36 @@ export default function TenantSiteContentPage() {
               <h2 className="mb-1 text-lg font-bold">
                 Galeria de fotografias
               </h2>
-
               <p className="mb-4 text-sm text-zinc-500">
-                Coloque um endereço de imagem por linha.
+                Carregue fotografias ou coloque um endereço de imagem por linha.
               </p>
+
+              <label className="mb-4 block">
+                <span className={labelClass}>Carregar fotografias</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  disabled={uploadingGallery}
+                  className={inputClass}
+                  onChange={(event) => {
+                    void handleGalleryUpload(event.target.files);
+                    event.currentTarget.value = "";
+                  }}
+                />
+                <span className="mt-1 block text-xs text-zinc-500">
+                  Cada imagem pode ter até 5 MB.
+                </span>
+                {uploadingGallery && (
+                  <span className="mt-2 block text-sm text-zinc-500">
+                    A carregar fotografias...
+                  </span>
+                )}
+              </label>
 
               <textarea
                 className={`${inputClass} font-mono text-xs`}
-                rows={6}
+                rows={5}
                 value={
                   Array.isArray(content.gallery)
                     ? content.gallery.join("\n")
@@ -560,21 +663,27 @@ export default function TenantSiteContentPage() {
                       .filter(Boolean),
                   })
                 }
-                placeholder={
-                  "https://.../foto1.jpg\nhttps://.../foto2.jpg"
-                }
+                placeholder={"https://.../foto1.jpg\nhttps://.../foto2.jpg"}
               />
 
               {Array.isArray(content.gallery) &&
                 content.gallery.length > 0 && (
                   <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
-                    {content.gallery.slice(0, 6).map((url, index) => (
-                      <img
-                        key={`${url}-${index}`}
-                        src={url}
-                        alt={`Fotografia ${index + 1}`}
-                        className="h-32 w-full rounded-xl object-cover"
-                      />
+                    {content.gallery.map((url, index) => (
+                      <div key={`${url}-${index}`} className="relative">
+                        <img
+                          src={url}
+                          alt={`Fotografia ${index + 1}`}
+                          className="h-36 w-full rounded-xl object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeGalleryImage(index)}
+                          className="absolute right-2 top-2 rounded-lg bg-black/70 px-3 py-1 text-xs font-bold text-white"
+                        >
+                          Remover
+                        </button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -587,50 +696,38 @@ export default function TenantSiteContentPage() {
 
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <label>
-                  <span className={labelClass}>
-                    Título dos serviços
-                  </span>
-
+                  <span className={labelClass}>Título dos serviços</span>
                   <input
                     className={inputClass}
                     value={content.servicesTitle || ""}
                     onChange={(event) =>
-                      updateContent({
-                        servicesTitle: event.target.value,
-                      })
+                      updateContent({ servicesTitle: event.target.value })
                     }
+                    placeholder="Os nossos serviços"
                   />
                 </label>
 
                 <label>
-                  <span className={labelClass}>
-                    Título da galeria
-                  </span>
-
+                  <span className={labelClass}>Título da galeria</span>
                   <input
                     className={inputClass}
                     value={content.galleryTitle || ""}
                     onChange={(event) =>
-                      updateContent({
-                        galleryTitle: event.target.value,
-                      })
+                      updateContent({ galleryTitle: event.target.value })
                     }
+                    placeholder="Os nossos trabalhos"
                   />
                 </label>
 
                 <label className="md:col-span-2">
-                  <span className={labelClass}>
-                    Título dos contactos
-                  </span>
-
+                  <span className={labelClass}>Título dos contactos</span>
                   <input
                     className={inputClass}
                     value={content.contactTitle || ""}
                     onChange={(event) =>
-                      updateContent({
-                        contactTitle: event.target.value,
-                      })
+                      updateContent({ contactTitle: event.target.value })
                     }
+                    placeholder="Vamos conversar?"
                   />
                 </label>
               </div>
@@ -640,70 +737,59 @@ export default function TenantSiteContentPage() {
               <h2 className="mb-1 text-lg font-bold">
                 Conteúdo avançado (JSON)
               </h2>
-
               <p className="mb-4 text-sm text-zinc-500">
-                Configurações adicionais do website.
+                Configurações adicionais. Altera esta área apenas se souberes
+                o que estás a modificar.
               </p>
 
               <textarea
                 className={`${inputClass} font-mono text-xs`}
-                rows={12}
+                rows={14}
                 spellCheck={false}
                 value={jsonText}
-                onChange={(event) => {
-                  setJsonText(event.target.value);
-
-                  try {
-                    const parsed = JSON.parse(event.target.value);
-
-                    if (
-                      parsed &&
-                      typeof parsed === "object" &&
-                      !Array.isArray(parsed)
-                    ) {
-                      setContent(parsed);
-                      setError("");
-                    } else {
-                      setError(
-                        "O conteúdo deve ser um objecto JSON."
-                      );
-                    }
-                  } catch {
-                    setError(
-                      "JSON inválido. Corrija antes de guardar."
-                    );
-                  }
-                }}
+                onChange={(event) => setJsonText(event.target.value)}
               />
             </section>
-
-            <div className="sticky bottom-3 flex flex-wrap gap-3 rounded-2xl border bg-white/95 p-3 shadow-lg backdrop-blur">
-              <button
-                disabled={saving}
-                onClick={saveDraft}
-                className="rounded-xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
-              >
-                {saving ? "A guardar..." : "Guardar rascunho"}
-              </button>
-
-              <button
-                disabled={saving}
-                onClick={publishWebsite}
-                className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
-              >
-                Publicar website
-              </button>
-
-              <button
-                disabled={saving || !published}
-                onClick={unpublishWebsite}
-                className="rounded-xl border border-red-200 px-5 py-3 text-sm font-bold text-red-700 disabled:opacity-50"
-              >
-                Retirar publicação
-              </button>
-            </div>
           </>
         )}
+
+        <div className="sticky bottom-3 flex flex-wrap gap-3 rounded-2xl border bg-white/95 p-3 shadow-lg backdrop-blur">
+          <button
+            type="button"
+            disabled={saving || loading}
+            onClick={() => void saveDraft()}
+            className="rounded-xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
+          >
+            {saving ? "A guardar..." : "Guardar rascunho"}
+          </button>
+
+          <button
+            type="button"
+            disabled={saving || loading}
+            onClick={previewDraft}
+            className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-bold text-zinc-800 disabled:opacity-50"
+          >
+            Pré-visualizar
+          </button>
+
+          <button
+            type="button"
+            disabled={saving || loading}
+            onClick={() => void publishWebsite()}
+            className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
+          >
+            Publicar website
+          </button>
+
+          <button
+            type="button"
+            disabled={saving || loading || !published}
+            onClick={() => void unpublishWebsite()}
+            className="rounded-xl border border-red-200 bg-white px-5 py-3 text-sm font-bold text-red-600 disabled:opacity-50"
+          >
+            Retirar publicação
+          </button>
+        </div>
       </div>
     </main>
   );
