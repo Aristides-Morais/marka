@@ -62,11 +62,38 @@ reservationRouter.post("/", async (req, res, next) => {
 reservationRouter.patch("/hours", requireAuth, async (req, res, next) => {
   try {
     const schema = z.object({
-      openTime: z.string().regex(/^\d{2}:\d{2}$/),
-      closeTime: z.string().regex(/^\d{2}:\d{2}$/),
-    });
+      openTime: z.string().regex(
+        /^(?:[01]\d|2[0-3]):[0-5]\d$/,
+        "Hora de abertura inválida."
+      ),
+      closeTime: z.string().regex(
+        /^(?:[01]\d|2[0-3]):[0-5]\d$/,
+        "Hora de fecho inválida."
+      ),
+    }).strict();
+
     const { openTime, closeTime } = schema.parse(req.body);
-    await prisma.business.update({ where: { id: req.business!.id }, data: { openTime, closeTime } });
+
+    const toMinutes = (value: string) => {
+      const [hours, minutes] = value.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+
+    if (toMinutes(closeTime) <= toMinutes(openTime)) {
+      res.status(400).json({
+        error: {
+          code: "INVALID_BUSINESS_HOURS",
+          message: "A hora de fecho deve ser posterior à hora de abertura.",
+        },
+      });
+      return;
+    }
+
+    await prisma.business.update({
+      where: { id: req.business!.id },
+      data: { openTime, closeTime },
+    });
+
     res.json({ openTime, closeTime });
   } catch (err) {
     next(err);
@@ -114,13 +141,29 @@ reservationRouter.patch("/:id/status", requireAuth, async (req, res, next) => {
   }
 });
 
+
 reservationRouter.patch("/:id/cancel", requireAuth, async (req, res, next) => {
   try {
-    await prisma.reservation.updateMany({
-      where: { id: String(req.params.id), businessId: req.business!.id },
+    const result = await prisma.reservation.updateMany({
+      where: {
+        id: String(req.params.id),
+        businessId: req.business!.id,
+        status: { not: "CANCELLED" },
+      },
       data: { status: "CANCELLED" },
     });
-    res.json({ ok: true });
+
+    if (result.count === 0) {
+      res.status(404).json({
+        error: {
+          code: "RESERVATION_NOT_FOUND",
+          message: "Reserva não encontrada ou já cancelada.",
+        },
+      });
+      return;
+    }
+
+    res.json({ ok: true, status: "CANCELLED" });
   } catch (err) {
     next(err);
   }

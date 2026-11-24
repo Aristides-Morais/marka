@@ -5,8 +5,27 @@ import { prisma } from "../../lib/prisma.js";
 import { hashPassword } from "../../lib/argon.js";
 import { signToken, verifyToken } from "../../lib/jwt.js";
 import { env } from "../../config/env.js";
+import rateLimit from "express-rate-limit";
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+});
 
 export const superAdminRouter = Router();
+
+const superAdminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: {
+    error: {
+      code: "TOO_MANY_REQUESTS",
+      message: "Demasiadas tentativas de acesso. Tente novamente mais tarde.",
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const hexColorSchema = z.string().regex(
   /^#[0-9A-Fa-f]{6}$/,
@@ -74,7 +93,7 @@ function requireSuperAdmin(req: any, res: any, next: any) {
 }
 
 // LOGIN DO SUPER ADMIN
-superAdminRouter.post("/login", async (req, res, next) => {
+superAdminRouter.post("/login", superAdminLoginLimiter, async (req, res, next) => {
   try {
     const schema = z.object({
       email: z.string().trim().email(),

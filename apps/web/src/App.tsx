@@ -1,11 +1,11 @@
-
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import WebsitePage from "./pages/WebsitePage";
+import ModuleAwareWebsitePage from "./pages/ModuleAwareWebsitePage";
 import ClientPage from "./pages/ClientPage";
 import AdminPage from "./pages/AdminPage";
 import StorePage from "./pages/StorePage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import SuperAdminPage from "./pages/SuperAdminPage";
+import BusinessModulesPage from "./pages/BusinessModulesPage";
 
 export default function App() {
   return (
@@ -14,17 +14,15 @@ export default function App() {
         <Route path="/" element={<Navigate to="/sara" replace />} />
 
         <Route path="/super-admin" element={<SuperAdminPage />} />
+        <Route
+          path="/super-admin/modulos"
+          element={<BusinessModulesPage />}
+        />
 
-        {/* Website principal */}
-        <Route path="/:slug" element={<WebsitePage />} />
-
-        {/* Loja */}
+        <Route path="/:slug" element={<ModuleAwareWebsitePage />} />
         <Route path="/:slug/loja" element={<StorePage />} />
-
-        {/* Reservas */}
         <Route path="/:slug/reservas" element={<ClientPage />} />
 
-        {/* Administração e planos */}
         <Route path="/:slug/admin" element={<AdminPage />} />
         <Route path="/:slug/planos" element={<SubscriptionPage />} />
       </Routes>

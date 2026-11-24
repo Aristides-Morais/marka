@@ -1,3 +1,4 @@
+
 import { useEffect, useState, type FormEvent, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
@@ -14,8 +15,17 @@ import {
   type LinkItem,
 } from "../lib/theme";
 
-type Service = { id: string; name: string; durationMin: number; price: number };
-type Busy = { start: string; end: string };
+type Service = {
+  id: string;
+  name: string;
+  durationMin: number;
+  price: number;
+};
+
+type Busy = {
+  start: string;
+  end: string;
+};
 
 type Info = {
   name: string;
@@ -48,22 +58,58 @@ const toMin = (hhmm: string) => {
 const fmtMin = (n: number) =>
   `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
 
+const ANGOLA_TIME_ZONE = "Africa/Luanda";
+
+const angolaParts = () => {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: ANGOLA_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+
+  return Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)])
+  ) as Record<string, number>;
+};
+
 const localToday = () => {
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+  const p = angolaParts();
+
+  return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+};
+
+const angolaDateTimeToISO = (date: string, time: string) => {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hours, minutes] = time.split(":").map(Number);
+
+  // Angola = UTC+1: converter a hora local para o instante UTC.
+  return new Date(
+    Date.UTC(year, month - 1, day, hours - 1, minutes)
+  ).toISOString();
 };
 
 export default function ClientPage() {
   const { slug } = useParams();
 
   const [info, setInfo] = useState<Info | null>(null);
-  const [publishedContent, setPublishedContent] = useState<PublishedContent | null>(null);
+  const [publishedContent, setPublishedContent] =
+    useState<PublishedContent | null>(null);
   const [services, setServices] = useState<Service[]>([]);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedService, setSelectedService] =
+    useState<Service | null>(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [busy, setBusy] = useState<Busy[]>([]);
-  const [hours, setHours] = useState({ openTime: "08:00", closeTime: "18:00" });
+  const [hours, setHours] = useState({
+    openTime: "08:00",
+    closeTime: "18:00",
+  });
 
   const [formData, setFormData] = useState({ name: "", phone: "" });
   const [showForm, setShowForm] = useState(false);
@@ -82,10 +128,13 @@ export default function ClientPage() {
         skipAuth: true,
         tenant: slug,
       }),
-      apiFetch<{ openTime: string; closeTime: string }>("/api/v1/reservations/hours", {
-        skipAuth: true,
-        tenant: slug,
-      }),
+      apiFetch<{ openTime: string; closeTime: string }>(
+        "/api/v1/reservations/hours",
+        {
+          skipAuth: true,
+          tenant: slug,
+        }
+      ),
       apiFetch<any>("/api/v1/business/info", {
         skipAuth: true,
         tenant: slug,
@@ -123,9 +172,7 @@ export default function ClientPage() {
         });
 
         setPublishedContent(
-          site?.isPublished && site.content
-            ? site.content
-            : null
+          site?.isPublished && site.content ? site.content : null
         );
 
         setLoading(false);
@@ -156,13 +203,14 @@ export default function ClientPage() {
     e.preventDefault();
 
     if (!selectedService || !date || !time) {
-      return setErrorMsg("Escolha o serviço, o dia e a hora.");
+      setErrorMsg("Escolha o serviço, o dia e a hora.");
+      return;
     }
 
     setSubmitting(true);
     setErrorMsg(null);
 
-    const startTime = new Date(`${date}T${time}:00.000Z`).toISOString();
+    const startTime = angolaDateTimeToISO(date, time);
 
     try {
       await apiFetch("/api/v1/reservations", {
@@ -288,26 +336,35 @@ export default function ClientPage() {
         color: "#18181B",
       };
 
-  // Horários disponíveis
-  const now = new Date();
-  const nowMin = now.getHours() * 60 + now.getMinutes();
+  // Horário actual de Angola, independentemente do fuso do dispositivo.
+  const currentAngolaTime = angolaParts();
+  const nowMin =
+    currentAngolaTime.hour * 60 + currentAngolaTime.minute;
 
-  const slots: { label: string; disabled: boolean; taken: boolean }[] = [];
+  const slots: {
+    label: string;
+    disabled: boolean;
+    taken: boolean;
+  }[] = [];
 
   if (selectedService && date) {
     const open = toMin(hours.openTime);
     const close = toMin(hours.closeTime);
-    const d = selectedService.durationMin;
+    const duration = selectedService.durationMin;
 
-    for (let s = open; s + d <= close; s += 30) {
-      const e = s + d;
+    for (let start = open; start + duration <= close; start += 30) {
+      const end = start + duration;
+
       const taken = busy.some(
-        (b) => s < toMin(b.end) && e > toMin(b.start)
+        (item) =>
+          start < toMin(item.end) && end > toMin(item.start)
       );
-      const past = date === localToday() && s <= nowMin;
+
+      const past =
+        date === localToday() && start <= nowMin;
 
       slots.push({
-        label: fmtMin(s),
+        label: fmtMin(start),
         disabled: taken || past,
         taken,
       });
@@ -453,16 +510,16 @@ export default function ClientPage() {
 
           {info.links.length > 0 && (
             <div className="grid grid-cols-3 gap-3 pt-1">
-              {info.links.map((l, i) => (
+              {info.links.map((link, index) => (
                 <a
-                  key={i}
-                  href={normalizeUrl(l.url)}
+                  key={index}
+                  href={normalizeUrl(link.url)}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center justify-center text-center px-2 py-5 rounded-2xl text-base font-medium break-words"
                   style={linkBtn}
                 >
-                  {l.label}
+                  {link.label}
                 </a>
               ))}
             </div>
@@ -514,7 +571,9 @@ export default function ClientPage() {
                   </svg>
                 </div>
 
-                <h2 className="text-2xl font-bold mb-2">Reserva feita!</h2>
+                <h2 className="text-2xl font-bold mb-2">
+                  Reserva feita!
+                </h2>
 
                 <p className="text-zinc-500 mb-6">
                   {selectedService?.name} no dia{" "}
@@ -559,37 +618,37 @@ export default function ClientPage() {
                     </label>
 
                     <div className="grid gap-2">
-                      {services.map((svc) => (
+                      {services.map((service) => (
                         <div
-                          key={svc.id}
+                          key={service.id}
                           onClick={() => {
-                            setSelectedService(svc);
+                            setSelectedService(service);
                             setTime("");
                           }}
                           className="p-4 rounded-xl border-2 cursor-pointer"
                           style={{
                             borderColor:
-                              selectedService?.id === svc.id
+                              selectedService?.id === service.id
                                 ? primary
                                 : "#E4E4E7",
                             backgroundColor:
-                              selectedService?.id === svc.id
+                              selectedService?.id === service.id
                                 ? "#FAFAFA"
                                 : "#FFFFFF",
                           }}
                         >
                           <div className="flex justify-between gap-3">
                             <span className="font-semibold break-words min-w-0">
-                              {svc.name}
+                              {service.name}
                             </span>
 
                             <span className="font-bold shrink-0">
-                              {Number(svc.price).toLocaleString("pt-AO")} Kz
+                              {Number(service.price).toLocaleString("pt-AO")} Kz
                             </span>
                           </div>
 
                           <p className="text-xs text-zinc-500 mt-1">
-                            {svc.durationMin} min
+                            {service.durationMin} min
                           </p>
                         </div>
                       ))}
@@ -627,19 +686,19 @@ export default function ClientPage() {
                     ) : (
                       <>
                         <div className="grid grid-cols-4 gap-2">
-                          {slots.map((s) => (
+                          {slots.map((slot) => (
                             <button
                               type="button"
-                              key={s.label}
-                              disabled={s.disabled}
-                              onClick={() => setTime(s.label)}
+                              key={slot.label}
+                              disabled={slot.disabled}
+                              onClick={() => setTime(slot.label)}
                               className={`py-2 rounded-lg text-sm font-semibold border ${
-                                s.disabled
+                                slot.disabled
                                   ? "bg-zinc-100 text-zinc-400 border-zinc-100 cursor-not-allowed"
                                   : ""
-                              } ${s.taken ? "line-through" : ""}`}
+                              } ${slot.taken ? "line-through" : ""}`}
                               style={
-                                time === s.label
+                                time === slot.label
                                   ? {
                                       backgroundColor: primary,
                                       color: textOn(primary),
@@ -648,7 +707,7 @@ export default function ClientPage() {
                                   : undefined
                               }
                             >
-                              {s.label}
+                              {slot.label}
                             </button>
                           ))}
                         </div>
@@ -671,7 +730,10 @@ export default function ClientPage() {
                       placeholder="Nome completo"
                       value={formData.name}
                       onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
+                        setFormData({
+                          ...formData,
+                          name: e.target.value,
+                        })
                       }
                       className="w-full border rounded-lg px-3 py-2"
                     />
@@ -682,7 +744,10 @@ export default function ClientPage() {
                       placeholder="Telefone"
                       value={formData.phone}
                       onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
+                        setFormData({
+                          ...formData,
+                          phone: e.target.value,
+                        })
                       }
                       className="w-full border rounded-lg px-3 py-2"
                     />

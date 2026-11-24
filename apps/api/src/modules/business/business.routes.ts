@@ -7,12 +7,16 @@ export const businessRouter = Router();
 
 businessRouter.get("/info", (req, res) => {
   const b = req.business as any;
+
   res.json({
     name: b.name,
     type: b.type ?? null,
     template: b.template ?? null,
+    modules: Array.isArray(b.modules) ? b.modules : ["website", "store", "booking"],
     logoUrl: b.logoUrl,
     primaryColor: b.primaryColor,
+    secondaryColor: b.secondaryColor,
+    accentColor: b.accentColor,
     phone: b.phone,
     iban: b.iban,
     expressNumber: b.expressNumber,
@@ -38,8 +42,14 @@ businessRouter.get("/info", (req, res) => {
 const hex = z.string().regex(/^#[0-9A-F]{6}$/i, "Cor inválida");
 const colorOrEmpty = hex.or(z.literal("")).optional();
 const txt = z.string().nullable().optional();
+
 const linksSchema = z
-  .array(z.object({ label: z.string().trim().min(1).max(30), url: z.string().trim().min(1).max(500) }))
+  .array(
+    z.object({
+      label: z.string().trim().min(1).max(30),
+      url: z.string().trim().min(1).max(500),
+    })
+  )
   .max(12);
 
 const themeSchema = z.object({
@@ -79,12 +89,14 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
       links: linksSchema.nullable().optional(),
       theme: themeSchema.nullable().optional(),
     });
+
     const data = schema.parse(req.body);
 
-    // Perfil: "" limpa o campo
-    const val = (v: string | null | undefined) => (v === undefined ? undefined : v || null);
-    // Aparência: undefined ignora, ""/null limpa
-    const theme = (v: string | null | undefined) => (v === undefined ? undefined : v || null);
+    const val = (v: string | null | undefined) =>
+      v === undefined ? undefined : v || null;
+
+    const theme = (v: string | null | undefined) =>
+      v === undefined ? undefined : v || null;
 
     const updated = await prisma.business.update({
       where: { id: req.business!.id },
@@ -113,6 +125,7 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
         theme: data.theme === undefined ? undefined : ((data.theme ?? {}) as any),
       } as any,
     });
+
     res.json(updated);
   } catch (err) {
     next(err);
