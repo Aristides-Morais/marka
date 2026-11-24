@@ -225,12 +225,6 @@ export default function WebsitePage() {
     business.secondaryColor ||
     "#F2A900";
 
-  const accent =
-    visual.accentColor ||
-    visual.accent ||
-    business.accentColor ||
-    secondary;
-
   const background = visual.background || "#F7F8FA";
   const surface = visual.surface || "#FFFFFF";
   const textColor = visual.text || "#18181B";
