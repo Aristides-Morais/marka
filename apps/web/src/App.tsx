@@ -6,6 +6,7 @@ import StorePage from "./pages/StorePage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import SuperAdminPage from "./pages/SuperAdminPage";
 import BusinessModulesPage from "./pages/BusinessModulesPage";
+import TenantSiteContentPage from "./pages/TenantSiteContentPage";
 
 export default function App() {
   return (
@@ -17,6 +18,11 @@ export default function App() {
         <Route
           path="/super-admin/modulos"
           element={<BusinessModulesPage />}
+        />
+
+        <Route
+          path="/:slug/admin/website"
+          element={<TenantSiteContentPage />}
         />
 
         <Route path="/:slug" element={<ModuleAwareWebsitePage />} />

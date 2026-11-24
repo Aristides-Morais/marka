@@ -1,3 +1,4 @@
+
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma.js";
 
@@ -8,30 +9,30 @@ function normalizeModules(value: unknown): ModuleName[] {
     return ["website", "store", "booking"];
   }
 
+  // Só o valor antigo exacto do Prisma recebe os três módulos.
+  // ["Website"] = configuração antiga.
+  // ["website"] = Website activo apenas.
+  if (value.length === 1 && value[0] === "Website") {
+    return ["website", "store", "booking"];
+  }
+
   const normalized = value
     .filter((item): item is string => typeof item === "string")
     .map((item) => item.trim().toLowerCase())
     .map((item) => {
       if (item === "site") return "website";
       if (item === "loja") return "store";
-      if (item === "reservas" || item === "reservation") return "booking";
+      if (item === "reservas" || item === "reservation") {
+        return "booking";
+      }
       return item;
     })
     .filter(
       (item): item is ModuleName =>
-        item === "website" || item === "store" || item === "booking"
+        item === "website" ||
+        item === "store" ||
+        item === "booking"
     );
-
-  // Compatibilidade com negócios antigos que tinham o valor
-  // ["Website"] como valor predefinido do Prisma.
-  if (
-    normalized.length === 1 &&
-    normalized[0] === "website" &&
-    value.length === 1 &&
-    String(value[0]).toLowerCase() === "website"
-  ) {
-    return ["website", "store", "booking"];
-  }
 
   return [...new Set(normalized)];
 }

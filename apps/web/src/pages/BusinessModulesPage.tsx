@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiFetch, getAccessToken, setAccessToken } from "../lib/api";
@@ -35,20 +36,21 @@ const moduleOptions: {
 ];
 
 function normalizeModules(modules: string[] = []): ModuleName[] {
-  const values = modules.map((value) => value.toLowerCase());
-
-  // Compatibilidade com o valor antigo por defeito do Prisma.
-  if (
-    values.length === 1 &&
-    values[0] === "website"
-  ) {
+  // Compatibilidade apenas com o valor antigo exacto do Prisma.
+  if (modules.length === 1 && modules[0] === "Website") {
     return ["website", "store", "booking"];
   }
 
-  return values.filter(
-    (value): value is ModuleName =>
-      value === "website" || value === "store" || value === "booking"
-  );
+  const values = modules.map((value) => value.trim().toLowerCase());
+
+  return [...new Set(
+    values.filter(
+      (value): value is ModuleName =>
+        value === "website" ||
+        value === "store" ||
+        value === "booking"
+    )
+  )];
 }
 
 export default function BusinessModulesPage() {
@@ -129,6 +131,7 @@ export default function BusinessModulesPage() {
     module: ModuleName
   ) {
     const current = normalizeModules(business.modules);
+
     const next = current.includes(module)
       ? current.filter((item) => item !== module)
       : [...current, module];
@@ -143,9 +146,11 @@ export default function BusinessModulesPage() {
           <h1 className="text-2xl font-black mb-3">
             Gestão de módulos
           </h1>
+
           <p className="text-zinc-400 text-sm mb-6">
             Entra primeiro no painel do Super Admin para gerir os módulos dos negócios.
           </p>
+
           <Link
             to="/super-admin"
             className="inline-block bg-emerald-500 px-5 py-3 rounded-xl font-bold"
@@ -165,6 +170,7 @@ export default function BusinessModulesPage() {
             <h1 className="text-2xl font-black">
               MARKA<span className="text-emerald-500">.</span> MÓDULOS
             </h1>
+
             <p className="text-zinc-400 text-sm mt-1">
               Controla as funcionalidades disponíveis em cada negócio.
             </p>
@@ -177,6 +183,7 @@ export default function BusinessModulesPage() {
             >
               Voltar ao painel
             </Link>
+
             <button
               onClick={() => {
                 setAccessToken(null);
@@ -207,6 +214,7 @@ export default function BusinessModulesPage() {
           <div className="space-y-5">
             {businesses.map((business) => {
               const enabled = normalizeModules(business.modules);
+              const saving = savingId === business.id;
 
               return (
                 <section
@@ -218,6 +226,7 @@ export default function BusinessModulesPage() {
                       <h2 className="text-lg font-bold">
                         {business.name}
                       </h2>
+
                       <p className="text-xs text-zinc-500 mt-1">
                         /{business.slug}
                       </p>
@@ -230,21 +239,24 @@ export default function BusinessModulesPage() {
                           : "bg-red-500/10 text-red-400"
                       }`}
                     >
-                      {business.active ? "Negócio activo" : "Negócio bloqueado"}
+                      {business.active
+                        ? "Negócio activo"
+                        : "Negócio bloqueado"}
                     </span>
                   </div>
 
                   <div className="grid md:grid-cols-3 gap-3">
                     {moduleOptions.map((option) => {
                       const checked = enabled.includes(option.id);
-                      const saving = savingId === business.id;
 
                       return (
                         <button
                           key={option.id}
                           type="button"
                           disabled={saving || !business.active}
-                          onClick={() => toggleModule(business, option.id)}
+                          onClick={() =>
+                            toggleModule(business, option.id)
+                          }
                           className={`text-left rounded-xl border p-4 transition-colors disabled:opacity-50 ${
                             checked
                               ? "border-emerald-500/50 bg-emerald-500/10"
@@ -255,6 +267,7 @@ export default function BusinessModulesPage() {
                             <span className="font-bold">
                               {option.title}
                             </span>
+
                             <span
                               className={`text-xs font-bold ${
                                 checked
@@ -265,6 +278,7 @@ export default function BusinessModulesPage() {
                               {checked ? "Activo" : "Desactivado"}
                             </span>
                           </div>
+
                           <p className="text-xs text-zinc-400 leading-relaxed">
                             {option.description}
                           </p>
@@ -273,7 +287,7 @@ export default function BusinessModulesPage() {
                     })}
                   </div>
 
-                  {savingId === business.id && (
+                  {saving && (
                     <p className="text-xs text-zinc-400 mt-3">
                       A guardar alterações...
                     </p>
