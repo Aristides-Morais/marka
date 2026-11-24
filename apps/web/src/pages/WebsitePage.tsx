@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
@@ -18,6 +19,20 @@ type SiteData = {
   storeHeroImage?: string | null;
 };
 
+type VisualIdentity = {
+  primary?: string;
+  secondary?: string;
+  accent?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  background?: string;
+  surface?: string;
+  text?: string;
+  muted?: string;
+  border?: string;
+};
+
 type Content = {
   heroTitle?: string;
   heroSubtitle?: string;
@@ -27,6 +42,7 @@ type Content = {
   aboutTitle?: string;
   aboutText?: string;
   gallery?: string[];
+  visualIdentity?: VisualIdentity;
 };
 
 export default function WebsitePage() {
@@ -93,9 +109,32 @@ export default function WebsitePage() {
     );
   }
 
-  const primary = business.primaryColor || "#173B67";
-  const secondary = business.secondaryColor || "#F2A900";
-  const accent = business.accentColor || "#F7F9FC";
+  // A identidade visual publicada tem prioridade sobre as cores antigas.
+  const visual = content.visualIdentity || {};
+
+  const primary =
+    visual.primaryColor ||
+    visual.primary ||
+    business.primaryColor ||
+    "#173B67";
+
+  const secondary =
+    visual.secondaryColor ||
+    visual.secondary ||
+    business.secondaryColor ||
+    "#F2A900";
+
+  const accent =
+    visual.accentColor ||
+    visual.accent ||
+    business.accentColor ||
+    "#F7F9FC";
+
+  const background = visual.background || accent;
+  const surface = visual.surface || "#FFFFFF";
+  const textColor = visual.text || "#18181B";
+  const muted = visual.muted || "#71717A";
+  const border = visual.border || "#E4E4E7";
 
   const title =
     content.heroTitle || business.heroTitle || business.name;
@@ -119,10 +158,19 @@ export default function WebsitePage() {
 
   return (
     <main
-      className="min-h-screen text-zinc-900"
-      style={{ backgroundColor: accent }}
+      className="min-h-screen"
+      style={{
+        backgroundColor: background,
+        color: textColor,
+      }}
     >
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b">
+      <header
+        className="sticky top-0 z-40 backdrop-blur border-b"
+        style={{
+          backgroundColor: `${surface}F2`,
+          borderColor: border,
+        }}
+      >
         <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between gap-5">
           <Link to={`/${slug}`} className="flex items-center gap-3 min-w-0">
             {business.logoUrl ? (
@@ -156,6 +204,7 @@ export default function WebsitePage() {
             <Link
               to={`/${slug}/loja`}
               className="hidden sm:inline-flex px-4 py-2 rounded-lg border font-semibold text-sm"
+              style={{ borderColor: border }}
             >
               Loja
             </Link>
@@ -187,7 +236,10 @@ export default function WebsitePage() {
           <div className="max-w-2xl text-white">
             <span
               className="inline-block rounded-full px-4 py-2 text-sm font-semibold mb-6"
-              style={{ backgroundColor: secondary, color: "#18181B" }}
+              style={{
+                backgroundColor: secondary,
+                color: "#18181B",
+              }}
             >
               Bem-vindo à {business.name}
             </span>
@@ -204,7 +256,10 @@ export default function WebsitePage() {
               <Link
                 to={`/${slug}/loja`}
                 className="px-7 py-4 rounded-xl font-bold"
-                style={{ backgroundColor: secondary, color: "#18181B" }}
+                style={{
+                  backgroundColor: secondary,
+                  color: "#18181B",
+                }}
               >
                 {content.buttonText || "Conhecer a loja"}
               </Link>
@@ -220,11 +275,15 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      <section id="sobre" className="py-20 px-6">
+      <section
+        id="sobre"
+        className="py-20 px-6"
+        style={{ backgroundColor: background }}
+      >
         <div className="max-w-5xl mx-auto text-center">
           <span
             className="font-bold uppercase tracking-widest text-sm"
-            style={{ color: primary }}
+            style={{ color: accent }}
           >
             Conheça-nos
           </span>
@@ -233,18 +292,28 @@ export default function WebsitePage() {
             {content.aboutTitle || `Sobre ${business.name}`}
           </h2>
 
-          <p className="text-zinc-600 text-lg leading-relaxed mt-7 max-w-3xl mx-auto whitespace-pre-line">
+          <p
+            className="text-lg leading-relaxed mt-7 max-w-3xl mx-auto whitespace-pre-line"
+            style={{ color: muted }}
+          >
             {description}
           </p>
         </div>
       </section>
 
-      <section className="py-16 px-6 bg-white">
+      <section
+        className="py-16 px-6"
+        style={{
+          backgroundColor: surface,
+          borderTop: `1px solid ${border}`,
+          borderBottom: `1px solid ${border}`,
+        }}
+      >
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-10 items-center">
           <div>
             <span
               className="font-bold uppercase tracking-widest text-sm"
-              style={{ color: primary }}
+              style={{ color: accent }}
             >
               Os nossos serviços
             </span>
@@ -253,7 +322,10 @@ export default function WebsitePage() {
               Tudo num só lugar
             </h2>
 
-            <p className="text-zinc-600 mt-4 leading-relaxed">
+            <p
+              className="mt-4 leading-relaxed"
+              style={{ color: muted }}
+            >
               Consulte os nossos produtos, conheça os nossos serviços
               e entre em contacto connosco.
             </p>
@@ -270,7 +342,10 @@ export default function WebsitePage() {
               <Link
                 to={`/${slug}/reservas`}
                 className="px-6 py-3 rounded-xl font-bold border"
-                style={{ borderColor: primary, color: primary }}
+                style={{
+                  borderColor: primary,
+                  color: primary,
+                }}
               >
                 Fazer reserva
               </Link>
@@ -279,12 +354,24 @@ export default function WebsitePage() {
 
           <div
             className="rounded-3xl min-h-[280px] flex items-center justify-center p-10 text-center"
-            style={{ backgroundColor: `${primary}12` }}
+            style={{
+              backgroundColor: background,
+              border: `1px solid ${border}`,
+            }}
           >
             <div>
-              <div className="text-5xl mb-4">✦</div>
-              <h3 className="text-2xl font-bold">{business.name}</h3>
-              <p className="text-zinc-500 mt-2">
+              <div
+                className="text-5xl mb-4"
+                style={{ color: accent }}
+              >
+                ✦
+              </div>
+
+              <h3 className="text-2xl font-bold">
+                {business.name}
+              </h3>
+
+              <p className="mt-2" style={{ color: muted }}>
                 Qualidade e atenção em cada detalhe.
               </p>
             </div>
@@ -293,7 +380,11 @@ export default function WebsitePage() {
       </section>
 
       {gallery.length > 0 && (
-        <section id="galeria" className="py-20 px-6">
+        <section
+          id="galeria"
+          className="py-20 px-6"
+          style={{ backgroundColor: background }}
+        >
           <div className="max-w-7xl mx-auto">
             <h2 className="text-3xl font-black text-center mb-10">
               Galeria
@@ -335,7 +426,10 @@ export default function WebsitePage() {
                 target="_blank"
                 rel="noreferrer"
                 className="px-6 py-3 rounded-xl font-bold"
-                style={{ backgroundColor: secondary, color: "#18181B" }}
+                style={{
+                  backgroundColor: secondary,
+                  color: "#18181B",
+                }}
               >
                 WhatsApp
               </a>
@@ -354,7 +448,9 @@ export default function WebsitePage() {
           </div>
 
           {business.address && (
-            <p className="mt-7 text-white/80">{business.address}</p>
+            <p className="mt-7 text-white/80">
+              {business.address}
+            </p>
           )}
 
           {business.links && business.links.length > 0 && (
