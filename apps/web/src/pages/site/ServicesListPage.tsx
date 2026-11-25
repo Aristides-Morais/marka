@@ -1,10 +1,9 @@
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { apiFetch } from "../../lib/api";
 import { detectSector, mergeWithDefaults, type SiteContent } from "../../lib/siteContent";
-import ScrollReveal from "../../components/site/motion/ScrollReveal";
 
-// Imagens de alta qualidade para cada prato do menu (substitui pelos URLs reais se tiveres)
+// Imagens de alta qualidade para cada prato do menu
 const DISH_IMAGES = [
   "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
   "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
@@ -13,6 +12,51 @@ const DISH_IMAGES = [
   "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=800&q=80",
   "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=800&q=80",
 ];
+
+// Componente de Animação embutido (para não depender de ficheiros externos)
+function ScrollReveal({ children, delay = 0, direction = "up", className = "" }: any) {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const getTransform = () => {
+    if (isVisible) return "translate(0, 0)";
+    switch (direction) {
+      case "up": return "translateY(40px)";
+      case "down": return "translateY(-40px)";
+      case "left": return "translateX(40px)";
+      case "right": return "translateX(-40px)";
+      default: return "translateY(40px)";
+    }
+  };
+
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-1000 ease-out ${className}`}
+      style={{
+        opacity: isVisible ? 1 : 0,
+        transform: getTransform(),
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function ServicesListPage() {
   const { slug = "" } = useParams();
