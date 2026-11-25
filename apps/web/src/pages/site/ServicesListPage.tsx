@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../../lib/api";
 import { detectSector, mergeWithDefaults, type SiteContent } from "../../lib/siteContent";
 
-// Imagens de alta qualidade para cada prato do menu
 const DISH_IMAGES = [
   "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
   "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
@@ -13,7 +12,6 @@ const DISH_IMAGES = [
   "https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=800&q=80",
 ];
 
-// Componente de Animação embutido
 function ScrollReveal({ children, delay = 0, direction = "up", className = "" }: any) {
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -66,22 +64,28 @@ export default function ServicesListPage() {
 
   useEffect(() => {
     let live = true;
+
+    // Fallback imediato para garantir que a página nunca fica vazia
+    const fallbackBusiness = {
+      name: "Restaurante Alive",
+      type: "restaurante",
+      template: "food",
+      phone: "244923000000",
+      primaryColor: "#6B1020",
+      secondaryColor: "#9A7634"
+    };
+
     async function load() {
       try {
-        // Fallback de dados para garantir que a página nunca fica vazia
-        const fallbackBusiness = {
-          name: "Restaurante Alive",
-          type: "restaurante",
-          template: "food",
-          phone: "244923000000",
-          primaryColor: "#6B1020",
-          secondaryColor: "#9A7634"
-        };
-
-        const [b, site] = await Promise.all([
+        // Timeout de 5 segundos para evitar "A carregar" eterno
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
+        
+        const fetchPromise = Promise.all([
           apiFetch<any>("/api/v1/business/info", { skipAuth: true, tenant: slug }).catch(() => fallbackBusiness),
           apiFetch<any>("/api/v1/site-content", { skipAuth: true, tenant: slug }).catch(() => null),
         ]);
+
+        const [b, site] = await Promise.race([fetchPromise, timeout]) as [any, any];
 
         if (!live) return;
         
@@ -95,11 +99,16 @@ export default function ServicesListPage() {
           
         setContent(merged);
       } catch (e) {
-        console.error(e);
+        console.error("Erro ao carregar, usando fallback:", e);
+        if (!live) return;
+        // Fallback total se a API falhar ou der timeout
+        setBusiness(fallbackBusiness);
+        setContent(mergeWithDefaults(null, "food", fallbackBusiness.name));
       } finally {
         if (live) setLoading(false);
       }
     }
+
     if (slug) load();
     return () => { live = false; };
   }, [slug]);

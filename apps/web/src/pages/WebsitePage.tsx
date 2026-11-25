@@ -84,7 +84,7 @@ export default function WebsitePage() {
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-widest">
             <a href="#sobre" className="hover:opacity-70 transition">Sobre</a>
-            <a href="#menu" className="hover:opacity-70 transition">{visualSector === "food" ? "Menu" : "Serviços"}</a>
+            <Link to={`/${slug}/servicos`} className="hover:opacity-70 transition">{visualSector === "food" ? "Menu" : "Serviços"}</Link>
             <a href="#galeria" className="hover:opacity-70 transition">Galeria</a>
             <a href="#contactos" className="hover:opacity-70 transition">Contactos</a>
             {waLink && (
