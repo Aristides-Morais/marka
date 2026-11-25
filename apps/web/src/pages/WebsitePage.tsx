@@ -83,10 +83,16 @@ export default function WebsitePage() {
             {business.name}
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-widest">
-            <a href="#sobre" className="hover:opacity-70 transition">Sobre</a>
-            <Link to={`/${slug}/servicos`} className="hover:opacity-70 transition">{visualSector === "food" ? "Menu" : "Serviços"}</Link>
+            {/* LINK PARA A PÁGINA SOBRE */}
+            <Link to={`/${slug}/sobre`} className="hover:opacity-70 transition">Sobre</Link>
+            
+            {/* LINK PARA A PÁGINA SERVIÇOS/MENU */}
+            <Link to={`/${slug}/servicos`} className="hover:opacity-70 transition">
+              {visualSector === "food" ? "Menu" : "Serviços"}
+            </Link>
+            
             <a href="#galeria" className="hover:opacity-70 transition">Galeria</a>
-            <a href="#contactos" className="hover:opacity-70 transition">Contactos</a>
+            <Link to={`/${slug}/contactos`} className="hover:opacity-70 transition">Contactos</Link>
             {waLink && (
               <a href={waLink} target="_blank" rel="noreferrer" className="px-6 py-2 rounded-full font-bold text-black transition hover:scale-105" style={{ background: secondary }}>
                 Reservar
@@ -146,7 +152,7 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* MENU */}
+      {/* MENU (Home) */}
       <section id="menu" className="py-24 bg-white text-black">
         <div className="container mx-auto px-6 max-w-5xl">
           <div className="text-center mb-16">
@@ -164,6 +170,17 @@ export default function WebsitePage() {
                 <p className="text-sm text-gray-500 leading-relaxed">{item.desc || item.description}</p>
               </div>
             ))}
+          </div>
+          
+          {/* Botão para ver a página completa de serviços */}
+          <div className="mt-16 text-center">
+            <Link 
+              to={`/${slug}/servicos`} 
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm text-white transition hover:-translate-y-1 shadow-xl"
+              style={{ background: primary }}
+            >
+              Ver Menu Completo <span aria-hidden>→</span>
+            </Link>
           </div>
         </div>
       </section>
