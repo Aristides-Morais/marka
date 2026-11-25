@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState, useRef, type CSSProperties } from "react"
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { normalizeUrl } from "../lib/theme";
+import HeroScene from "../components/site/three/HeroScene";
+import RevealText from "../components/site/motion/RevealText";
+import ParallaxImage from "../components/site/motion/ParallaxImage";
+import { resolveAnimationPreset, type SectorKey } from "../components/site/sectors/sectorAnimationPresets";
 
 type Business = {
   name: string;
@@ -49,6 +53,9 @@ type SiteContent = {
   servicesTitle?: string;
   galleryTitle?: string;
   contactTitle?: string;
+  animations?: Record<string, unknown>;
+  sections?: Record<string, unknown>;
+  theme?: Record<string, string>;
 };
 
 type Sector =
@@ -70,41 +77,19 @@ function detectSector(
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
-  if (
-    /beleza|beauty|salao|barbearia|estetica|spa|cabeleireiro|unhas/.test(
-      value
-    )
-  )
+  if (/beleza|beauty|salao|barbearia|estetica|spa|cabeleireiro|unhas/.test(value))
     return "beauty";
-  if (
-    /restaurante|restaurant|cafe|cafeteria|bar|food|comida|hotel/.test(
-      value
-    )
-  )
+  if (/restaurante|restaurant|cafe|cafeteria|bar|food|comida|hotel/.test(value))
     return "food";
-  if (
-    /saude|health|clinica|medico|dentista|farmacia|hospital/.test(value)
-  )
+  if (/saude|health|clinica|medico|dentista|farmacia|hospital/.test(value))
     return "health";
-  if (
-    /educacao|education|escola|colegio|universidade|formacao|curso/.test(
-      value
-    )
-  )
+  if (/educacao|education|escola|colegio|universidade|formacao|curso/.test(value))
     return "education";
-  if (
-    /imobiliaria|realestate|imoveis|construcao|arquitetura/.test(value)
-  )
+  if (/imobiliaria|realestate|imoveis|construcao|arquitetura/.test(value))
     return "realestate";
-  if (
-    /loja|retail|comercio|shopping|supermercado|fashion|moda/.test(value)
-  )
+  if (/loja|retail|comercio|shopping|supermercado|fashion|moda/.test(value))
     return "retail";
-  if (
-    /servicos|services|consultoria|agencia|tecnologia|oficina/.test(
-      value
-    )
-  )
+  if (/servicos|services|consultoria|agencia|tecnologia|oficina/.test(value))
     return "services";
   return "general";
 }
@@ -468,37 +453,39 @@ export default function WebsitePage() {
 
   const cfg = sectorConfig[sector];
   const v = content.visualIdentity || {};
+  const theme = content.theme || {};
 
   const primary =
-    v.primaryColor || v.primary || business.primaryColor || cfg.defaults.primary;
+    theme.primaryColor ||
+    v.primaryColor ||
+    v.primary ||
+    business.primaryColor ||
+    cfg.defaults.primary;
   const secondary =
+    theme.secondaryColor ||
     v.secondaryColor ||
     v.secondary ||
     business.secondaryColor ||
     cfg.defaults.secondary;
-  const bg = v.background || cfg.defaults.bg;
-  const surface = v.surface || cfg.defaults.surface;
-  const ink = v.text || cfg.defaults.ink;
-  const muted = v.muted || cfg.defaults.muted;
-  const border = v.border || cfg.defaults.border;
+  const bg = theme.background || v.background || cfg.defaults.bg;
+  const surface = theme.surface || v.surface || cfg.defaults.surface;
+  const ink = theme.text || v.text || cfg.defaults.ink;
+  const muted = theme.muted || v.muted || cfg.defaults.muted;
+  const border = theme.border || v.border || cfg.defaults.border;
 
-  const title =
-    content.heroTitle || business.heroTitle || business.name;
+  const title = content.heroTitle || business.heroTitle || business.name;
   const subtitle =
     content.heroSubtitle ||
     business.heroSubtitle ||
     "Descubra a nossa experiência, os nossos serviços e tudo o que preparámos para si.";
 
   const heroImage =
-    content.heroImage ||
-    business.storeHeroImage ||
-    cfg.fallbackHero;
+    content.heroImage || business.storeHeroImage || cfg.fallbackHero;
 
   const rawGallery = Array.isArray(content.gallery)
     ? content.gallery.filter(Boolean)
     : [];
-  const gallery =
-    rawGallery.length > 0 ? rawGallery : cfg.fallbackGallery;
+  const gallery = rawGallery.length > 0 ? rawGallery : cfg.fallbackGallery;
 
   const showStore =
     !business.modules ||
@@ -521,6 +508,9 @@ export default function WebsitePage() {
 
   const serifFamily = cfg.fonts.serif;
   const sansFamily = cfg.fonts.sans;
+
+  // Resolve preset de animação (lê do JSON do Super Admin se existir)
+  resolveAnimationPreset(sector as SectorKey, content.animations);
 
   return (
     <main
@@ -674,6 +664,15 @@ export default function WebsitePage() {
         }
 
         html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .mk-reveal, .mk-hero-anim, .mk-card, .mk-gal-item img {
+            transition: none !important;
+            animation: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+          }
+        }
       `}</style>
 
       {/* HEADER */}
@@ -840,22 +839,22 @@ export default function WebsitePage() {
         )}
       </header>
 
-      {/* HERO */}
+      {/* HERO — com cena 3D animada */}
       <section
         id="inicio"
         className="relative flex min-h-[100svh] items-end overflow-hidden md:items-center"
       >
-        <div
-          className="absolute inset-0 scale-105 bg-cover bg-center"
-          style={{
-            backgroundImage: `url("${heroImage}")`,
-          }}
+        <HeroScene
+          sector={sector as SectorKey}
+          primaryColor={primary}
+          secondaryColor={secondary}
+          animationOverrides={content.animations}
         />
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(105deg, rgba(20,12,16,0.88) 0%, rgba(20,12,16,0.55) 45%, rgba(20,12,16,0.25) 100%)",
+              "linear-gradient(105deg, rgba(20,12,16,0.82) 0%, rgba(20,12,16,0.45) 50%, rgba(20,12,16,0.2) 100%)",
           }}
         />
         <div
@@ -870,9 +869,12 @@ export default function WebsitePage() {
             <p className="mk-kicker mk-hero-anim text-white/70">
               {cfg.eyebrow}
             </p>
-            <h1 className="mk-serif mk-hero-anim mk-hero-anim-d1 mt-5 text-[2.75rem] leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
-              {title}
-            </h1>
+            <RevealText
+              text={title}
+              as="h1"
+              className="mk-serif mk-hero-anim mk-hero-anim-d1 mt-5 text-[2.75rem] leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl"
+              delay={200}
+            />
             <p className="mk-hero-anim mk-hero-anim-d2 mt-6 max-w-lg text-base leading-relaxed text-white/80 md:text-lg">
               {subtitle}
             </p>
@@ -901,31 +903,26 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* ABOUT */}
+      {/* ABOUT — imagem com parallax */}
       <section id="sobre" className="mk-section">
         <div className="mk-wrap grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <div className="mk-reveal relative aspect-[4/5] overflow-hidden sm:aspect-[5/6]">
-            <img
-              src={gallery[0] || heroImage}
-              alt={`${business.name} — apresentação`}
-              className="absolute inset-0 h-full w-full object-cover"
-              loading="lazy"
-            />
-            <div
-              className="absolute bottom-0 left-0 right-0 h-1/3"
-              style={{
-                background: `linear-gradient(to top, ${primary}99, transparent)`,
-              }}
-            />
-          </div>
+          <ParallaxImage
+            src={gallery[0] || heroImage}
+            alt={`${business.name} — apresentação`}
+            className="mk-reveal relative aspect-[4/5] sm:aspect-[5/6]"
+            speed={0.12}
+          />
 
           <div className="mk-reveal mk-reveal-d1 py-2">
             <p className="mk-kicker" style={{ color: primary }}>
               {cfg.about}
             </p>
-            <h2 className="mk-serif mt-4 text-4xl leading-[1.12] md:text-5xl">
-              {content.aboutTitle || `Bem-vindo à ${business.name}`}
-            </h2>
+            <RevealText
+              text={content.aboutTitle || `Bem-vindo à ${business.name}`}
+              as="h2"
+              className="mk-serif mt-4 text-4xl leading-[1.12] md:text-5xl"
+              delay={100}
+            />
             <p
               className="mt-6 whitespace-pre-line text-[15px] leading-8"
               style={{ color: muted }}
