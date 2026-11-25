@@ -5,6 +5,7 @@ import HeroScene from "../components/site/three/HeroScene";
 import Gallery3D from "../components/site/motion/Gallery3D";
 import SiteHeader from "../components/site/SiteHeader";
 import { detectSector, mergeWithDefaults, type SiteContent } from "../lib/siteContent";
+import { useSEO } from "../lib/useSEO";
 
 type Business = any; 
 type Product = any;
@@ -17,18 +18,27 @@ export default function WebsitePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scrolled, setScrolled] = useState(false);
 
-  // 1. CARREGAMENTO INICIAL
+  useSEO(
+    "Alive Restaurante & Lounge | Alta Cozinha em Luanda",
+    "Descubra o Alive, o melhor restaurante de Luanda. Pratos de autor, ambiente sofisticado e reservas online. Contacte-nos pelo WhatsApp."
+  );
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   useEffect(() => {
     let live = true;
     async function load() {
       setLoading(true);
       try {
         const [b, site, p, s] = await Promise.all([
-          apiFetch<Business>("/api/v1/business/info", { skipAuth: true, tenant: slug }).catch(() => ({
-            name: "Alive Restaurante & Lounge", type: "restaurante", template: "food", phone: "244923000000", primaryColor: "#6B1020", secondaryColor: "#9A7634"
-          })),
-          apiFetch<{ isPublished: boolean; content: SiteContent | null }>("/api/v1/site-content", { skipAuth: true, tenant: slug }).catch(() => null),
+          apiFetch<Business>("/api/v1/business/info", { skipAuth: true, tenant: slug }),
+          apiFetch<{ isPublished: boolean; content: SiteContent | null }>("/api/v1/site-content", { skipAuth: true, tenant: slug }),
           apiFetch<Product[]>("/api/v1/products", { skipAuth: true, tenant: slug }).catch(() => []),
           apiFetch<Service[]>("/api/v1/reservations/services", { skipAuth: true, tenant: slug }).catch(() => []),
         ]);
@@ -40,7 +50,7 @@ export default function WebsitePage() {
         setProducts(Array.isArray(p) ? p : []);
         setServices(Array.isArray(s) ? s : []);
       } catch (e) {
-        console.error(e);
+        console.error("Erro ao carregar website:", e);
       } finally {
         if (live) setLoading(false);
       }
@@ -49,32 +59,15 @@ export default function WebsitePage() {
     return () => { live = false; };
   }, [slug]);
 
-  // 2. OUVINTE EM TEMPO REAL (Recebe dados do Super Admin)
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // Verifica se a mensagem vem do nosso painel de edição
-      if (event.data && event.data.type === "SITE_CONTENT_UPDATE") {
-        const newContent = event.data.content;
-        if (newContent && business) {
-          const sector = detectSector(business.type, business.template);
-          // Mescla os novos dados com os defaults para não quebrar a página
-          setContent(mergeWithDefaults(newContent, sector, business.name));
-        }
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [business]);
-
   const sector = useMemo(() => detectSector(business?.type, business?.template), [business?.type, business?.template]);
 
   if (loading) return <div className="min-h-screen grid place-items-center bg-[#f8f5f0]">A carregar...</div>;
   if (!business) return <div className="min-h-screen grid place-items-center">Negócio não encontrado.</div>;
 
   const visualSector = business.name.toLowerCase().includes("alive") ? "food" : sector;
-  const primary = content.visualIdentity?.primaryColor || business.primaryColor || "#6B1020";
-  const secondary = content.visualIdentity?.secondaryColor || business.secondaryColor || "#9A7634";
+
+  const primary = content.visualIdentity?.primaryColor || business.primaryColor || (visualSector === "food" ? "#6B1020" : "#512638");
+  const secondary = content.visualIdentity?.secondaryColor || business.secondaryColor || (visualSector === "food" ? "#9A7634" : "#B99A75");
   
   const isServiceList = visualSector === "beauty" || visualSector === "health" || visualSector === "services";
   const cards = isServiceList ? (services.length > 0 ? services : content.services) : (products.length > 0 ? products : content.services);
@@ -201,13 +194,21 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* FOOTER COM REDES SOCIAIS */}
       <footer id="contactos" className="bg-[#1a1412] text-white py-20 px-6">
         <div className="container mx-auto max-w-6xl grid md:grid-cols-3 gap-12">
           <div>
             <h3 className="font-serif text-3xl mb-6">{business.name}</h3>
             <p className="text-gray-400 mb-6">{business.address || "Luanda, Angola"}</p>
             <p className="text-gray-400">{business.phone}</p>
+            <div className="flex gap-4 mt-6">
+              <a href="https://instagram.com/alive" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#9A7634] transition-colors">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              </a>
+              <a href="https://facebook.com/alive" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#9A7634] transition-colors">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+              </a>
+            </div>
           </div>
           <div>
             <h4 className="text-lg font-bold mb-6 uppercase tracking-widest">Links Rápidos</h4>
@@ -220,6 +221,8 @@ export default function WebsitePage() {
               <li><Link to={`/${slug}/blog`} className="hover:text-white transition">Blog</Link></li>
               <li><Link to={`/${slug}/localizacao`} className="hover:text-white transition">Localização</Link></li>
               <li><Link to={`/${slug}/contactos`} className="hover:text-white transition">Contactos</Link></li>
+              <li><Link to={`/${slug}/eventos`} className="hover:text-white transition">Eventos</Link></li>
+              <li><Link to={`/${slug}/takeaway`} className="hover:text-white transition">Takeaway</Link></li>
             </ul>
           </div>
           <div>
