@@ -5,7 +5,6 @@ import HeroScene from "../components/site/three/HeroScene";
 import Gallery3D from "../components/site/motion/Gallery3D";
 import SiteHeader from "../components/site/SiteHeader";
 import { detectSector, mergeWithDefaults, type SiteContent } from "../lib/siteContent";
-import { useSEO } from "../lib/useSEO";
 
 type Business = any; 
 type Product = any;
@@ -19,11 +18,6 @@ export default function WebsitePage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
-
-  useSEO(
-    "Alive Restaurante & Lounge | Alta Cozinha em Luanda",
-    "Descubra o Alive, o melhor restaurante de Luanda. Pratos de autor, ambiente sofisticado e reservas online. Contacte-nos pelo WhatsApp."
-  );
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -194,7 +188,7 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* FOOTER COM REDES SOCIAIS */}
+      {/* FOOTER */}
       <footer id="contactos" className="bg-[#1a1412] text-white py-20 px-6">
         <div className="container mx-auto max-w-6xl grid md:grid-cols-3 gap-12">
           <div>
@@ -221,8 +215,6 @@ export default function WebsitePage() {
               <li><Link to={`/${slug}/blog`} className="hover:text-white transition">Blog</Link></li>
               <li><Link to={`/${slug}/localizacao`} className="hover:text-white transition">Localização</Link></li>
               <li><Link to={`/${slug}/contactos`} className="hover:text-white transition">Contactos</Link></li>
-              <li><Link to={`/${slug}/eventos`} className="hover:text-white transition">Eventos</Link></li>
-              <li><Link to={`/${slug}/takeaway`} className="hover:text-white transition">Takeaway</Link></li>
             </ul>
           </div>
           <div>

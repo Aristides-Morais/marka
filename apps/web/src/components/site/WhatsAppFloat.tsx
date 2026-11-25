@@ -8,7 +8,6 @@ type Props = {
 export default function WhatsAppFloat({ phone, message = "Olá! Gostaria de fazer uma reserva." }: Props) {
   const [isVisible, setIsVisible] = useState(false);
 
-  // Mostra o botão após um pequeno delay (para não aparecer imediatamente ao carregar)
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 1500);
     return () => clearTimeout(timer);
@@ -29,17 +28,13 @@ export default function WhatsAppFloat({ phone, message = "Olá! Gostaria de faze
       }`}
       aria-label="Contactar via WhatsApp"
     >
-      {/* Tooltip (aparece ao passar o rato) */}
       <span className="hidden md:block bg-white text-gray-800 text-sm font-medium px-4 py-2 rounded-full shadow-lg border border-gray-100 opacity-0 group-hover:opacity-100 transition-opacity">
         Fale connosco
       </span>
 
-      {/* Botão Redondo */}
       <div className="relative w-16 h-16 rounded-full bg-[#25D366] flex items-center justify-center shadow-2xl hover:scale-110 transition-transform duration-300 group">
-        {/* Animação de pulsação (anel) */}
         <span className="absolute inset-0 rounded-full bg-[#25D366] opacity-75 animate-ping"></span>
         
-        {/* Ícone do WhatsApp */}
         <svg
           className="w-8 h-8 text-white relative z-10"
           fill="currentColor"

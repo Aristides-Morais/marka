@@ -19,8 +19,6 @@ import TermsPage from "./pages/site/TermsPage";
 import BlogPage from "./pages/site/BlogPage";
 import BlogPostPage from "./pages/site/BlogPostPage";
 import GalleryPage from "./pages/site/GalleryPage";
-import EventsPage from "./pages/site/EventsPage";
-import TakeawayPage from "./pages/TakeawayPage";
 
 export default function App() {
   return (
@@ -44,8 +42,6 @@ export default function App() {
         <Route path="/:slug/blog" element={<BlogPage />} />
         <Route path="/:slug/blog/:postSlug" element={<BlogPostPage />} />
         <Route path="/:slug/galeria" element={<GalleryPage />} />
-        <Route path="/:slug/eventos" element={<EventsPage />} />
-        <Route path="/:slug/takeaway" element={<TakeawayPage />} />
 
         <Route path="/:slug/loja" element={<StorePage />} />
         <Route path="/:slug/reservas" element={<ClientPage />} />

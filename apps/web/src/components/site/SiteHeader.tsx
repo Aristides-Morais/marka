@@ -10,8 +10,6 @@ type Props = {
 
 export default function SiteHeader({ businessName, primary, secondary, waLink }: Props) {
   const { slug = "" } = useParams();
-
-  // Extrai o número do WhatsApp do waLink (ex: https://wa.me/244923000000 -> 244923000000)
   const phoneNumber = waLink ? waLink.split("/").pop()?.split("?")[0] || "" : "";
 
   return (
@@ -19,7 +17,6 @@ export default function SiteHeader({ businessName, primary, secondary, waLink }:
       <header className="fixed inset-x-0 top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm py-3">
         <div className="container mx-auto px-6 flex items-center justify-between">
           
-          {/* Esquerda: Voltar + Logotipo */}
           <div className="flex items-center gap-4">
             <Link 
               to={`/${slug}`} 
@@ -33,7 +30,6 @@ export default function SiteHeader({ businessName, primary, secondary, waLink }:
             </Link>
           </div>
           
-          {/* Direita: Menu */}
           <nav className="hidden lg:flex items-center gap-4 text-[10px] xl:text-xs font-medium uppercase tracking-widest">
             <Link to={`/${slug}/sobre`} className="hover:opacity-70 transition">Sobre</Link>
             <Link to={`/${slug}/servicos`} className="hover:opacity-70 transition">Menu</Link>
@@ -51,7 +47,6 @@ export default function SiteHeader({ businessName, primary, secondary, waLink }:
             )}
           </nav>
 
-          {/* Menu Mobile Simplificado */}
           <div className="lg:hidden">
             <Link to={`/${slug}/contactos`} className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full text-white" style={{ background: primary }}>
               Menu
@@ -60,7 +55,6 @@ export default function SiteHeader({ businessName, primary, secondary, waLink }:
         </div>
       </header>
 
-      {/* Botão Fixo de WhatsApp - Visível em todas as páginas */}
       {phoneNumber && (
         <WhatsAppFloat 
           phone={phoneNumber} 
