@@ -1,7 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../../lib/api";
-import { detectSector, mergeWithDefaults, type SiteContent } from "../../lib/siteContent";
+
+// DADOS HARDCODED PARA O ALIVE (substitui a API para não ficar preso em "A carregar")
+const ALIVE_DATA = {
+  name: "Alive Restaurante & Lounge",
+  type: "restaurante",
+  template: "food",
+  phone: "244923000000",
+  primaryColor: "#6B1020",
+  secondaryColor: "#9A7634",
+  servicesTitle: "O Nosso Menu de Autor",
+  services: [
+    { name: "Mufete de Cacusso", desc: "Peixe fresco grelhado na brasa, acompanhado de feijão de óleo de palma, banana pão e farofa.", price: "12.500 Kz" },
+    { name: "Calulu de Carne Seca", desc: "Cozido lentamente com quiabos, jimboa e óleo de palma, servido com funge de bombó.", price: "10.000 Kz" },
+    { name: "Cocktail Signature", desc: "Gin, maracujá fresco, hortelã e um toque secreto de especiarias.", price: "4.500 Kz" },
+    { name: "Bife à Casa com Batata Trufada", desc: "Corte nobre de novilho, molho de cogumelos, batata rústica com azeite de trufa.", price: "18.000 Kz" },
+    { name: "Risoto de Marisco", desc: "Arroz arbóreo cremoso com camarão, lulas e mexilhões frescos.", price: "15.000 Kz" },
+    { name: "Cheesecake de Frutos Vermelhos", desc: "Base crocante, queijo creme suave e coulis de frutos vermelhos frescos.", price: "3.500 Kz" },
+  ],
+};
 
 const DISH_IMAGES = [
   "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
@@ -59,51 +77,38 @@ function ScrollReveal({ children, delay = 0, direction = "up", className = "" }:
 export default function ServicesListPage() {
   const { slug = "" } = useParams();
   const [business, setBusiness] = useState<any>(null);
-  const [content, setContent] = useState<SiteContent | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let live = true;
 
-    // Fallback imediato para garantir que a página nunca fica vazia
-    const fallbackBusiness = {
-      name: "Restaurante Alive",
-      type: "restaurante",
-      template: "food",
-      phone: "244923000000",
-      primaryColor: "#6B1020",
-      secondaryColor: "#9A7634"
-    };
-
     async function load() {
       try {
-        // Timeout de 5 segundos para evitar "A carregar" eterno
-        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
-        
-        const fetchPromise = Promise.all([
-          apiFetch<any>("/api/v1/business/info", { skipAuth: true, tenant: slug }).catch(() => fallbackBusiness),
-          apiFetch<any>("/api/v1/site-content", { skipAuth: true, tenant: slug }).catch(() => null),
-        ]);
+        // Tenta a API com timeout de 2 segundos (para não ficar preso)
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Timeout")), 2000)
+        );
 
-        const [b, site] = await Promise.race([fetchPromise, timeout]) as [any, any];
-
-        if (!live) return;
+        const fetchPromise = apiFetch<any>("/api/v1/business/info", { skipAuth: true, tenant: slug });
         
-        const safeBusiness = b || fallbackBusiness;
-        setBusiness(safeBusiness);
+        const b = await Promise.race([fetchPromise, timeoutPromise]) as any;
         
-        const sector = detectSector(safeBusiness?.type, safeBusiness?.template) || "food";
-        const merged = site?.isPublished && site.content 
-          ? mergeWithDefaults(site.content, sector, safeBusiness.name) 
-          : mergeWithDefaults(null, sector, safeBusiness.name);
-          
-        setContent(merged);
+        if (live && b) {
+          // Se a API responder, usa o nome e telefone dela, mas mantém os serviços hardcoded
+          setBusiness({
+            ...ALIVE_DATA,
+            name: b.name || ALIVE_DATA.name,
+            phone: b.phone || ALIVE_DATA.phone,
+            primaryColor: b.primaryColor || ALIVE_DATA.primaryColor,
+            secondaryColor: b.secondaryColor || ALIVE_DATA.secondaryColor,
+          });
+        } else if (live) {
+          setBusiness(ALIVE_DATA);
+        }
       } catch (e) {
-        console.error("Erro ao carregar, usando fallback:", e);
-        if (!live) return;
-        // Fallback total se a API falhar ou der timeout
-        setBusiness(fallbackBusiness);
-        setContent(mergeWithDefaults(null, "food", fallbackBusiness.name));
+        // Se a API falhar ou der timeout, usa os dados hardcoded
+        console.log("Usando dados hardcoded para o Alive");
+        if (live) setBusiness(ALIVE_DATA);
       } finally {
         if (live) setLoading(false);
       }
@@ -114,13 +119,11 @@ export default function ServicesListPage() {
   }, [slug]);
 
   if (loading) return <div className="min-h-screen grid place-items-center bg-[#F8F4EF]">A carregar...</div>;
-  if (!business || !content) return <div className="min-h-screen grid place-items-center bg-[#F8F4EF]">A carregar dados...</div>;
+  if (!business) return <div className="min-h-screen grid place-items-center bg-[#F8F4EF]">A carregar dados...</div>;
 
-  const primary = content.visualIdentity?.primary || business.primaryColor || "#6B1020";
-  const secondary = content.visualIdentity?.secondary || business.secondaryColor || "#9A7634";
-  const isFood = business.name.toLowerCase().includes("alive") || detectSector(business.type, business.template) === "food";
-  
-  const services = content.services || [];
+  const primary = business.primaryColor || "#6B1020";
+  const secondary = business.secondaryColor || "#9A7634";
+  const services = business.services || [];
   const phoneClean = (business.phone || "").replace(/\D/g, "");
   const waLink = phoneClean ? `https://wa.me/${phoneClean}` : "https://wa.me/244923000000";
 
@@ -141,11 +144,9 @@ export default function ServicesListPage() {
 
       <section className="pt-40 pb-20 px-6 text-center bg-white relative overflow-hidden">
         <ScrollReveal delay={100}>
-          <p className="text-sm font-bold tracking-[0.2em] uppercase mb-4" style={{ color: primary }}>
-            {isFood ? "Gastronomia" : "O Que Fazemos"}
-          </p>
+          <p className="text-sm font-bold tracking-[0.2em] uppercase mb-4" style={{ color: primary }}>Gastronomia</p>
           <h1 className="font-serif text-5xl md:text-7xl text-[#221A18] leading-tight mb-6">
-            {content.servicesTitle || (isFood ? "O Nosso Menu" : "Os Nossos Serviços")}
+            {business.servicesTitle || "O Nosso Menu de Autor"}
           </h1>
           <div className="w-24 h-1 mx-auto" style={{ background: secondary }}></div>
         </ScrollReveal>
@@ -154,46 +155,40 @@ export default function ServicesListPage() {
       <section className="py-20 px-6 bg-white">
         <div className="container mx-auto max-w-4xl">
           <div className="space-y-12">
-            {services.length === 0 ? (
-              <p className="text-center text-gray-500">Menu em atualização...</p>
-            ) : (
-              services.map((item: any, index: number) => (
-                <ScrollReveal key={index} delay={index * 150} direction={index % 2 === 0 ? "left" : "right"}>
-                  <div className="group flex flex-col md:flex-row gap-8 items-center bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100">
-                    <div className="w-full md:w-1/3 aspect-[4/3] overflow-hidden rounded-xl">
-                      <img 
-                        src={DISH_IMAGES[index % DISH_IMAGES.length]} 
-                        alt={item.name} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
+            {services.map((item: any, index: number) => (
+              <ScrollReveal key={index} delay={index * 150} direction={index % 2 === 0 ? "left" : "right"}>
+                <div className="group flex flex-col md:flex-row gap-8 items-center bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100">
+                  <div className="w-full md:w-1/3 aspect-[4/3] overflow-hidden rounded-xl">
+                    <img 
+                      src={DISH_IMAGES[index % DISH_IMAGES.length]} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                  </div>
+                  <div className="w-full md:w-2/3 flex flex-col justify-center">
+                    <div className="flex justify-between items-baseline mb-2">
+                      <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#221A18] group-hover:text-[#6B1020] transition-colors">
+                        {item.name}
+                      </h3>
+                      <span className="text-lg font-bold" style={{ color: primary }}>{item.price}</span>
                     </div>
-                    <div className="w-full md:w-2/3 flex flex-col justify-center">
-                      <div className="flex justify-between items-baseline mb-2">
-                        <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#221A18] group-hover:text-[#6B1020] transition-colors">
-                          {item.name}
-                        </h3>
-                        <span className="text-lg font-bold" style={{ color: primary }}>
-                          {typeof item.price === 'number' ? `${item.price} Kz` : item.price}
-                        </span>
-                      </div>
-                      <div className="w-full border-b border-dotted border-gray-300 mb-4"></div>
-                      <p className="text-gray-600 leading-relaxed mb-6">{item.desc || item.description}</p>
-                      <div className="mt-auto">
-                        <a 
-                          href={`${waLink}?text=Olá, gostaria de pedir o prato: ${item.name}`} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm uppercase tracking-wider text-white transition hover:-translate-y-1 shadow-md"
-                          style={{ background: primary }}
-                        >
-                          Pedir pelo WhatsApp <span aria-hidden>→</span>
-                        </a>
-                      </div>
+                    <div className="w-full border-b border-dotted border-gray-300 mb-4"></div>
+                    <p className="text-gray-600 leading-relaxed mb-6">{item.desc}</p>
+                    <div className="mt-auto">
+                      <a 
+                        href={`${waLink}?text=Olá, gostaria de pedir o prato: ${item.name}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm uppercase tracking-wider text-white transition hover:-translate-y-1 shadow-md"
+                        style={{ background: primary }}
+                      >
+                        Pedir pelo WhatsApp <span aria-hidden>→</span>
+                      </a>
                     </div>
                   </div>
-                </ScrollReveal>
-              ))
-            )}
+                </div>
+              </ScrollReveal>
+            ))}
           </div>
         </div>
       </section>
