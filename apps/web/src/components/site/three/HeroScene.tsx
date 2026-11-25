@@ -1,63 +1,48 @@
-import { Suspense, useMemo } from "react";
-import { Canvas } from "@react-three/fiber";
-import { useScrollDrivenScene } from "./useScrollDrivenScene";
-import {
-  resolveAnimationPreset,
-  type SectorKey,
-} from "../sectors/sectorAnimationPresets";
-import RestaurantScene from "./scenes/RestaurantScene";
-import BeautyScene from "./scenes/BeautyScene";
-import GenericScene from "./scenes/GenericScene";
+import { Suspense, lazy } from "react";
+
+const RestaurantScene = lazy(() => import("./scenes/RestaurantScene"));
+const GenericScene = lazy(() => import("./scenes/GenericScene"));
 
 type Props = {
-  sector: SectorKey;
+  sector: string;
   primaryColor: string;
   secondaryColor: string;
-  animationOverrides?: Record<string, unknown> | null;
+  heroImage?: string;
 };
 
-export default function HeroScene({
-  sector,
-  primaryColor,
-  secondaryColor,
-  animationOverrides,
-}: Props) {
-  const preset = useMemo(
-    () => resolveAnimationPreset(sector, animationOverrides),
-    [sector, animationOverrides]
-  );
-  const scrollProgress = useScrollDrivenScene(preset.scrollParallax);
-  const is3D = preset.heroMode === "3d";
-
-  return (
-    <div
-      className="absolute inset-0"
-      style={{
-        background: is3D
-          ? `radial-gradient(circle at 30% 40%, ${primaryColor}22 0%, transparent 60%)`
-          : `linear-gradient(135deg, ${primaryColor}18 0%, ${secondaryColor}12 100%)`,
-      }}
-    >
-      <Canvas
-        camera={{ position: [0, 0.5, 5], fov: 45 }}
-        dpr={[1, 2]}
-        gl={{ antialias: true, alpha: true }}
-        style={{ pointerEvents: "none" }}
-      >
-        <Suspense fallback={null}>
-          {preset.sceneKey === "restaurant" ? (
-            <RestaurantScene scrollProgress={scrollProgress} />
-          ) : preset.sceneKey === "beauty" ? (
-            <BeautyScene scrollProgress={scrollProgress} />
-          ) : (
-            <GenericScene
-              scrollProgress={scrollProgress}
-              colorA={primaryColor}
-              colorB={secondaryColor}
-            />
-          )}
+export default function HeroScene({ sector, primaryColor, secondaryColor, heroImage }: Props) {
+  // Para Restaurantes, usamos a cena 3D animada (com os pratos)
+  if (sector === "food") {
+    return (
+      <div className="absolute inset-0 bg-[#1a1412]">
+        <Suspense fallback={<div className="absolute inset-0 bg-gradient-to-br from-[#6B1020] to-[#1a1412]" />}>
+          <RestaurantScene scrollProgress={0} />
         </Suspense>
-      </Canvas>
+        {/* Vinheta escura para o texto brilhar */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-black/40 to-black/80 pointer-events-none" />
+      </div>
+    );
+  }
+
+  // Para TODOS os outros setores, usamos uma composição elegante com a imagem real, 
+  // texturas de grão e gradientes premium. Zero bolinhas.
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-black">
+      {heroImage && (
+        <img
+          src={heroImage}
+          alt="Hero Background"
+          className="absolute inset-0 h-full w-full object-cover opacity-60 scale-105 animate-[slow-zoom_20s_ease-in-out_infinite_alternate]"
+        />
+      )}
+      <div 
+        className="absolute inset-0" 
+        style={{ background: `linear-gradient(135deg, ${primaryColor}cc 0%, ${secondaryColor}66 100%)` }} 
+      />
+      <div 
+        className="absolute inset-0 opacity-[0.15] mix-blend-overlay"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
+      />
     </div>
   );
 }
