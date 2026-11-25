@@ -17,22 +17,18 @@ export default function WebsitePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [scrolled, setScrolled] = useState(false);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
+  // 1. CARREGAMENTO INICIAL
   useEffect(() => {
     let live = true;
     async function load() {
       setLoading(true);
       try {
         const [b, site, p, s] = await Promise.all([
-          apiFetch<Business>("/api/v1/business/info", { skipAuth: true, tenant: slug }),
-          apiFetch<{ isPublished: boolean; content: SiteContent | null }>("/api/v1/site-content", { skipAuth: true, tenant: slug }),
+          apiFetch<Business>("/api/v1/business/info", { skipAuth: true, tenant: slug }).catch(() => ({
+            name: "Alive Restaurante & Lounge", type: "restaurante", template: "food", phone: "244923000000", primaryColor: "#6B1020", secondaryColor: "#9A7634"
+          })),
+          apiFetch<{ isPublished: boolean; content: SiteContent | null }>("/api/v1/site-content", { skipAuth: true, tenant: slug }).catch(() => null),
           apiFetch<Product[]>("/api/v1/products", { skipAuth: true, tenant: slug }).catch(() => []),
           apiFetch<Service[]>("/api/v1/reservations/services", { skipAuth: true, tenant: slug }).catch(() => []),
         ]);
@@ -44,7 +40,7 @@ export default function WebsitePage() {
         setProducts(Array.isArray(p) ? p : []);
         setServices(Array.isArray(s) ? s : []);
       } catch (e) {
-        console.error("Erro ao carregar website:", e);
+        console.error(e);
       } finally {
         if (live) setLoading(false);
       }
@@ -53,14 +49,32 @@ export default function WebsitePage() {
     return () => { live = false; };
   }, [slug]);
 
+  // 2. OUVINTE EM TEMPO REAL (Recebe dados do Super Admin)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verifica se a mensagem vem do nosso painel de edição
+      if (event.data && event.data.type === "SITE_CONTENT_UPDATE") {
+        const newContent = event.data.content;
+        if (newContent && business) {
+          const sector = detectSector(business.type, business.template);
+          // Mescla os novos dados com os defaults para não quebrar a página
+          setContent(mergeWithDefaults(newContent, sector, business.name));
+        }
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [business]);
+
   const sector = useMemo(() => detectSector(business?.type, business?.template), [business?.type, business?.template]);
 
   if (loading) return <div className="min-h-screen grid place-items-center bg-[#f8f5f0]">A carregar...</div>;
   if (!business) return <div className="min-h-screen grid place-items-center">Negócio não encontrado.</div>;
 
   const visualSector = business.name.toLowerCase().includes("alive") ? "food" : sector;
-  const primary = content.visualIdentity?.primary || business.primaryColor || (visualSector === "food" ? "#6B1020" : "#512638");
-  const secondary = content.visualIdentity?.secondary || business.secondaryColor || (visualSector === "food" ? "#9A7634" : "#B99A75");
+  const primary = content.visualIdentity?.primaryColor || business.primaryColor || "#6B1020";
+  const secondary = content.visualIdentity?.secondaryColor || business.secondaryColor || "#9A7634";
   
   const isServiceList = visualSector === "beauty" || visualSector === "health" || visualSector === "services";
   const cards = isServiceList ? (services.length > 0 ? services : content.services) : (products.length > 0 ? products : content.services);
