@@ -1,16 +1,30 @@
-import SiteLayout, { PageHero } from "./SiteLayout";
+import { Link, useParams } from "react-router-dom";
 import { usePublicSite } from "./usePublicSite";
+import SiteLayout, { PageHero } from "./SiteLayout";
 
 export default function AboutPage() {
   const { business, content, loading, primary, secondary } = usePublicSite();
+  const { slug = "" } = useParams();
 
   if (loading || !business) {
     return (
-      <div style={{ minHeight: "50vh", display: "grid", placeItems: "center" }}>
-        A carregar...
+      <div className="min-h-screen grid place-items-center bg-[#f8f5f0]">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-gray-900"></div>
       </div>
     );
   }
+
+  // Usa os valores de fallback do siteContent.ts
+  const aboutTitle = content.aboutTitle || "A Nossa Paixão pela Alta Cozinha";
+  const aboutText = content.aboutText || "Fundado em 2018...";
+  const mission = content.aboutMission || "Proporcionar momentos inesquecíveis...";
+  const vision = content.aboutVision || "Ser reconhecido como o destino gastronómico...";
+  const values = content.aboutValues || ["Excelência no Serviço", "Ingredientes Frescos", "Paixão pela Cozinha", "Ambiente Acolhedor"];
+  const stats = content.stats || [
+    { label: "Anos de Experiência", value: "10+" },
+    { label: "Clientes Satisfeitos", value: "5k+" },
+    { label: "Pratos no Menu", value: "45" },
+  ];
 
   return (
     <SiteLayout
@@ -18,94 +32,88 @@ export default function AboutPage() {
       content={content}
       primary={primary}
       secondary={secondary}
-      title={content.seo?.about?.title || `Sobre | ${business.name}`}
+      title={`Sobre Nós | ${business.name}`}
     >
+      {/* HERO DA PÁGINA SOBRE */}
       <PageHero
-        kicker="Quem somos"
-        title={content.aboutTitle || `Sobre a ${business.name}`}
-        subtitle={content.seo?.about?.description}
+        kicker="A Nossa História"
+        title={aboutTitle}
+        subtitle="Conheça a paixão e a dedicação que colocamos em cada detalhe."
         primary={primary}
       />
 
-      <section style={{ padding: "72px 0" }}>
-        <div
-          className="sl-wrap"
-          style={{
-            display: "grid",
-            gap: 40,
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            alignItems: "start",
-          }}
-        >
-          <div>
-            <p style={{ whiteSpace: "pre-line", lineHeight: 1.8, color: "#5c534e", fontSize: 15, margin: 0 }}>
-              {content.aboutText || content.description}
+      {/* SECÇÃO DE TEXTO EDITORIAL */}
+      <section className="py-24 px-6 bg-white">
+        <div className="container mx-auto max-w-4xl">
+          <div className="prose prose-lg mx-auto text-gray-600 leading-relaxed text-center">
+            <p className="text-xl md:text-2xl text-gray-800 font-serif mb-8 italic">
+              "{aboutText.split('.')[0]}."
             </p>
-          </div>
-          <div style={{ display: "grid", gap: 20 }}>
-            {content.aboutMission && (
-              <div style={{ background: "#fff", border: "1px solid #EDE6DF", padding: 24 }}>
-                <h3 className="sl-serif" style={{ margin: "0 0 8px", fontSize: 20 }}>Missão</h3>
-                <p style={{ margin: 0, color: "#5c534e", lineHeight: 1.65, fontSize: 14 }}>{content.aboutMission}</p>
-              </div>
-            )}
-            {content.aboutVision && (
-              <div style={{ background: "#fff", border: "1px solid #EDE6DF", padding: 24 }}>
-                <h3 className="sl-serif" style={{ margin: "0 0 8px", fontSize: 20 }}>Visão</h3>
-                <p style={{ margin: 0, color: "#5c534e", lineHeight: 1.65, fontSize: 14 }}>{content.aboutVision}</p>
-              </div>
-            )}
+            <p>{aboutText}</p>
           </div>
         </div>
       </section>
 
-      {content.aboutValues && content.aboutValues.length > 0 && (
-        <section style={{ padding: "0 0 72px" }}>
-          <div className="sl-wrap">
-            <h2 className="sl-serif" style={{ fontSize: 28, marginBottom: 28, textAlign: "center" }}>
-              Os nossos valores
-            </h2>
-            <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-              {content.aboutValues.map((v) => (
-                <div
-                  key={v}
-                  style={{
-                    background: "#fff",
-                    padding: "22px 20px",
-                    border: "1px solid #EDE6DF",
-                    borderTop: `3px solid ${secondary}`,
-                  }}
-                >
-                  <p style={{ margin: 0, fontWeight: 600, fontSize: 15 }}>{v}</p>
-                </div>
-              ))}
-            </div>
+      {/* MISSÃO E VISÃO */}
+      <section className="py-24 px-6 bg-[#F8F4EF]">
+        <div className="container mx-auto max-w-6xl grid md:grid-cols-2 gap-12">
+          <div className="bg-white p-10 rounded-2xl shadow-sm border-t-4" style={{ borderColor: primary }}>
+            <h3 className="font-serif text-2xl font-bold mb-4 text-[#221A18]">A Nossa Missão</h3>
+            <p className="text-gray-600 leading-relaxed">{mission}</p>
           </div>
-        </section>
-      )}
+          <div className="bg-white p-10 rounded-2xl shadow-sm border-t-4" style={{ borderColor: secondary }}>
+            <h3 className="font-serif text-2xl font-bold mb-4 text-[#221A18]">A Nossa Visão</h3>
+            <p className="text-gray-600 leading-relaxed">{vision}</p>
+          </div>
+        </div>
+      </section>
 
-      {content.stats && content.stats.length > 0 && (
-        <section style={{ background: primary, color: "#fff", padding: "56px 0" }}>
-          <div
-            className="sl-wrap"
-            style={{
-              display: "grid",
-              gap: 24,
-              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-              textAlign: "center",
-            }}
-          >
-            {content.stats.map((s) => (
-              <div key={s.label}>
-                <div className="sl-serif" style={{ fontSize: 36, fontWeight: 600 }}>{s.value}</div>
-                <div style={{ fontSize: 12, letterSpacing: ".1em", textTransform: "uppercase", opacity: 0.75, marginTop: 6 }}>
-                  {s.label}
+      {/* VALORES */}
+      <section className="py-24 px-6 bg-white">
+        <div className="container mx-auto max-w-5xl">
+          <div className="text-center mb-16">
+            <h2 className="font-serif text-4xl text-[#221A18]">Os Nossos Valores</h2>
+            <div className="w-16 h-1 mx-auto mt-4" style={{ background: secondary }}></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {values.map((value, idx) => (
+              <div key={idx} className="text-center p-6 rounded-xl hover:bg-gray-50 transition">
+                <div className="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center text-white font-bold text-xl" style={{ background: primary }}>
+                  {idx + 1}
                 </div>
+                <h4 className="font-bold text-[#221A18]">{value}</h4>
               </div>
             ))}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
+
+      {/* NÚMEROS (ESTATÍSTICAS) */}
+      <section className="py-20 px-6 text-white text-center" style={{ background: primary }}>
+        <div className="container mx-auto max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-8">
+          {stats.map((stat, idx) => (
+            <div key={idx}>
+              <div className="font-serif text-5xl font-bold mb-2">{stat.value}</div>
+              <div className="text-sm uppercase tracking-widest opacity-80">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA FINAL */}
+      <section className="py-24 px-6 bg-[#F8F4EF] text-center">
+        <div className="container mx-auto max-w-2xl">
+          <h2 className="font-serif text-3xl md:text-4xl mb-6 text-[#221A18]">Pronto para nos conhecer?</h2>
+          <p className="text-gray-600 mb-8">Venha viver a experiência que temos preparada para si.</p>
+          <Link
+            to={`/${slug}/contactos`}
+            className="inline-block px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm text-white transition hover:-translate-y-1 shadow-lg"
+            style={{ background: primary }}
+          >
+            Contacte-nos
+          </Link>
+        </div>
+      </section>
     </SiteLayout>
   );
 }
