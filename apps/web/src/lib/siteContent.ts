@@ -83,7 +83,7 @@ const DEFAULT_CONTENT: Record<Sector, SiteContent> = {
       { title: "Harmonização de Vinhos com Pratos Angolanos", excerpt: "Saiba qual vinho escolher para acompanhar o Calulu ou a Muamba de Galinha.", date: "02 Nov 2026", content: "Muitos pensam que a comida angolana não combina com vinho. Neste artigo, o nosso sommelier explica como os vinhos brancos mais ácidos cortam a gordura do óleo de palma..." },
     ],
   },
-  // ... (Os outros setores podem ficar com fallbacks mais simples por agora)
+  // ... (Os outros setores mantêm os fallbacks simples)
   beauty: { heroTitle: "Realce a Sua Beleza Natural", heroSubtitle: "Tratamentos exclusivos e um ambiente feito para relaxar.", aboutTitle: "O Seu Momento de Cuidado", aboutText: "No nosso salão, cada cliente é única. Oferecemos tratamentos de cabelo, unhas e estética com profissionais experientes.", servicesTitle: "Tratamentos", services: [{ name: "Corte e Escova", desc: "Corte personalizado e escova modelada.", price: "Sob consulta" }] },
   retail: { heroTitle: "Elegância Que Define Você", heroSubtitle: "A nova coleção chegou.", aboutTitle: "Curadoria de Estilo", aboutText: "Selecionamos as melhores peças.", servicesTitle: "Destaques" },
   health: { heroTitle: "A Sua Saúde em Boas Mãos", heroSubtitle: "Cuidados médicos de excelência.", aboutTitle: "Sobre a Clínica", aboutText: "Profissionais dedicados ao seu bem-estar.", servicesTitle: "Especialidades" },
@@ -115,12 +115,17 @@ export function mergeWithDefaults(raw: SiteContent | null, sector: Sector, busin
   if (raw?.services && raw.services.length > 0 && finalSector !== "food") finalContent.services = raw.services;
   else if (finalSector === "food") finalContent.services = defaults.services; // Força o menu do restaurante
 
+  // GALERIA ATUALIZADA COM 8 IMAGENS DE PRATOS VARIADOS
   if (!finalContent.gallery || finalContent.gallery.length === 0 || finalSector === "food") {
     finalContent.gallery = [
-      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1600&q=80",
-      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1600&q=80", // Mesa posta
+      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",  // Prato de carne
+      "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",  // Prato gourmet
+      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80", // Restaurante interior
+      "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",  // Bife
+      "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80", // Salmão
+      "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=800&q=80",  // Massa
+      "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=800&q=80", // Salada
     ];
   }
   

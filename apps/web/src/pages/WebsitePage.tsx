@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import HeroScene from "../components/site/three/HeroScene";
+import Gallery3D from "../components/site/motion/Gallery3D";
 import { detectSector, mergeWithDefaults, type SiteContent, type Sector } from "../lib/siteContent";
 
 type Business = any; 
@@ -95,11 +96,10 @@ export default function WebsitePage() {
         </div>
       </header>
 
-      {/* HERO CORRIGIDO */}
+      {/* HERO */}
       <section id="inicio" className="relative h-[100svh] flex items-center justify-center overflow-hidden pt-20">
         <HeroScene sector={visualSector} primaryColor={primary} secondaryColor={secondary} heroImage={content.gallery?.[0]} />
         
-        {/* Vinheta suave para o texto ter contraste, mas sem esconder o 3D */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
 
         <div className="relative z-10 text-center px-6 max-w-4xl mx-auto flex flex-col items-center justify-center h-full pb-10">
@@ -113,7 +113,6 @@ export default function WebsitePage() {
             {content.heroSubtitle}
           </p>
           
-          {/* Botões com tamanho garantido e sem margens excessivas */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
             <a href={waLink || "#"} target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition hover:-translate-y-1 shadow-xl w-full sm:w-auto" style={{ background: secondary, color: "#1a1412" }}>
               {content.buttonText || "Contactar"}
@@ -125,6 +124,7 @@ export default function WebsitePage() {
         </div>
       </section>
 
+      {/* SOBRE */}
       <section id="sobre" className="py-24 md:py-32 px-6">
         <div className="container mx-auto max-w-6xl grid md:grid-cols-2 gap-16 items-center">
           <div className="relative aspect-[4/5] rounded-t-full overflow-hidden shadow-2xl">
@@ -146,6 +146,7 @@ export default function WebsitePage() {
         </div>
       </section>
 
+      {/* MENU */}
       <section id="menu" className="py-24 bg-white text-black">
         <div className="container mx-auto px-6 max-w-5xl">
           <div className="text-center mb-16">
@@ -167,21 +168,18 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      <section id="galeria" className="py-24 px-6 bg-[#F8F4EF]">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-             <h2 className="font-serif text-4xl md:text-5xl text-[#221A18]">Momentos</h2>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {content.gallery?.slice(0, 4).map((img: string, i: number) => (
-              <div key={i} className={`overflow-hidden rounded-2xl shadow-lg ${i === 1 || i === 2 ? "md:translate-y-8" : ""}`}>
-                <img src={img} alt="Galeria" className="w-full h-[300px] object-cover hover:scale-110 transition duration-700" />
-              </div>
-            ))}
+      {/* GALERIA 3D */}
+      <section id="galeria" className="py-24 bg-[#1a1412]">
+        <div className="container mx-auto max-w-6xl px-6">
+          <div className="text-center mb-12">
+             <h2 className="font-serif text-4xl md:text-5xl text-white">Momentos</h2>
+             <p className="text-gray-400 mt-2">Deslize para ver mais</p>
           </div>
         </div>
+        <Gallery3D images={content.gallery || []} primary={primary} secondary={secondary} />
       </section>
 
+      {/* TESTEMUNHOS */}
       <section className="py-24 px-6 bg-[#F8F4EF]">
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-3 gap-8">
@@ -199,6 +197,7 @@ export default function WebsitePage() {
         </div>
       </section>
 
+      {/* FOOTER */}
       <footer id="contactos" className="bg-[#1a1412] text-white py-20 px-6">
         <div className="container mx-auto max-w-6xl grid md:grid-cols-3 gap-12">
           <div>
