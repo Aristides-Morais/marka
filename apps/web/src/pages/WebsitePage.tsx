@@ -58,7 +58,6 @@ export default function WebsitePage() {
   if (!business) return <div className="min-h-screen grid place-items-center">Negócio não encontrado.</div>;
 
   const visualSector = business.name.toLowerCase().includes("alive") ? "food" : sector;
-
   const primary = content.visualIdentity?.primary || business.primaryColor || (visualSector === "food" ? "#6B1020" : "#512638");
   const secondary = content.visualIdentity?.secondary || business.secondaryColor || (visualSector === "food" ? "#9A7634" : "#B99A75");
   
@@ -77,33 +76,21 @@ export default function WebsitePage() {
         @keyframes slow-zoom { from { transform: scale(1); } to { transform: scale(1.1); } }
       `}</style>
 
-      {/* HEADER COM MENU DUPLO (Âncoras + Páginas) */}
+      {/* HEADER (Apenas com as Páginas) */}
       <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${scrolled ? "bg-white/90 backdrop-blur-md shadow-sm py-3 text-black" : "bg-transparent py-6 text-white"}`}>
         <div className="container mx-auto px-6 flex items-center justify-between">
           <Link to={`/${slug}`} className="font-serif text-2xl font-bold tracking-tight">
             {business.name}
           </Link>
           
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium uppercase tracking-widest">
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-widest">
+            <Link to={`/${slug}/sobre`} className="hover:opacity-70 transition">Sobre</Link>
+            <Link to={`/${slug}/servicos`} className="hover:opacity-70 transition">
+              {visualSector === "food" ? "Menu" : "Serviços"}
+            </Link>
+            <Link to={`/${slug}/galeria`} className="hover:opacity-70 transition">Galeria</Link>
+            <Link to={`/${slug}/contactos`} className="hover:opacity-70 transition">Contactos</Link>
             
-            {/* GRUPO 1: ÂNCORAS (Scroll na Home) */}
-            <div className="flex items-center gap-4 border-r border-gray-500/30 pr-6">
-              <span className="text-[10px] opacity-50 font-bold">Na Página:</span>
-              <a href="#sobre" className="hover:opacity-70 transition">Sobre</a>
-              <a href="#menu" className="hover:opacity-70 transition">{visualSector === "food" ? "Menu" : "Serviços"}</a>
-              <a href="#galeria" className="hover:opacity-70 transition">Galeria</a>
-              <a href="#contactos" className="hover:opacity-70 transition">Contactos</a>
-            </div>
-
-            {/* GRUPO 2: LINKS PARA PÁGINAS COMPLETAS */}
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] opacity-50 font-bold">Páginas:</span>
-              <Link to={`/${slug}/sobre`} className="hover:opacity-70 transition">Sobre</Link>
-              <Link to={`/${slug}/servicos`} className="hover:opacity-70 transition">{visualSector === "food" ? "Menu" : "Serviços"}</Link>
-              <Link to={`/${slug}/galeria`} className="hover:opacity-70 transition">Galeria</Link>
-              <Link to={`/${slug}/contactos`} className="hover:opacity-70 transition">Contactos</Link>
-            </div>
-
             {waLink && (
               <a href={waLink} target="_blank" rel="noreferrer" className="ml-4 px-6 py-2 rounded-full font-bold text-black transition hover:scale-105" style={{ background: secondary }}>
                 Reservar

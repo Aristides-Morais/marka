@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { apiFetch } from "../../lib/api";
 
-// DADOS HARDCODED PARA O ALIVE (substitui a API para não ficar preso em "A carregar")
+// DADOS HARDCODED (Para abrir instantaneamente)
 const ALIVE_DATA = {
   name: "Alive Restaurante & Lounge",
-  type: "restaurante",
-  template: "food",
   phone: "244923000000",
   primaryColor: "#6B1020",
   secondaryColor: "#9A7634",
@@ -76,56 +73,13 @@ function ScrollReveal({ children, delay = 0, direction = "up", className = "" }:
 
 export default function ServicesListPage() {
   const { slug = "" } = useParams();
-  const [business, setBusiness] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let live = true;
-
-    async function load() {
-      try {
-        // Tenta a API com timeout de 2 segundos (para não ficar preso)
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Timeout")), 2000)
-        );
-
-        const fetchPromise = apiFetch<any>("/api/v1/business/info", { skipAuth: true, tenant: slug });
-        
-        const b = await Promise.race([fetchPromise, timeoutPromise]) as any;
-        
-        if (live && b) {
-          // Se a API responder, usa o nome e telefone dela, mas mantém os serviços hardcoded
-          setBusiness({
-            ...ALIVE_DATA,
-            name: b.name || ALIVE_DATA.name,
-            phone: b.phone || ALIVE_DATA.phone,
-            primaryColor: b.primaryColor || ALIVE_DATA.primaryColor,
-            secondaryColor: b.secondaryColor || ALIVE_DATA.secondaryColor,
-          });
-        } else if (live) {
-          setBusiness(ALIVE_DATA);
-        }
-      } catch (e) {
-        // Se a API falhar ou der timeout, usa os dados hardcoded
-        console.log("Usando dados hardcoded para o Alive");
-        if (live) setBusiness(ALIVE_DATA);
-      } finally {
-        if (live) setLoading(false);
-      }
-    }
-
-    if (slug) load();
-    return () => { live = false; };
-  }, [slug]);
-
-  if (loading) return <div className="min-h-screen grid place-items-center bg-[#F8F4EF]">A carregar...</div>;
-  if (!business) return <div className="min-h-screen grid place-items-center bg-[#F8F4EF]">A carregar dados...</div>;
-
-  const primary = business.primaryColor || "#6B1020";
-  const secondary = business.secondaryColor || "#9A7634";
-  const services = business.services || [];
-  const phoneClean = (business.phone || "").replace(/\D/g, "");
-  const waLink = phoneClean ? `https://wa.me/${phoneClean}` : "https://wa.me/244923000000";
+  
+  // Dados diretos: sem loading, sem erros de API
+  const business = ALIVE_DATA;
+  const services = ALIVE_DATA.services;
+  const primary = ALIVE_DATA.primaryColor;
+  const secondary = ALIVE_DATA.secondaryColor;
+  const waLink = `https://wa.me/${ALIVE_DATA.phone}`;
 
   return (
     <main className="min-h-screen bg-[#F8F4EF] text-[#35232B] font-sans">
@@ -146,7 +100,7 @@ export default function ServicesListPage() {
         <ScrollReveal delay={100}>
           <p className="text-sm font-bold tracking-[0.2em] uppercase mb-4" style={{ color: primary }}>Gastronomia</p>
           <h1 className="font-serif text-5xl md:text-7xl text-[#221A18] leading-tight mb-6">
-            {business.servicesTitle || "O Nosso Menu de Autor"}
+            {business.servicesTitle}
           </h1>
           <div className="w-24 h-1 mx-auto" style={{ background: secondary }}></div>
         </ScrollReveal>
@@ -155,7 +109,7 @@ export default function ServicesListPage() {
       <section className="py-20 px-6 bg-white">
         <div className="container mx-auto max-w-4xl">
           <div className="space-y-12">
-            {services.map((item: any, index: number) => (
+            {services.map((item, index) => (
               <ScrollReveal key={index} delay={index * 150} direction={index % 2 === 0 ? "left" : "right"}>
                 <div className="group flex flex-col md:flex-row gap-8 items-center bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100">
                   <div className="w-full md:w-1/3 aspect-[4/3] overflow-hidden rounded-xl">
