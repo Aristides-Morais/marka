@@ -1,777 +1,189 @@
-
-import { useEffect, useState, type FormEvent, type CSSProperties } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { apiFetch } from "../lib/api";
-import {
-  fontStack,
-  heroSize,
-  isDark,
-  loadFont,
-  normalizeUrl,
-  parseExtra,
-  prettyName,
-  textOn,
-  type ExtraTheme,
-  type LinkItem,
-} from "../lib/theme";
 
-type Service = {
-  id: string;
-  name: string;
-  durationMin: number;
-  price: number;
-};
-
-type Busy = {
-  start: string;
-  end: string;
-};
-
-type Info = {
-  name: string;
-  logoUrl: string | null;
-  primaryColor: string;
-  address: string | null;
-  bookingBgColor: string | null;
-  bookingBgImage: string | null;
-  fontFamily: string | null;
-  heroTitle: string | null;
-  heroSubtitle: string | null;
-  mapsUrl: string | null;
-  links: LinkItem[];
-  extra: ExtraTheme;
-};
-
-type PublishedContent = {
-  heroTitle?: string;
-  heroSubtitle?: string;
-  buttonText?: string;
-  heroImage?: string;
-  description?: string;
-};
-
-const toMin = (hhmm: string) => {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + (m || 0);
-};
-
-const fmtMin = (n: number) =>
-  `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
-
-const ANGOLA_TIME_ZONE = "Africa/Luanda";
-
-const angolaParts = () => {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: ANGOLA_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date());
-
-  return Object.fromEntries(
-    parts
-      .filter((part) => part.type !== "literal")
-      .map((part) => [part.type, Number(part.value)])
-  ) as Record<string, number>;
-};
-
-const localToday = () => {
-  const p = angolaParts();
-
-  return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
-};
-
-const angolaDateTimeToISO = (date: string, time: string) => {
-  const [year, month, day] = date.split("-").map(Number);
-  const [hours, minutes] = time.split(":").map(Number);
-
-  // Angola = UTC+1: converter a hora local para o instante UTC.
-  return new Date(
-    Date.UTC(year, month - 1, day, hours - 1, minutes)
-  ).toISOString();
+// Dados hardcoded para garantir que abre instantaneamente
+const ALIVE_DATA = {
+  name: "Alive Restaurante & Lounge",
+  phone: "244923000000",
+  primaryColor: "#6B1020",
+  secondaryColor: "#9A7634",
 };
 
 export default function ClientPage() {
-  const { slug } = useParams();
-
-  const [info, setInfo] = useState<Info | null>(null);
-  const [publishedContent, setPublishedContent] =
-    useState<PublishedContent | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
-  const [selectedService, setSelectedService] =
-    useState<Service | null>(null);
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [busy, setBusy] = useState<Busy[]>([]);
-  const [hours, setHours] = useState({
-    openTime: "08:00",
-    closeTime: "18:00",
+  const { slug = "" } = useParams();
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    date: "",
+    time: "",
+    guests: "2",
+    notes: "",
   });
 
-  const [formData, setFormData] = useState({ name: "", phone: "" });
-  const [showForm, setShowForm] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const primary = ALIVE_DATA.primaryColor;
+  const secondary = ALIVE_DATA.secondaryColor;
+  const waLink = `https://wa.me/${ALIVE_DATA.phone}`;
 
-  useEffect(() => {
-    if (!slug) return;
-
-    setLoading(true);
-
-    Promise.all([
-      apiFetch<Service[]>("/api/v1/reservations/services", {
-        skipAuth: true,
-        tenant: slug,
-      }),
-      apiFetch<{ openTime: string; closeTime: string }>(
-        "/api/v1/reservations/hours",
-        {
-          skipAuth: true,
-          tenant: slug,
-        }
-      ),
-      apiFetch<any>("/api/v1/business/info", {
-        skipAuth: true,
-        tenant: slug,
-      }),
-      apiFetch<{
-        isPublished: boolean;
-        content: PublishedContent | null;
-      }>("/api/v1/site-content", {
-        skipAuth: true,
-        tenant: slug,
-      }),
-    ])
-      .then(([svcs, hrs, b, site]) => {
-        setServices(svcs);
-        setHours(hrs);
-
-        const extra = parseExtra(b.theme);
-
-        loadFont(b.fontFamily);
-        loadFont(extra.headingFont);
-
-        setInfo({
-          name: b.name,
-          logoUrl: b.logoUrl || null,
-          primaryColor: b.primaryColor || "#1A4D2E",
-          address: b.address || null,
-          bookingBgColor: b.bookingBgColor || null,
-          bookingBgImage: b.bookingBgImage || null,
-          fontFamily: b.fontFamily || null,
-          heroTitle: b.heroTitle || null,
-          heroSubtitle: b.heroSubtitle || null,
-          mapsUrl: b.mapsUrl || null,
-          links: Array.isArray(b.links) ? b.links : [],
-          extra,
-        });
-
-        setPublishedContent(
-          site?.isPublished && site.content ? site.content : null
-        );
-
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [slug]);
-
-  function refreshBusy() {
-    if (!slug || !date) {
-      setBusy([]);
-      return;
-    }
-
-    apiFetch<Busy[]>(`/api/v1/reservations/busy?date=${date}`, {
-      skipAuth: true,
-      tenant: slug,
-    })
-      .then(setBusy)
-      .catch(() => setBusy([]));
-  }
-
-  useEffect(() => {
-    setTime("");
-    refreshBusy();
-  }, [slug, date]);
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-
-    if (!selectedService || !date || !time) {
-      setErrorMsg("Escolha o serviço, o dia e a hora.");
-      return;
-    }
-
-    setSubmitting(true);
-    setErrorMsg(null);
-
-    const startTime = angolaDateTimeToISO(date, time);
-
-    try {
-      await apiFetch("/api/v1/reservations", {
-        method: "POST",
-        body: JSON.stringify({
-          serviceId: selectedService.id,
-          clientName: formData.name,
-          clientPhone: formData.phone,
-          startTime,
-        }),
-        skipAuth: true,
-        tenant: slug,
-      });
-
-      setIsSuccess(true);
-    } catch (err: any) {
-      setErrorMsg(err.message);
-
-      if (err.status === 409) {
-        setTime("");
-        refreshBusy();
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  function closeForm() {
-    setShowForm(false);
-    setErrorMsg(null);
-
-    if (isSuccess) {
-      setIsSuccess(false);
-      setSelectedService(null);
-      setDate("");
-      setTime("");
-      setFormData({ name: "", phone: "" });
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-zinc-500">
-        A carregar...
-      </div>
-    );
-  }
-
-  if (!info) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-500 font-bold">
-        Negócio não encontrado.
-      </div>
-    );
-  }
-
-  const primary = info.primaryColor;
-  const ex = info.extra;
-
-  const heroImage =
-    publishedContent?.heroImage || info.bookingBgImage;
-
-  const hasImage = !!heroImage;
-  const bgColor = info.bookingBgColor || "#F4F4F5";
-  const onDark = hasImage || isDark(bgColor);
-
-  const body = fontStack(info.fontFamily);
-  const heading = fontStack(ex.headingFont || info.fontFamily);
-
-  const rootStyle: CSSProperties = {
-    backgroundColor: bgColor,
-    backgroundImage: hasImage ? `url(${heroImage})` : undefined,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundAttachment: "fixed",
-    fontFamily: body,
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const titleColor =
-    ex.bookingTitleColor || (onDark ? "#FFFFFF" : "#18181B");
-
-  const subColor =
-    ex.bookingSubtitleColor ||
-    (onDark ? "rgba(255,255,255,0.8)" : "#52525B");
-
-  const displayName = prettyName(info.name);
-
-  const title =
-    publishedContent?.heroTitle?.trim() ||
-    info.heroTitle ||
-    displayName;
-
-  const subtitle =
-    publishedContent?.heroSubtitle?.trim() ||
-    info.heroSubtitle;
-
-  const description = publishedContent?.description?.trim();
-
-  const reservationButtonText =
-    publishedContent?.buttonText?.trim() || "Reservar";
-
-  const ampIdx = title.indexOf("&");
-  const titleFirst = ampIdx > 0 ? title.slice(0, ampIdx).trim() : title;
-  const titleSecond = ampIdx > 0 ? title.slice(ampIdx).trim() : "";
-
-  const secondaryBtn: CSSProperties = onDark
-    ? { backgroundColor: "#F5EFE6", color: "#18181B" }
-    : {
-        backgroundColor: "#FFFFFF",
-        color: "#18181B",
-        border: "1px solid #E4E4E7",
-      };
-
-  const linkBtn: CSSProperties = onDark
-    ? {
-        backgroundColor: "rgba(255,255,255,0.08)",
-        border: "1px solid rgba(255,255,255,0.25)",
-        color: "#FFFFFF",
-      }
-    : {
-        backgroundColor: "#FFFFFF",
-        border: "1px solid #D4D4D8",
-        color: "#18181B",
-      };
-
-  // Horário actual de Angola, independentemente do fuso do dispositivo.
-  const currentAngolaTime = angolaParts();
-  const nowMin =
-    currentAngolaTime.hour * 60 + currentAngolaTime.minute;
-
-  const slots: {
-    label: string;
-    disabled: boolean;
-    taken: boolean;
-  }[] = [];
-
-  if (selectedService && date) {
-    const open = toMin(hours.openTime);
-    const close = toMin(hours.closeTime);
-    const duration = selectedService.durationMin;
-
-    for (let start = open; start + duration <= close; start += 30) {
-      const end = start + duration;
-
-      const taken = busy.some(
-        (item) =>
-          start < toMin(item.end) && end > toMin(item.start)
-      );
-
-      const past =
-        date === localToday() && start <= nowMin;
-
-      slots.push({
-        label: fmtMin(start),
-        disabled: taken || past,
-        taken,
-      });
-    }
-  }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Cria a mensagem formatada para o WhatsApp
+    const text = `Olá, *${ALIVE_DATA.name}*!%0A%0A` +
+                 `Gostaria de fazer uma reserva:%0A%0A` +
+                 `*Nome:* ${formData.name}%0A` +
+                 `*Telefone:* ${formData.phone}%0A` +
+                 `*Data:* ${formData.date}%0A` +
+                 `*Hora:* ${formData.time}%0A` +
+                 `*Pessoas:* ${formData.guests}%0A` +
+                 (formData.notes ? `*Observações:* ${formData.notes}` : "");
+                 
+    // Abre o WhatsApp com a mensagem
+    window.open(`${waLink}?text=${text}`, "_blank");
+  };
 
   return (
-    <div className="min-h-screen relative" style={rootStyle}>
-      {hasImage && (
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(0,0,0,0.35), rgba(0,0,0,0.78))",
-          }}
+    <main className="min-h-screen flex flex-col md:flex-row bg-[#F8F4EF]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:wght@400;500;600;700&display=swap');
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .font-sans { font-family: 'DM Sans', sans-serif; }
+      `}</style>
+
+      {/* LADO ESQUERDO: IMAGEM E BRANDING */}
+      <div className="relative w-full md:w-1/2 h-[40vh] md:h-screen flex flex-col justify-between p-8 md:p-16 overflow-hidden">
+        <img 
+          src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80" 
+          alt="Restaurante" 
+          className="absolute inset-0 w-full h-full object-cover"
         />
-      )}
+        <div className="absolute inset-0 bg-black/60" />
+        
+        <div className="relative z-10">
+          <Link to={`/${slug}`} className="font-serif text-2xl font-bold text-white hover:opacity-80 transition">
+            {ALIVE_DATA.name}
+          </Link>
+        </div>
 
-      <div className="relative z-10 min-h-screen max-w-lg mx-auto px-5 py-8 flex flex-col">
-        <header className="flex items-center gap-4">
-          {info.logoUrl ? (
-            <img
-              src={info.logoUrl}
-              alt="Logo"
-              className="w-20 h-20 shrink-0 rounded-full object-cover border border-white/20 shadow-lg"
-            />
-          ) : (
-            <div
-              className="w-20 h-20 shrink-0 rounded-full flex items-center justify-center font-bold text-3xl shadow-lg"
-              style={{
-                backgroundColor: primary,
-                color: textOn(primary),
-              }}
-            >
-              {displayName.charAt(0)}
-            </div>
-          )}
-
-          <div className="min-w-0">
-            <h2
-              className="text-xl font-semibold leading-tight break-words"
-              style={{
-                color: titleColor,
-                fontFamily: heading,
-                overflowWrap: "anywhere",
-              }}
-            >
-              {displayName}
-            </h2>
-
-            {info.address && (
-              <p
-                className="text-base mt-1 break-words"
-                style={{ color: subColor }}
-              >
-                {info.address}
-              </p>
-            )}
-          </div>
-        </header>
-
-        <section className="flex-1 flex flex-col justify-center py-10">
-          <h1
-            className="font-bold leading-[1.05] break-words"
-            style={{
-              color: titleColor,
-              fontFamily: heading,
-              fontSize: heroSize(title),
-              overflowWrap: "anywhere",
-            }}
-          >
-            {titleFirst}
-
-            {titleSecond && (
-              <>
-                <br />
-                <span style={{ color: primary }}>{titleSecond}</span>
-              </>
-            )}
+        <div className="relative z-10">
+          <h1 className="font-serif text-4xl md:text-6xl text-white leading-tight mb-4">
+            Reserve o seu <br/>momento.
           </h1>
-
-          {subtitle && (
-            <p className="mt-5 text-lg max-w-xs" style={{ color: subColor }}>
-              {subtitle}
-            </p>
-          )}
-
-          {description && (
-            <p
-              className="mt-4 text-sm max-w-md leading-relaxed"
-              style={{ color: subColor }}
-            >
-              {description}
-            </p>
-          )}
-
-          <p
-            className="mt-4 text-xs inline-block self-start px-3 py-1 rounded-full"
-            style={{
-              backgroundColor: onDark
-                ? "rgba(255,255,255,0.12)"
-                : "#ECFDF5",
-              color: onDark ? "#FFFFFF" : "#047857",
-            }}
-          >
-            Aberto das {hours.openTime} às {hours.closeTime}
+          <p className="text-white/80 text-lg max-w-md">
+            Garanta o seu lugar e prepare-se para uma experiência gastronómica inesquecível.
           </p>
-        </section>
-
-        <section className="space-y-3">
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="w-full flex items-center justify-between px-6 py-5 rounded-2xl font-semibold text-xl shadow-lg"
-            style={{
-              background: `linear-gradient(90deg, ${primary}CC, ${primary})`,
-              color: textOn(primary),
-            }}
-          >
-            <span>{reservationButtonText}</span>
-            <span className="text-2xl">→</span>
-          </button>
-
-          <Link
-            to={`/${slug}/loja`}
-            className="w-full flex items-center justify-center py-4 rounded-2xl font-semibold text-lg"
-            style={secondaryBtn}
-          >
-            Ir para a Loja
-          </Link>
-
-          {info.mapsUrl && (
-            <a
-              href={normalizeUrl(info.mapsUrl)}
-              target="_blank"
-              rel="noreferrer"
-              className="w-full flex items-center justify-center py-4 rounded-2xl font-semibold text-lg"
-              style={secondaryBtn}
-            >
-              Como chegar
-            </a>
-          )}
-
-          {info.links.length > 0 && (
-            <div className="grid grid-cols-3 gap-3 pt-1">
-              {info.links.map((link, index) => (
-                <a
-                  key={index}
-                  href={normalizeUrl(link.url)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center text-center px-2 py-5 rounded-2xl text-base font-medium break-words"
-                  style={linkBtn}
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <footer className="pt-6 text-center">
-          <Link
-            to={`/${slug}/admin`}
-            className="text-xs"
-            style={{ color: subColor, opacity: 0.6 }}
-          >
-            Admin
-          </Link>
-        </footer>
+        </div>
       </div>
 
-      {showForm && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center"
-          onClick={closeForm}
-        >
-          <div
-            className="bg-white w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-6 md:p-8 text-zinc-900"
-            style={{ fontFamily: body }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {isSuccess ? (
-              <div className="text-center">
-                <div
-                  className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
-                  style={{
-                    backgroundColor: primary,
-                    color: textOn(primary),
-                  }}
-                >
-                  <svg
-                    className="w-10 h-10"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
+      {/* LADO DIREITO: FORMULÁRIO */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-8 md:p-16">
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <h2 className="font-serif text-3xl font-bold text-[#221A18] mb-2">Faça a sua Reserva</h2>
+            <p className="text-gray-500 text-sm">Preencha os dados abaixo e envie-nos uma mensagem via WhatsApp.</p>
+          </div>
 
-                <h2 className="text-2xl font-bold mb-2">
-                  Reserva feita!
-                </h2>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Nome Completo *</label>
+              <input 
+                type="text" 
+                name="name" 
+                required
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition"
+                placeholder="O seu nome" 
+              />
+            </div>
 
-                <p className="text-zinc-500 mb-6">
-                  {selectedService?.name} no dia{" "}
-                  {date.split("-").reverse().join("/")} às {time}.
-                </p>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Telefone *</label>
+              <input 
+                type="tel" 
+                name="phone" 
+                required
+                value={formData.phone}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition"
+                placeholder="+244 9XX XXX XXX" 
+              />
+            </div>
 
-                <button
-                  onClick={closeForm}
-                  className="w-full py-3 rounded-xl font-semibold"
-                  style={{
-                    backgroundColor: primary,
-                    color: textOn(primary),
-                  }}
-                >
-                  Fechar
-                </button>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Data *</label>
+                <input 
+                  type="date" 
+                  name="date" 
+                  required
+                  value={formData.date}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition"
+                />
               </div>
-            ) : (
-              <>
-                <div className="flex justify-between items-center mb-5">
-                  <h2 className="text-xl font-bold">Fazer reserva</h2>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Hora *</label>
+                <input 
+                  type="time" 
+                  name="time" 
+                  required
+                  value={formData.time}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition"
+                />
+              </div>
+            </div>
 
-                  <button
-                    type="button"
-                    onClick={closeForm}
-                    className="text-zinc-400 hover:text-zinc-900 text-2xl leading-none px-2"
-                  >
-                    ×
-                  </button>
-                </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Número de Pessoas *</label>
+              <select 
+                name="guests" 
+                value={formData.guests}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition bg-white"
+              >
+                <option value="1">1 Pessoa</option>
+                <option value="2">2 Pessoas</option>
+                <option value="3">3 Pessoas</option>
+                <option value="4">4 Pessoas</option>
+                <option value="5">5 Pessoas</option>
+                <option value="6">6 Pessoas</option>
+                <option value="7+">Mais de 6 Pessoas</option>
+              </select>
+            </div>
 
-                {errorMsg && (
-                  <div className="mb-5 p-4 bg-red-50 text-red-700 text-sm rounded-lg">
-                    {errorMsg}
-                  </div>
-                )}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">Observações (Opcional)</label>
+              <textarea 
+                name="notes" 
+                rows={2}
+                value={formData.notes}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition resize-none"
+                placeholder="Alguma restrição alimentar ou pedido especial?" 
+              ></textarea>
+            </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      1. Serviço
-                    </label>
+            <button 
+              type="submit" 
+              className="w-full py-4 rounded-xl font-bold uppercase tracking-widest text-white transition hover:-translate-y-1 shadow-lg mt-4"
+              style={{ background: primary }}
+            >
+              Confirmar via WhatsApp
+            </button>
+          </form>
 
-                    <div className="grid gap-2">
-                      {services.map((service) => (
-                        <div
-                          key={service.id}
-                          onClick={() => {
-                            setSelectedService(service);
-                            setTime("");
-                          }}
-                          className="p-4 rounded-xl border-2 cursor-pointer"
-                          style={{
-                            borderColor:
-                              selectedService?.id === service.id
-                                ? primary
-                                : "#E4E4E7",
-                            backgroundColor:
-                              selectedService?.id === service.id
-                                ? "#FAFAFA"
-                                : "#FFFFFF",
-                          }}
-                        >
-                          <div className="flex justify-between gap-3">
-                            <span className="font-semibold break-words min-w-0">
-                              {service.name}
-                            </span>
-
-                            <span className="font-bold shrink-0">
-                              {Number(service.price).toLocaleString("pt-AO")} Kz
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-zinc-500 mt-1">
-                            {service.durationMin} min
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      2. Dia
-                    </label>
-
-                    <input
-                      type="date"
-                      required
-                      min={localToday()}
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      3. Hora
-                    </label>
-
-                    {!selectedService || !date ? (
-                      <p className="text-sm text-zinc-500">
-                        Escolha primeiro o serviço e o dia.
-                      </p>
-                    ) : slots.length === 0 ? (
-                      <p className="text-sm text-zinc-500">
-                        Sem horários disponíveis para este serviço.
-                      </p>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-4 gap-2">
-                          {slots.map((slot) => (
-                            <button
-                              type="button"
-                              key={slot.label}
-                              disabled={slot.disabled}
-                              onClick={() => setTime(slot.label)}
-                              className={`py-2 rounded-lg text-sm font-semibold border ${
-                                slot.disabled
-                                  ? "bg-zinc-100 text-zinc-400 border-zinc-100 cursor-not-allowed"
-                                  : ""
-                              } ${slot.taken ? "line-through" : ""}`}
-                              style={
-                                time === slot.label
-                                  ? {
-                                      backgroundColor: primary,
-                                      color: textOn(primary),
-                                      borderColor: primary,
-                                    }
-                                  : undefined
-                              }
-                            >
-                              {slot.label}
-                            </button>
-                          ))}
-                        </div>
-
-                        <p className="text-xs text-zinc-500 mt-2">
-                          Os horários riscados já estão ocupados.
-                        </p>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="block text-sm font-medium">
-                      4. Os seus dados
-                    </label>
-
-                    <input
-                      type="text"
-                      required
-                      placeholder="Nome completo"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          name: e.target.value,
-                        })
-                      }
-                      className="w-full border rounded-lg px-3 py-2"
-                    />
-
-                    <input
-                      type="text"
-                      required
-                      placeholder="Telefone"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          phone: e.target.value,
-                        })
-                      }
-                      className="w-full border rounded-lg px-3 py-2"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={
-                      submitting || !selectedService || !date || !time
-                    }
-                    className="w-full py-3 rounded-xl font-bold disabled:opacity-50"
-                    style={{
-                      backgroundColor: primary,
-                      color: textOn(primary),
-                    }}
-                  >
-                    {submitting ? "A agendar..." : "Confirmar Reserva"}
-                  </button>
-                </form>
-              </>
-            )}
+          <div className="mt-8 text-center">
+            <Link to={`/${slug}`} className="text-sm text-gray-500 hover:text-black transition">
+              ← Voltar ao site
+            </Link>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    </main>
   );
 }
