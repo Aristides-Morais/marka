@@ -18,6 +18,10 @@ import PrivacyPage from "./pages/site/PrivacyPage";
 import TermsPage from "./pages/site/TermsPage";
 import BlogPage from "./pages/site/BlogPage";
 import BlogPostPage from "./pages/site/BlogPostPage";
+import GalleryPage from "./pages/site/GalleryPage"; // Import
+
+// Dentro do <Routes>:
+<Route path="/:slug/galeria" element={<GalleryPage />} />
 
 export default function App() {
   return (

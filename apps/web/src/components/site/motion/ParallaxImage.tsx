@@ -7,37 +7,26 @@ type Props = {
   speed?: number;
 };
 
-export default function ParallaxImage({
-  src,
-  alt,
-  className = "",
-  speed = 0.15,
-}: Props) {
+export default function ParallaxImage({ src, alt, className = "", speed = 0.1 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
+    const handleScroll = () => {
+      if (!ref.current) return;
+      const rect = ref.current.getBoundingClientRect();
+      const scrollY = window.scrollY;
+      const elementCenter = rect.top + rect.height / 2 + scrollY;
+      const windowCenter = scrollY + window.innerHeight / 2;
+      const distance = windowCenter - elementCenter;
+      
+      // Aplica o movimento de parallax
+      setOffset(distance * speed);
+    };
 
-    let raf: number | null = null;
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = null;
-        const rect = el.getBoundingClientRect();
-        const center = rect.top + rect.height / 2;
-        const viewCenter = window.innerHeight / 2;
-        setOffset((center - viewCenter) * speed);
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (raf) cancelAnimationFrame(raf);
-    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll(); // Chamada inicial
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [speed]);
 
   return (
@@ -45,9 +34,8 @@ export default function ParallaxImage({
       <img
         src={src}
         alt={alt}
-        loading="lazy"
-        className="h-full w-full object-cover will-change-transform"
-        style={{ transform: `translateY(${offset}px) scale(1.08)` }}
+        className="w-full h-full object-cover transition-transform duration-100 ease-out"
+        style={{ transform: `translateY(${offset}px) scale(1.15)` }}
       />
     </div>
   );
