@@ -1,4 +1,3 @@
-
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma.js";
 
@@ -6,6 +5,11 @@ type ModuleName = "website" | "store" | "booking";
 
 function normalizeModules(value: unknown): ModuleName[] {
   if (!Array.isArray(value)) {
+    return ["website", "store", "booking"];
+  }
+
+  // Se está vazio, não bloqueia nada - negócio novo tem de conseguir entrar
+  if (value.length === 0) {
     return ["website", "store", "booking"];
   }
 
@@ -34,14 +38,27 @@ function normalizeModules(value: unknown): ModuleName[] {
         item === "booking"
     );
 
+  // Se depois de limpar ficou vazio, também não bloqueia
+  if (normalized.length === 0) {
+    return ["website", "store", "booking"];
+  }
+
   return [...new Set(normalized)];
 }
 
 function getRequiredModule(url: string): ModuleName | null {
   const pathname = url.split("?")[0];
 
+  // FIX: /business/info é PÚBLICO
+  // É ele que diz ao frontend qual é o negócio.
+  // Se ele pedir módulo, nenhum negócio consegue fazer login.
   if (/^\/api\/v1\/business\/info\/?$/.test(pathname)) {
-    return "website";
+    return null;
+  }
+
+  // Auth também é público
+  if (/^\/api\/v1\/auth(\/|$)/.test(pathname)) {
+    return null;
   }
 
   if (/^\/api\/v1\/site-content(\/|$)/.test(pathname)) {
