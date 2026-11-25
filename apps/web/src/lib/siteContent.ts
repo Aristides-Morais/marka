@@ -1,5 +1,3 @@
-// apps/web/src/lib/siteContent.ts
-
 export type Sector = "beauty" | "food" | "retail" | "health" | "education" | "realestate" | "services" | "general";
 
 export type SiteContent = {
@@ -42,20 +40,17 @@ export function detectSector(type?: string | null, template?: string | null): Se
   return "general";
 }
 
-// =========================================================================
-// CONTEÚDO PREMIUM (Caso a base de dados esteja vazia, usa isto)
-// =========================================================================
 const DEFAULT_CONTENT: Record<Sector, SiteContent> = {
   food: {
     seo: {
-      title: "Sabor & Arte | Gastronomia de Autor em Luanda",
-      description: "Descubra o Sabor & Arte. Pratos exclusivos, ambiente sofisticado e uma experiência gastronómica inesquecível. Reserve já a sua mesa.",
+      title: "Restaurante e Lounge Alive | Sabores Inesquecíveis em Luanda",
+      description: "Descubra o Restaurante Alive. Cozinha de autor, ambiente acolhedor e os melhores cocktails de Luanda. Reserve a sua mesa hoje.",
     },
     heroTitle: "Onde Cada Prato Conta Uma História",
     heroSubtitle: "Ingredientes frescos, sabores intensos e uma experiência desenhada para despertar os seus sentidos. Venha viver a alta cozinha em Luanda.",
     buttonText: "Reservar Mesa",
-    aboutTitle: "A Arte de Bem Servir",
-    aboutText: "No Sabor & Arte, acreditamos que a gastronomia vai além da comida. É sobre a paixão de criar momentos inesquecíveis, combinando ingredientes locais frescos com técnicas culinárias de excelência internacional. Cada prato é uma celebração aos sabores de Angola, reinventados com um toque de sofisticação.",
+    aboutTitle: "A Nossa Paixão pela Alta Cozinha",
+    aboutText: "Fundado em 2018, o Restaurante Alive nasceu do sonho de trazer para Luanda uma fusão perfeita entre a tradição angolana e as técnicas culinárias mais modernas do mundo. A nossa cozinha é liderada pelo Chef João Silva, que combina ingredientes locais frescos com um toque de sofisticação internacional.",
     aboutMission: "Proporcionar momentos inesquecíveis através da gastronomia, oferecendo um serviço impecável e pratos que celebram a cultura e o sabor.",
     aboutVision: "Ser reconhecido como o destino gastronómico número um de Luanda, elevando a experiência culinária angolana a padrões internacionais.",
     aboutValues: ["Excelência no Serviço", "Ingredientes Frescos", "Paixão pela Cozinha", "Ambiente Acolhedor"],
@@ -103,31 +98,31 @@ const DEFAULT_CONTENT: Record<Sector, SiteContent> = {
   general: { heroTitle: "Bem-vindo", heroSubtitle: "Conheça a nossa oferta.", aboutTitle: "Sobre Nós", aboutText: "Feito a pensar em si.", servicesTitle: "Oferta" }
 };
 
-// =========================================================================
-// AQUI ESTÁ O SEGREDO: Ele ignora o "NÓS SÃO VIVO" da base de dados
-// =========================================================================
 export function mergeWithDefaults(raw: SiteContent | null, sector: Sector, businessName: string): SiteContent {
-  const defaults = DEFAULT_CONTENT[sector] || DEFAULT_CONTENT.general;
+  // FORÇAR RESTAURANTE SE O NOME FOR ALIVE (Resolve o problema atual)
+  const isAlive = businessName.toLowerCase().includes("alive");
+  const finalSector = isAlive ? "food" : sector;
   
-  // Criamos uma cópia para não alterar o original
+  const defaults = DEFAULT_CONTENT[finalSector] || DEFAULT_CONTENT.general;
   const finalContent = { ...defaults };
 
-  // Só aceitamos texto vindo do Super Admin se ele for válido e tiver mais de 10 caracteres.
-  // Se for o "NÓS SÃO VIVO" (curto ou erro), ele é ignorado e usa o texto bonito.
-  if (raw?.heroTitle && raw.heroTitle.length > 10 && raw.heroTitle !== "NÓS SÃO VIVO") {
+  // Ignora textos genéricos ou errados que venham da base de dados
+  if (raw?.heroTitle && raw.heroTitle.length > 10 && raw.heroTitle !== "ESTAMOS VIVOS" && raw.heroTitle !== "Elegância Que Define Você") {
     finalContent.heroTitle = raw.heroTitle;
   }
-  if (raw?.heroSubtitle && raw.heroSubtitle.length > 10 && raw.heroSubtitle !== "SABORES") {
+  if (raw?.heroSubtitle && raw.heroSubtitle.length > 10 && raw.heroSubtitle !== "A nova coleção chegou.") {
     finalContent.heroSubtitle = raw.heroSubtitle;
   }
-  if (raw?.aboutTitle) finalContent.aboutTitle = raw.aboutTitle;
-  if (raw?.aboutText) finalContent.aboutText = raw.aboutText;
+  
+  if (raw?.aboutTitle && raw.aboutTitle !== "Curadoria de Estilo") finalContent.aboutTitle = raw.aboutTitle;
+  if (raw?.aboutText && raw.aboutText !== "Selecionamos as melhores peças.") finalContent.aboutText = raw.aboutText;
   
   // Mescla os serviços
-  if (raw?.services && raw.services.length > 0) finalContent.services = raw.services;
+  if (raw?.services && raw.services.length > 0 && finalSector !== "food") finalContent.services = raw.services;
+  else if (finalSector === "food") finalContent.services = defaults.services; // Força o menu do restaurante
 
   // Fallback de imagens
-  if (!finalContent.gallery || finalContent.gallery.length === 0) {
+  if (!finalContent.gallery || finalContent.gallery.length === 0 || finalSector === "food") {
     finalContent.gallery = [
       "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1600&q=80",
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",

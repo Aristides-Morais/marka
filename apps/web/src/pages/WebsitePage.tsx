@@ -56,11 +56,13 @@ export default function WebsitePage() {
   if (loading) return <div className="min-h-screen grid place-items-center bg-[#f8f5f0]">A carregar...</div>;
   if (!business) return <div className="min-h-screen grid place-items-center">Negócio não encontrado.</div>;
 
-  const primary = content.visualIdentity?.primary || business.primaryColor || "#512638";
-  const secondary = content.visualIdentity?.secondary || business.secondaryColor || "#B99A75";
-  const isServiceList = sector === "beauty" || sector === "health" || sector === "services";
+  // Força o setor visual para food se for o Alive
+  const visualSector = business.name.toLowerCase().includes("alive") ? "food" : sector;
+
+  const primary = content.visualIdentity?.primary || business.primaryColor || (visualSector === "food" ? "#6B1020" : "#512638");
+  const secondary = content.visualIdentity?.secondary || business.secondaryColor || (visualSector === "food" ? "#9A7634" : "#B99A75");
   
-  // Puxa os serviços da API ou os do Fallback do siteContent.ts
+  const isServiceList = visualSector === "beauty" || visualSector === "health" || visualSector === "services";
   const cards = isServiceList ? (services.length > 0 ? services : content.services) : (products.length > 0 ? products : content.services);
   
   const phoneClean = (business.phone || "").replace(/\D/g, "");
@@ -83,7 +85,7 @@ export default function WebsitePage() {
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-widest">
             <a href="#sobre" className="hover:opacity-70 transition">Sobre</a>
-            <a href="#menu" className="hover:opacity-70 transition">{isServiceList ? "Serviços" : "Menu"}</a>
+            <a href="#menu" className="hover:opacity-70 transition">{visualSector === "food" ? "Menu" : "Serviços"}</a>
             <a href="#galeria" className="hover:opacity-70 transition">Galeria</a>
             <a href="#contactos" className="hover:opacity-70 transition">Contactos</a>
             {waLink && (
@@ -97,7 +99,7 @@ export default function WebsitePage() {
 
       {/* HERO CINEMATOGRÁFICO */}
       <section id="inicio" className="relative h-[100svh] flex items-center justify-center overflow-hidden">
-        <HeroScene sector={sector} primaryColor={primary} secondaryColor={secondary} heroImage={content.gallery?.[0]} />
+        <HeroScene sector={visualSector} primaryColor={primary} secondaryColor={secondary} heroImage={content.gallery?.[0]} />
         
         <div className="relative z-10 text-center px-6 max-w-4xl mx-auto mt-20">
           <p className="text-xs md:text-sm font-bold tracking-[0.3em] uppercase text-white/80 mb-6">
@@ -164,7 +166,7 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* GALERIA (Agora alinhada corretamente) */}
+      {/* GALERIA */}
       <section id="galeria" className="py-24 px-6 bg-[#F8F4EF]">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
