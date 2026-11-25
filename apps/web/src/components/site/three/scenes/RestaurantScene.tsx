@@ -47,6 +47,6 @@ export default function RestaurantScene({ scrollProgress }: { scrollProgress: nu
           <meshStandardMaterial color="#9A7634" roughness={0.1} metalness={0.9} />
         </mesh>
       </group>
-    </section>
+    </group>
   );
 }
