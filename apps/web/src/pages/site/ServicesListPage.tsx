@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import SiteHeader from "../../components/site/SiteHeader";
 
-// DADOS HARDCODED (Para abrir instantaneamente)
 const ALIVE_DATA = {
   name: "Alive Restaurante & Lounge",
   phone: "244923000000",
@@ -57,15 +57,7 @@ function ScrollReveal({ children, delay = 0, direction = "up", className = "" }:
   };
 
   return (
-    <div
-      ref={ref}
-      className={`transition-all duration-1000 ease-out ${className}`}
-      style={{
-        opacity: isVisible ? 1 : 0,
-        transform: getTransform(),
-        transitionDelay: `${delay}ms`,
-      }}
-    >
+    <div ref={ref} className={`transition-all duration-1000 ease-out ${className}`} style={{ opacity: isVisible ? 1 : 0, transform: getTransform(), transitionDelay: `${delay}ms` }}>
       {children}
     </div>
   );
@@ -73,8 +65,6 @@ function ScrollReveal({ children, delay = 0, direction = "up", className = "" }:
 
 export default function ServicesListPage() {
   const { slug = "" } = useParams();
-  
-  // Dados diretos: sem loading, sem erros de API
   const business = ALIVE_DATA;
   const services = ALIVE_DATA.services;
   const primary = ALIVE_DATA.primaryColor;
@@ -89,19 +79,12 @@ export default function ServicesListPage() {
         .font-sans { font-family: 'DM Sans', sans-serif; }
       `}</style>
 
-      <header className="fixed inset-x-0 top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm py-4">
-        <div className="container mx-auto px-6 flex items-center justify-between">
-          <Link to={`/${slug}`} className="font-serif text-2xl font-bold text-[#221A18]">{business.name}</Link>
-          <Link to={`/${slug}`} className="text-sm font-medium uppercase tracking-widest text-gray-600 hover:text-black">← Voltar ao Início</Link>
-        </div>
-      </header>
+      <SiteHeader businessName={business.name} primary={primary} secondary={secondary} waLink={waLink} />
 
-      <section className="pt-40 pb-20 px-6 text-center bg-white relative overflow-hidden">
+      <section className="pt-32 pb-20 px-6 text-center bg-white relative overflow-hidden">
         <ScrollReveal delay={100}>
           <p className="text-sm font-bold tracking-[0.2em] uppercase mb-4" style={{ color: primary }}>Gastronomia</p>
-          <h1 className="font-serif text-5xl md:text-7xl text-[#221A18] leading-tight mb-6">
-            {business.servicesTitle}
-          </h1>
+          <h1 className="font-serif text-5xl md:text-7xl text-[#221A18] leading-tight mb-6">{business.servicesTitle}</h1>
           <div className="w-24 h-1 mx-auto" style={{ background: secondary }}></div>
         </ScrollReveal>
       </section>
@@ -113,29 +96,17 @@ export default function ServicesListPage() {
               <ScrollReveal key={index} delay={index * 150} direction={index % 2 === 0 ? "left" : "right"}>
                 <div className="group flex flex-col md:flex-row gap-8 items-center bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100">
                   <div className="w-full md:w-1/3 aspect-[4/3] overflow-hidden rounded-xl">
-                    <img 
-                      src={DISH_IMAGES[index % DISH_IMAGES.length]} 
-                      alt={item.name} 
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
+                    <img src={DISH_IMAGES[index % DISH_IMAGES.length]} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                   </div>
                   <div className="w-full md:w-2/3 flex flex-col justify-center">
                     <div className="flex justify-between items-baseline mb-2">
-                      <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#221A18] group-hover:text-[#6B1020] transition-colors">
-                        {item.name}
-                      </h3>
+                      <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#221A18] group-hover:text-[#6B1020] transition-colors">{item.name}</h3>
                       <span className="text-lg font-bold" style={{ color: primary }}>{item.price}</span>
                     </div>
                     <div className="w-full border-b border-dotted border-gray-300 mb-4"></div>
                     <p className="text-gray-600 leading-relaxed mb-6">{item.desc}</p>
                     <div className="mt-auto">
-                      <a 
-                        href={`${waLink}?text=Olá, gostaria de pedir o prato: ${item.name}`} 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm uppercase tracking-wider text-white transition hover:-translate-y-1 shadow-md"
-                        style={{ background: primary }}
-                      >
+                      <a href={`${waLink}?text=Olá, gostaria de pedir o prato: ${item.name}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm uppercase tracking-wider text-white transition hover:-translate-y-1 shadow-md" style={{ background: primary }}>
                         Pedir pelo WhatsApp <span aria-hidden>→</span>
                       </a>
                     </div>
@@ -151,13 +122,7 @@ export default function ServicesListPage() {
         <div className="container mx-auto max-w-2xl">
           <h2 className="font-serif text-3xl md:text-4xl mb-6 text-white">Pronto para experimentar?</h2>
           <p className="text-white/80 mb-8 text-lg">Faça a sua reserva e venha viver uma experiência inesquecível.</p>
-          <a 
-            href={waLink} 
-            target="_blank" 
-            rel="noreferrer" 
-            className="inline-block px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition hover:-translate-y-1 shadow-xl"
-            style={{ background: secondary, color: "#1a1412" }}
-          >
+          <a href={waLink} target="_blank" rel="noreferrer" className="inline-block px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition hover:-translate-y-1 shadow-xl" style={{ background: secondary, color: "#1a1412" }}>
             Reservar Mesa Agora
           </a>
         </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import SiteHeader from "../../components/site/SiteHeader";
 
 const FAQ_DATA = [
   { q: "É necessário fazer reserva?", a: "Recomendamos vivamente a reserva, especialmente aos fins de semana, para garantir o seu lugar. Pode fazê-lo através do nosso WhatsApp." },
@@ -12,16 +13,13 @@ const FAQ_DATA = [
 
 export default function FaqPage() {
   const { slug = "" } = useParams();
-  const [openIndex, setOpenIndex] = useState<number | null>(0); // Primeira pergunta aberta por defeito
-  
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
   const primary = "#6B1020";
   const secondary = "#9A7634";
   const waLink = "https://wa.me/244923000000";
   const businessName = "Alive Restaurante & Lounge";
 
-  const toggleAccordion = (index: number) => {
-    setOpenIndex(openIndex === index ? null : index);
-  };
+  const toggleAccordion = (index: number) => setOpenIndex(openIndex === index ? null : index);
 
   return (
     <main className="min-h-screen bg-[#F8F4EF] text-[#35232B] font-sans">
@@ -31,14 +29,9 @@ export default function FaqPage() {
         .font-sans { font-family: 'DM Sans', sans-serif; }
       `}</style>
 
-      <header className="fixed inset-x-0 top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm py-4">
-        <div className="container mx-auto px-6 flex items-center justify-between">
-          <Link to={`/${slug}`} className="font-serif text-2xl font-bold text-[#221A18]">{businessName}</Link>
-          <Link to={`/${slug}`} className="text-sm font-medium uppercase tracking-widest text-gray-600 hover:text-black">← Voltar ao Início</Link>
-        </div>
-      </header>
+      <SiteHeader businessName={businessName} primary={primary} secondary={secondary} waLink={waLink} />
 
-      <section className="pt-40 pb-20 px-6 text-center bg-white">
+      <section className="pt-32 pb-20 px-6 text-center bg-white">
         <p className="text-sm font-bold tracking-[0.2em] uppercase mb-4" style={{ color: primary }}>Dúvidas Frequentes</p>
         <h1 className="font-serif text-5xl md:text-7xl text-[#221A18] leading-tight mb-6">Perguntas & Respostas</h1>
         <div className="w-24 h-1 mx-auto" style={{ background: secondary }}></div>
@@ -50,38 +43,15 @@ export default function FaqPage() {
             {FAQ_DATA.map((item, index) => {
               const isOpen = openIndex === index;
               return (
-                <div 
-                  key={index} 
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300"
-                >
-                  <button 
-                    onClick={() => toggleAccordion(index)}
-                    className="w-full px-8 py-6 flex items-center justify-between text-left focus:outline-none group"
-                  >
-                    <h3 className="font-serif text-xl font-bold text-[#221A18] group-hover:text-[#6B1020] transition-colors pr-4">
-                      {item.q}
-                    </h3>
-                    <span 
-                      className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300"
-                      style={{ 
-                        background: isOpen ? primary : "#F8F4EF",
-                        color: isOpen ? "white" : primary,
-                        transform: isOpen ? "rotate(180deg)" : "rotate(0)"
-                      }}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
+                <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-300">
+                  <button onClick={() => toggleAccordion(index)} className="w-full px-8 py-6 flex items-center justify-between text-left focus:outline-none group">
+                    <h3 className="font-serif text-xl font-bold text-[#221A18] group-hover:text-[#6B1020] transition-colors pr-4">{item.q}</h3>
+                    <span className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300" style={{ background: isOpen ? primary : "#F8F4EF", color: isOpen ? "white" : primary, transform: isOpen ? "rotate(180deg)" : "rotate(0)" }}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                     </span>
                   </button>
-                  
-                  <div 
-                    className="px-8 overflow-hidden transition-all duration-500 ease-in-out"
-                    style={{ maxHeight: isOpen ? "200px" : "0", opacity: isOpen ? 1 : 0 }}
-                  >
-                    <p className="text-gray-600 leading-relaxed pb-6 pt-2">
-                      {item.a}
-                    </p>
+                  <div className="px-8 overflow-hidden transition-all duration-500 ease-in-out" style={{ maxHeight: isOpen ? "200px" : "0", opacity: isOpen ? 1 : 0 }}>
+                    <p className="text-gray-600 leading-relaxed pb-6 pt-2">{item.a}</p>
                   </div>
                 </div>
               );

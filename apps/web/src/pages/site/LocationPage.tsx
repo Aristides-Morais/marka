@@ -1,10 +1,12 @@
 import { Link, useParams } from "react-router-dom";
+import SiteHeader from "../../components/site/SiteHeader";
 
 export default function LocationPage() {
   const { slug = "" } = useParams();
   const primary = "#6B1020";
   const secondary = "#9A7634";
   const businessName = "Alive Restaurante & Lounge";
+  const waLink = "https://wa.me/244923000000";
   
   return (
     <main className="min-h-screen bg-[#F8F4EF] text-[#35232B] font-sans">
@@ -12,29 +14,14 @@ export default function LocationPage() {
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:wght@400;500;600;700&display=swap');
         .font-serif { font-family: 'Playfair Display', serif; }
         .font-sans { font-family: 'DM Sans', sans-serif; }
-        @keyframes kenburns {
-          0% { transform: scale(1); }
-          100% { transform: scale(1.1); }
-        }
-        .animate-kenburns {
-          animation: kenburns 20s ease-in-out infinite alternate;
-        }
+        @keyframes kenburns { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+        .animate-kenburns { animation: kenburns 20s ease-in-out infinite alternate; }
       `}</style>
 
-      <header className="fixed inset-x-0 top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm py-4">
-        <div className="container mx-auto px-6 flex items-center justify-between">
-          <Link to={`/${slug}`} className="font-serif text-2xl font-bold text-[#221A18]">{businessName}</Link>
-          <Link to={`/${slug}`} className="text-sm font-medium uppercase tracking-widest text-gray-600 hover:text-black">← Voltar ao Início</Link>
-        </div>
-      </header>
+      <SiteHeader businessName={businessName} primary={primary} secondary={secondary} waLink={waLink} />
 
-      {/* HERO COM IMAGEM EM KEN BURNS */}
       <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
-        <img 
-          src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1920&q=80" 
-          alt="Localização" 
-          className="absolute inset-0 w-full h-full object-cover animate-kenburns"
-        />
+        <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1920&q=80" alt="Localização" className="absolute inset-0 w-full h-full object-cover animate-kenburns" />
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 text-center px-6">
           <p className="text-sm font-bold tracking-[0.2em] uppercase mb-4 text-white/80">Onde Estamos</p>
@@ -42,7 +29,6 @@ export default function LocationPage() {
         </div>
       </section>
 
-      {/* INFO E MAPA */}
       <section className="py-24 px-6">
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-3 gap-12 mb-16">
@@ -63,17 +49,8 @@ export default function LocationPage() {
             </div>
           </div>
 
-          {/* MAPA */}
           <div className="rounded-3xl overflow-hidden shadow-2xl border-4 border-white h-[500px]">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15793.26239243537!2d13.2301747!3d-8.8383198!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1a51f2a6a3f1d5b7%3A0x6b3c3b3b3b3b3b3b!2sLuanda%2C%20Angola!5e0!3m2!1spt-PT!2sao!4v1620000000000!5m2!1spt-PT!2sao"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            ></iframe>
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15793.26239243537!2d13.2301747!3d-8.8383198!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1a51f2a6a3f1d5b7%3A0x6b3c3b3b3b3b3b3b!2sLuanda%2C%20Angola!5e0!3m2!1spt-PT!2sao!4v1620000000000!5m2!1spt-PT!2sao" width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe>
           </div>
         </div>
       </section>

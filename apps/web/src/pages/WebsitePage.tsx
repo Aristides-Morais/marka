@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import HeroScene from "../components/site/three/HeroScene";
 import Gallery3D from "../components/site/motion/Gallery3D";
+import SiteHeader from "../components/site/SiteHeader";
 import { detectSector, mergeWithDefaults, type SiteContent } from "../lib/siteContent";
 
 type Business = any; 
@@ -73,39 +74,14 @@ export default function WebsitePage() {
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:wght@400;500;600;700&display=swap');
         .font-serif { font-family: 'Playfair Display', serif; }
         .font-sans { font-family: 'DM Sans', sans-serif; }
-        @keyframes slow-zoom { from { transform: scale(1); } to { transform: scale(1.1); } }
       `}</style>
 
-      {/* HEADER (Apenas com as Páginas) */}
-      <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${scrolled ? "bg-white/90 backdrop-blur-md shadow-sm py-3 text-black" : "bg-transparent py-6 text-white"}`}>
-        <div className="container mx-auto px-6 flex items-center justify-between">
-          <Link to={`/${slug}`} className="font-serif text-2xl font-bold tracking-tight">
-            {business.name}
-          </Link>
-          
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-widest">
-            <Link to={`/${slug}/sobre`} className="hover:opacity-70 transition">Sobre</Link>
-            <Link to={`/${slug}/servicos`} className="hover:opacity-70 transition">
-              {visualSector === "food" ? "Menu" : "Serviços"}
-            </Link>
-            <Link to={`/${slug}/galeria`} className="hover:opacity-70 transition">Galeria</Link>
-            <Link to={`/${slug}/contactos`} className="hover:opacity-70 transition">Contactos</Link>
-            
-            {waLink && (
-              <a href={waLink} target="_blank" rel="noreferrer" className="ml-4 px-6 py-2 rounded-full font-bold text-black transition hover:scale-105" style={{ background: secondary }}>
-                Reservar
-              </a>
-            )}
-          </nav>
-        </div>
-      </header>
+      <SiteHeader businessName={business.name} primary={primary} secondary={secondary} waLink={waLink} />
 
       {/* HERO */}
       <section id="inicio" className="relative h-[100svh] flex items-center justify-center overflow-hidden pt-20">
         <HeroScene sector={visualSector} primaryColor={primary} secondaryColor={secondary} heroImage={content.gallery?.[0]} />
-        
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
-
         <div className="relative z-10 text-center px-6 max-w-4xl mx-auto flex flex-col items-center justify-center h-full pb-10">
           <p className="text-xs md:text-sm font-bold tracking-[0.3em] uppercase text-white/80 mb-4 md:mb-6 mt-10">
             Bem-vindo ao {business.name}
@@ -116,7 +92,6 @@ export default function WebsitePage() {
           <p className="text-base md:text-lg text-white/90 max-w-2xl mx-auto mb-10 drop-shadow-md">
             {content.heroSubtitle}
           </p>
-          
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
             <a href={waLink || "#"} target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition hover:-translate-y-1 shadow-xl w-full sm:w-auto" style={{ background: secondary, color: "#1a1412" }}>
               {content.buttonText || "Contactar"}
@@ -128,16 +103,15 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* SOBRE (Resumo) */}
+      {/* SOBRE */}
       <section id="sobre" className="py-24 md:py-32 px-6">
         <div className="container mx-auto max-w-6xl grid md:grid-cols-2 gap-16 items-center">
           <div className="relative aspect-[4/5] rounded-t-full overflow-hidden shadow-2xl">
-             <img src={content.gallery?.[1] || "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c"} alt="Sobre" className="w-full h-full object-cover" />
+             <img src={content.gallery?.[1]} alt="Sobre" className="w-full h-full object-cover" />
           </div>
           <div>
             <h2 className="font-serif text-4xl md:text-5xl mb-6 text-[#221A18]">{content.aboutTitle}</h2>
             <p className="text-gray-600 leading-relaxed mb-8 text-lg">{content.aboutText}</p>
-            
             <div className="grid grid-cols-3 gap-6 pt-8 border-t border-gray-200">
                {content.stats?.map((s: any, i: number) => (
                  <div key={i}>
@@ -153,14 +127,13 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* MENU (Resumo) */}
+      {/* MENU */}
       <section id="menu" className="py-24 bg-white text-black">
         <div className="container mx-auto px-6 max-w-5xl">
           <div className="text-center mb-16">
             <h2 className="font-serif text-4xl md:text-5xl mb-4 text-[#221A18]">{content.servicesTitle}</h2>
             <div className="w-24 h-1 mx-auto" style={{ background: secondary }} />
           </div>
-          
           <div className="grid md:grid-cols-2 gap-x-12 gap-y-8">
             {Array.isArray(cards) && cards.slice(0, 4).map((item: any, i: number) => (
               <div key={i} className="group border-b border-gray-100 pb-4">
@@ -172,13 +145,8 @@ export default function WebsitePage() {
               </div>
             ))}
           </div>
-          
           <div className="mt-16 text-center">
-            <Link 
-              to={`/${slug}/servicos`} 
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm text-white transition hover:-translate-y-1 shadow-xl"
-              style={{ background: primary }}
-            >
+            <Link to={`/${slug}/servicos`} className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm text-white transition hover:-translate-y-1 shadow-xl" style={{ background: primary }}>
               Ver Menu Completo <span aria-hidden>→</span>
             </Link>
           </div>
@@ -234,6 +202,9 @@ export default function WebsitePage() {
               <li><Link to={`/${slug}/servicos`} className="hover:text-white transition">Menu / Serviços</Link></li>
               <li><Link to={`/${slug}/galeria`} className="hover:text-white transition">Galeria</Link></li>
               <li><Link to={`/${slug}/depoimentos`} className="hover:text-white transition">Depoimentos</Link></li>
+              <li><Link to={`/${slug}/faq`} className="hover:text-white transition">FAQ</Link></li>
+              <li><Link to={`/${slug}/blog`} className="hover:text-white transition">Blog</Link></li>
+              <li><Link to={`/${slug}/localizacao`} className="hover:text-white transition">Localização</Link></li>
               <li><Link to={`/${slug}/contactos`} className="hover:text-white transition">Contactos</Link></li>
             </ul>
           </div>
