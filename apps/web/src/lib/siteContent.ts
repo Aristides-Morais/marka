@@ -40,12 +40,10 @@ export function detectSector(type?: string | null, template?: string | null): Se
   return "general";
 }
 
+// Conteúdo Premium Padrão para cada setor
 const DEFAULT_CONTENT: Record<Sector, SiteContent> = {
   food: {
-    seo: {
-      title: "Restaurante e Lounge Alive | Sabores Inesquecíveis em Luanda",
-      description: "Descubra o Restaurante Alive. Cozinha de autor, ambiente acolhedor e os melhores cocktails de Luanda. Reserve a sua mesa hoje.",
-    },
+    seo: { title: "Alive Restaurante & Lounge | Alta Cozinha em Luanda", description: "Viva uma experiência gastronómica inesquecível no Alive. Pratos de autor, ambiente sofisticado e reservas online." },
     heroTitle: "Onde Cada Prato Conta Uma História",
     heroSubtitle: "Ingredientes frescos, sabores intensos e uma experiência desenhada para despertar os seus sentidos. Venha viver a alta cozinha em Luanda.",
     buttonText: "Reservar Mesa",
@@ -72,24 +70,21 @@ const DEFAULT_CONTENT: Record<Sector, SiteContent> = {
     testimonials: [
       { name: "Maria Fernandes", text: "O melhor Mufete de Luanda! O ambiente é super elegante e o atendimento é de outro mundo.", role: "Cliente Fiel" },
       { name: "Carlos Andrade", text: "Festejei o meu aniversário aqui e superou todas as expectativas. O cocktail de maracujá é divinal.", role: "Cliente" },
+      { name: "Ana Rita", text: "Atenção aos detalhes no prato e no serviço. Voltarei com certeza!", role: "Food Blogger" },
     ],
     faq: [
       { q: "É necessário fazer reserva?", a: "Recomendamos vivamente a reserva, especialmente aos fins de semana, para garantir o seu lugar." },
       { q: "Têm opções vegetarianas?", a: "Sim, o nosso chef prepara opções vegetarianas deliciosas mediante pedido prévio." },
+      { q: "Qual é o horário de funcionamento?", a: "Abrimos de terça a domingo, das 12h às 23h." },
+      { q: "Fazem eventos privados?", a: "Sim, temos um espaço lounge dedicado para eventos privados. Contacte-nos para mais informações." },
     ],
     blog: [
-      { title: "A Arte de Preparar um Mufete Perfeito", excerpt: "Descubra os segredos do nosso chef para grelhar o peixe na perfeição.", date: "15 Nov 2026", content: "O segredo do mufete perfeito começa na frescura do peixe..." },
+      { title: "A Arte de Preparar um Mufete Perfeito", excerpt: "Descubra os segredos do nosso chef para grelhar o peixe na perfeição e o equilíbrio do óleo de palma.", date: "15 Nov 2026", content: "O segredo do mufete perfeito começa na frescura do peixe. No Alive, recebemos o cacusso diariamente diretamente do mercado. A arte está em não sobrecarregar o peixe com temperos fortes, deixando o sabor natural brilhar..." },
+      { title: "Harmonização de Vinhos com Pratos Angolanos", excerpt: "Saiba qual vinho escolher para acompanhar o Calulu ou a Muamba de Galinha.", date: "02 Nov 2026", content: "Muitos pensam que a comida angolana não combina com vinho. Neste artigo, o nosso sommelier explica como os vinhos brancos mais ácidos cortam a gordura do óleo de palma..." },
     ],
   },
-  beauty: {
-    seo: { title: "Salão de Beleza | Luanda", description: "Realce a sua beleza." },
-    heroTitle: "Realce a Sua Beleza Natural",
-    heroSubtitle: "Tratamentos exclusivos e um ambiente feito para relaxar.",
-    aboutTitle: "O Seu Momento de Cuidado",
-    aboutText: "No nosso salão, cada cliente é única. Oferecemos tratamentos de cabelo, unhas e estética com profissionais experientes.",
-    servicesTitle: "Tratamentos",
-    services: [{ name: "Corte e Escova", desc: "Corte personalizado e escova modelada.", price: "Sob consulta" }]
-  },
+  // ... (Os outros setores podem ficar com fallbacks mais simples por agora)
+  beauty: { heroTitle: "Realce a Sua Beleza Natural", heroSubtitle: "Tratamentos exclusivos e um ambiente feito para relaxar.", aboutTitle: "O Seu Momento de Cuidado", aboutText: "No nosso salão, cada cliente é única. Oferecemos tratamentos de cabelo, unhas e estética com profissionais experientes.", servicesTitle: "Tratamentos", services: [{ name: "Corte e Escova", desc: "Corte personalizado e escova modelada.", price: "Sob consulta" }] },
   retail: { heroTitle: "Elegância Que Define Você", heroSubtitle: "A nova coleção chegou.", aboutTitle: "Curadoria de Estilo", aboutText: "Selecionamos as melhores peças.", servicesTitle: "Destaques" },
   health: { heroTitle: "A Sua Saúde em Boas Mãos", heroSubtitle: "Cuidados médicos de excelência.", aboutTitle: "Sobre a Clínica", aboutText: "Profissionais dedicados ao seu bem-estar.", servicesTitle: "Especialidades" },
   realestate: { heroTitle: "Encontre o Seu Novo Lar", heroSubtitle: "Os melhores imóveis de Luanda.", aboutTitle: "Sobre Nós", aboutText: "Ajudamos a realizar o seu sonho.", servicesTitle: "Imóveis" },
@@ -99,14 +94,14 @@ const DEFAULT_CONTENT: Record<Sector, SiteContent> = {
 };
 
 export function mergeWithDefaults(raw: SiteContent | null, sector: Sector, businessName: string): SiteContent {
-  // FORÇAR RESTAURANTE SE O NOME FOR ALIVE (Resolve o problema atual)
+  // Força o setor food para o Alive para garantir o design correto
   const isAlive = businessName.toLowerCase().includes("alive");
   const finalSector = isAlive ? "food" : sector;
   
   const defaults = DEFAULT_CONTENT[finalSector] || DEFAULT_CONTENT.general;
   const finalContent = { ...defaults };
 
-  // Ignora textos genéricos ou errados que venham da base de dados
+  // Só aceita texto do Super Admin se for válido
   if (raw?.heroTitle && raw.heroTitle.length > 10 && raw.heroTitle !== "ESTAMOS VIVOS" && raw.heroTitle !== "Elegância Que Define Você") {
     finalContent.heroTitle = raw.heroTitle;
   }
@@ -117,11 +112,9 @@ export function mergeWithDefaults(raw: SiteContent | null, sector: Sector, busin
   if (raw?.aboutTitle && raw.aboutTitle !== "Curadoria de Estilo") finalContent.aboutTitle = raw.aboutTitle;
   if (raw?.aboutText && raw.aboutText !== "Selecionamos as melhores peças.") finalContent.aboutText = raw.aboutText;
   
-  // Mescla os serviços
   if (raw?.services && raw.services.length > 0 && finalSector !== "food") finalContent.services = raw.services;
   else if (finalSector === "food") finalContent.services = defaults.services; // Força o menu do restaurante
 
-  // Fallback de imagens
   if (!finalContent.gallery || finalContent.gallery.length === 0 || finalSector === "food") {
     finalContent.gallery = [
       "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1600&q=80",
