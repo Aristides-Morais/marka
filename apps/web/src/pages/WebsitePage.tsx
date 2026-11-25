@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import HeroScene from "../components/site/three/HeroScene";
 import Gallery3D from "../components/site/motion/Gallery3D";
-import { detectSector, mergeWithDefaults, type SiteContent, type Sector } from "../lib/siteContent";
+import { detectSector, mergeWithDefaults, type SiteContent } from "../lib/siteContent";
 
 type Business = any; 
 type Product = any;
@@ -77,24 +77,35 @@ export default function WebsitePage() {
         @keyframes slow-zoom { from { transform: scale(1); } to { transform: scale(1.1); } }
       `}</style>
 
+      {/* HEADER COM MENU DUPLO (Âncoras + Páginas) */}
       <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${scrolled ? "bg-white/90 backdrop-blur-md shadow-sm py-3 text-black" : "bg-transparent py-6 text-white"}`}>
         <div className="container mx-auto px-6 flex items-center justify-between">
           <Link to={`/${slug}`} className="font-serif text-2xl font-bold tracking-tight">
             {business.name}
           </Link>
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-widest">
-            {/* LINK PARA A PÁGINA SOBRE */}
-            <Link to={`/${slug}/sobre`} className="hover:opacity-70 transition">Sobre</Link>
+          
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium uppercase tracking-widest">
             
-            {/* LINK PARA A PÁGINA SERVIÇOS/MENU */}
-            <Link to={`/${slug}/servicos`} className="hover:opacity-70 transition">
-              {visualSector === "food" ? "Menu" : "Serviços"}
-            </Link>
-            
-            <a href="#galeria" className="hover:opacity-70 transition">Galeria</a>
-            <Link to={`/${slug}/contactos`} className="hover:opacity-70 transition">Contactos</Link>
+            {/* GRUPO 1: ÂNCORAS (Scroll na Home) */}
+            <div className="flex items-center gap-4 border-r border-gray-500/30 pr-6">
+              <span className="text-[10px] opacity-50 font-bold">Na Página:</span>
+              <a href="#sobre" className="hover:opacity-70 transition">Sobre</a>
+              <a href="#menu" className="hover:opacity-70 transition">{visualSector === "food" ? "Menu" : "Serviços"}</a>
+              <a href="#galeria" className="hover:opacity-70 transition">Galeria</a>
+              <a href="#contactos" className="hover:opacity-70 transition">Contactos</a>
+            </div>
+
+            {/* GRUPO 2: LINKS PARA PÁGINAS COMPLETAS */}
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] opacity-50 font-bold">Páginas:</span>
+              <Link to={`/${slug}/sobre`} className="hover:opacity-70 transition">Sobre</Link>
+              <Link to={`/${slug}/servicos`} className="hover:opacity-70 transition">{visualSector === "food" ? "Menu" : "Serviços"}</Link>
+              <Link to={`/${slug}/galeria`} className="hover:opacity-70 transition">Galeria</Link>
+              <Link to={`/${slug}/contactos`} className="hover:opacity-70 transition">Contactos</Link>
+            </div>
+
             {waLink && (
-              <a href={waLink} target="_blank" rel="noreferrer" className="px-6 py-2 rounded-full font-bold text-black transition hover:scale-105" style={{ background: secondary }}>
+              <a href={waLink} target="_blank" rel="noreferrer" className="ml-4 px-6 py-2 rounded-full font-bold text-black transition hover:scale-105" style={{ background: secondary }}>
                 Reservar
               </a>
             )}
@@ -130,7 +141,7 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* SOBRE */}
+      {/* SOBRE (Resumo) */}
       <section id="sobre" className="py-24 md:py-32 px-6">
         <div className="container mx-auto max-w-6xl grid md:grid-cols-2 gap-16 items-center">
           <div className="relative aspect-[4/5] rounded-t-full overflow-hidden shadow-2xl">
@@ -148,11 +159,14 @@ export default function WebsitePage() {
                  </div>
                ))}
             </div>
+            <Link to={`/${slug}/sobre`} className="inline-block mt-8 text-sm font-bold uppercase tracking-widest" style={{ color: primary }}>
+              Ler a Nossa História Completa →
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* MENU (Home) */}
+      {/* MENU (Resumo) */}
       <section id="menu" className="py-24 bg-white text-black">
         <div className="container mx-auto px-6 max-w-5xl">
           <div className="text-center mb-16">
@@ -161,7 +175,7 @@ export default function WebsitePage() {
           </div>
           
           <div className="grid md:grid-cols-2 gap-x-12 gap-y-8">
-            {Array.isArray(cards) && cards.map((item: any, i: number) => (
+            {Array.isArray(cards) && cards.slice(0, 4).map((item: any, i: number) => (
               <div key={i} className="group border-b border-gray-100 pb-4">
                 <div className="flex justify-between items-baseline mb-2">
                   <h3 className="font-serif text-xl font-bold group-hover:text-[#6B1020] transition-colors">{item.name}</h3>
@@ -172,7 +186,6 @@ export default function WebsitePage() {
             ))}
           </div>
           
-          {/* Botão para ver a página completa de serviços */}
           <div className="mt-16 text-center">
             <Link 
               to={`/${slug}/servicos`} 
@@ -200,7 +213,7 @@ export default function WebsitePage() {
       <section className="py-24 px-6 bg-[#F8F4EF]">
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-3 gap-8">
-            {content.testimonials?.map((t: any, i: number) => (
+            {content.testimonials?.slice(0, 3).map((t: any, i: number) => (
               <div key={i} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
                 <div className="text-4xl text-gray-300 font-serif mb-4">"</div>
                 <p className="text-gray-600 italic mb-6">{t.text}</p>
@@ -210,6 +223,11 @@ export default function WebsitePage() {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="text-center mt-12">
+             <Link to={`/${slug}/depoimentos`} className="inline-block px-8 py-3 rounded-full font-bold text-sm uppercase tracking-widest border-2 transition hover:bg-black hover:text-white" style={{ borderColor: primary, color: primary }}>
+              Ver Todos os Depoimentos
+            </Link>
           </div>
         </div>
       </section>
@@ -226,9 +244,10 @@ export default function WebsitePage() {
             <h4 className="text-lg font-bold mb-6 uppercase tracking-widest">Links Rápidos</h4>
             <ul className="space-y-3 text-gray-400">
               <li><Link to={`/${slug}/sobre`} className="hover:text-white transition">Sobre Nós</Link></li>
-              <li><Link to={`/${slug}/servicos`} className="hover:text-white transition">Serviços</Link></li>
-              <li><Link to={`/${slug}/faq`} className="hover:text-white transition">FAQ</Link></li>
-              <li><Link to={`/${slug}/blog`} className="hover:text-white transition">Blog</Link></li>
+              <li><Link to={`/${slug}/servicos`} className="hover:text-white transition">Menu / Serviços</Link></li>
+              <li><Link to={`/${slug}/galeria`} className="hover:text-white transition">Galeria</Link></li>
+              <li><Link to={`/${slug}/depoimentos`} className="hover:text-white transition">Depoimentos</Link></li>
+              <li><Link to={`/${slug}/contactos`} className="hover:text-white transition">Contactos</Link></li>
             </ul>
           </div>
           <div>
