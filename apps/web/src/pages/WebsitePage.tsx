@@ -95,24 +95,30 @@ export default function WebsitePage() {
         </div>
       </header>
 
-      <section id="inicio" className="relative h-[100svh] flex items-center justify-center overflow-hidden">
+      {/* HERO CORRIGIDO */}
+      <section id="inicio" className="relative h-[100svh] flex items-center justify-center overflow-hidden pt-20">
         <HeroScene sector={visualSector} primaryColor={primary} secondaryColor={secondary} heroImage={content.gallery?.[0]} />
         
-        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto mt-20">
-          <p className="text-xs md:text-sm font-bold tracking-[0.3em] uppercase text-white/80 mb-6">
+        {/* Vinheta suave para o texto ter contraste, mas sem esconder o 3D */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
+
+        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto flex flex-col items-center justify-center h-full pb-10">
+          <p className="text-xs md:text-sm font-bold tracking-[0.3em] uppercase text-white/80 mb-4 md:mb-6 mt-10">
             Bem-vindo ao {business.name}
           </p>
-          <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl text-white leading-tight mb-8 drop-shadow-lg">
+          <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white leading-tight mb-6 drop-shadow-xl">
             {content.heroTitle}
           </h1>
-          <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-12 drop-shadow-md">
+          <p className="text-base md:text-lg text-white/90 max-w-2xl mx-auto mb-10 drop-shadow-md">
             {content.heroSubtitle}
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href={waLink || "#"} target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition hover:-translate-y-1 shadow-xl" style={{ background: secondary, color: "#1a1412" }}>
+          
+          {/* Botões com tamanho garantido e sem margens excessivas */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
+            <a href={waLink || "#"} target="_blank" rel="noreferrer" className="px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition hover:-translate-y-1 shadow-xl w-full sm:w-auto" style={{ background: secondary, color: "#1a1412" }}>
               {content.buttonText || "Contactar"}
             </a>
-            <a href="#sobre" className="px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm border-2 border-white text-white hover:bg-white hover:text-black transition">
+            <a href="#sobre" className="px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm border-2 border-white text-white hover:bg-white hover:text-black transition w-full sm:w-auto">
               Descobrir Mais
             </a>
           </div>
