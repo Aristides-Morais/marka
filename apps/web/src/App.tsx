@@ -18,10 +18,7 @@ import PrivacyPage from "./pages/site/PrivacyPage";
 import TermsPage from "./pages/site/TermsPage";
 import BlogPage from "./pages/site/BlogPage";
 import BlogPostPage from "./pages/site/BlogPostPage";
-import GalleryPage from "./pages/site/GalleryPage"; // Import
-
-// Dentro do <Routes>:
-<Route path="/:slug/galeria" element={<GalleryPage />} />
+import GalleryPage from "./pages/site/GalleryPage";
 
 export default function App() {
   return (
@@ -44,6 +41,7 @@ export default function App() {
         <Route path="/:slug/termos" element={<TermsPage />} />
         <Route path="/:slug/blog" element={<BlogPage />} />
         <Route path="/:slug/blog/:postSlug" element={<BlogPostPage />} />
+        <Route path="/:slug/galeria" element={<GalleryPage />} />
 
         <Route path="/:slug/loja" element={<StorePage />} />
         <Route path="/:slug/reservas" element={<ClientPage />} />
