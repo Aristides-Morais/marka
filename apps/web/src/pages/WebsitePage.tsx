@@ -56,7 +56,6 @@ export default function WebsitePage() {
   if (loading) return <div className="min-h-screen grid place-items-center bg-[#f8f5f0]">A carregar...</div>;
   if (!business) return <div className="min-h-screen grid place-items-center">Negócio não encontrado.</div>;
 
-  // Força o setor visual para food se for o Alive
   const visualSector = business.name.toLowerCase().includes("alive") ? "food" : sector;
 
   const primary = content.visualIdentity?.primary || business.primaryColor || (visualSector === "food" ? "#6B1020" : "#512638");
@@ -77,7 +76,6 @@ export default function WebsitePage() {
         @keyframes slow-zoom { from { transform: scale(1); } to { transform: scale(1.1); } }
       `}</style>
 
-      {/* HEADER PREMIUM */}
       <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${scrolled ? "bg-white/90 backdrop-blur-md shadow-sm py-3 text-black" : "bg-transparent py-6 text-white"}`}>
         <div className="container mx-auto px-6 flex items-center justify-between">
           <Link to={`/${slug}`} className="font-serif text-2xl font-bold tracking-tight">
@@ -97,7 +95,6 @@ export default function WebsitePage() {
         </div>
       </header>
 
-      {/* HERO CINEMATOGRÁFICO */}
       <section id="inicio" className="relative h-[100svh] flex items-center justify-center overflow-hidden">
         <HeroScene sector={visualSector} primaryColor={primary} secondaryColor={secondary} heroImage={content.gallery?.[0]} />
         
@@ -122,7 +119,6 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* SOBRE NÓS */}
       <section id="sobre" className="py-24 md:py-32 px-6">
         <div className="container mx-auto max-w-6xl grid md:grid-cols-2 gap-16 items-center">
           <div className="relative aspect-[4/5] rounded-t-full overflow-hidden shadow-2xl">
@@ -144,7 +140,6 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* SERVIÇOS / MENU */}
       <section id="menu" className="py-24 bg-white text-black">
         <div className="container mx-auto px-6 max-w-5xl">
           <div className="text-center mb-16">
@@ -166,7 +161,6 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* GALERIA */}
       <section id="galeria" className="py-24 px-6 bg-[#F8F4EF]">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
@@ -182,7 +176,6 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* TESTEMUNHOS */}
       <section className="py-24 px-6 bg-[#F8F4EF]">
         <div className="container mx-auto max-w-6xl">
           <div className="grid md:grid-cols-3 gap-8">
@@ -200,7 +193,6 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer id="contactos" className="bg-[#1a1412] text-white py-20 px-6">
         <div className="container mx-auto max-w-6xl grid md:grid-cols-3 gap-12">
           <div>
