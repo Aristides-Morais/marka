@@ -61,7 +61,6 @@ export default function WebsitePage() {
   if (!business) return <div className="min-h-screen grid place-items-center">Negócio não encontrado.</div>;
 
   const visualSector = business.name.toLowerCase().includes("alive") ? "food" : sector;
-
   const primary = content.visualIdentity?.primaryColor || business.primaryColor || (visualSector === "food" ? "#6B1020" : "#512638");
   const secondary = content.visualIdentity?.secondaryColor || business.secondaryColor || (visualSector === "food" ? "#9A7634" : "#B99A75");
   
@@ -79,7 +78,7 @@ export default function WebsitePage() {
         .font-sans { font-family: 'DM Sans', sans-serif; }
       `}</style>
 
-      <SiteHeader businessName={business.name} primary={primary} secondary={secondary} waLink={waLink} />
+      <SiteHeader businessName={business.name} primary={primary} secondary={secondary} waLink={waLink} businessType={business.type} />
 
       {/* HERO */}
       <section id="inicio" className="relative h-[100svh] flex items-center justify-center overflow-hidden pt-20">
@@ -156,25 +155,27 @@ export default function WebsitePage() {
         </div>
       </section>
 
-      {/* SECÇÃO DE DESTAQUE DO TAKEAWAY (NOVO) */}
-      <section className="py-16 px-6 bg-white">
-        <div className="container mx-auto max-w-5xl">
-          <div className="bg-[#1a1412] rounded-3xl p-8 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
-            <div className="absolute inset-0 opacity-20">
-              <img src="https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=1200&q=80" alt="Delivery" className="w-full h-full object-cover" />
-            </div>
-            <div className="relative z-10 md:w-2/3">
-              <h2 className="font-serif text-3xl md:text-5xl text-white mb-4">Comer em casa?</h2>
-              <p className="text-white/80 text-lg">Peça os seus pratos favoritos e receba em casa em Luanda. Rápido e saboroso.</p>
-            </div>
-            <div className="relative z-10 w-full md:w-auto">
-              <Link to={`/${slug}/takeaway`} className="block text-center px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition hover:-translate-y-1 shadow-xl w-full" style={{ background: secondary, color: "#1a1412" }}>
-                Fazer Pedido Takeaway
-              </Link>
+      {/* TAKEAWAY */}
+      {business.type?.includes("restaurante") && (
+        <section className="py-16 px-6 bg-white">
+          <div className="container mx-auto max-w-5xl">
+            <div className="bg-[#1a1412] rounded-3xl p-8 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-20">
+                <img src="https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=1200&q=80" alt="Delivery" className="w-full h-full object-cover" />
+              </div>
+              <div className="relative z-10 md:w-2/3">
+                <h2 className="font-serif text-3xl md:text-5xl text-white mb-4">Comer em casa?</h2>
+                <p className="text-white/80 text-lg">Peça os seus pratos favoritos e receba em casa em Luanda. Rápido e saboroso.</p>
+              </div>
+              <div className="relative z-10 w-full md:w-auto">
+                <Link to={`/${slug}/takeaway`} className="block text-center px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition hover:-translate-y-1 shadow-xl w-full" style={{ background: secondary, color: "#1a1412" }}>
+                  Fazer Pedido Takeaway
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* GALERIA 3D */}
       <section id="galeria" className="py-24 bg-[#1a1412]">
@@ -187,30 +188,7 @@ export default function WebsitePage() {
         <Gallery3D images={content.gallery || []} primary={primary} secondary={secondary} />
       </section>
 
-      {/* TESTEMUNHOS */}
-      <section className="py-24 px-6 bg-[#F8F4EF]">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-3 gap-8">
-            {content.testimonials?.slice(0, 3).map((t: any, i: number) => (
-              <div key={i} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                <div className="text-4xl text-gray-300 font-serif mb-4">"</div>
-                <p className="text-gray-600 italic mb-6">{t.text}</p>
-                <div>
-                  <div className="font-bold text-[#221A18]">{t.name}</div>
-                  <div className="text-xs text-gray-400 uppercase tracking-wide">{t.role}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-12">
-             <Link to={`/${slug}/depoimentos`} className="inline-block px-8 py-3 rounded-full font-bold text-sm uppercase tracking-widest border-2 transition hover:bg-black hover:text-white" style={{ borderColor: primary, color: primary }}>
-              Ver Todos os Depoimentos
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
+      {/* FOOTER (SEM DEPOIMENTOS, TERMOS, PRIVACIDADE) */}
       <footer id="contactos" className="bg-[#1a1412] text-white py-20 px-6">
         <div className="container mx-auto max-w-6xl grid md:grid-cols-3 gap-12">
           <div>
@@ -232,13 +210,13 @@ export default function WebsitePage() {
               <li><Link to={`/${slug}/sobre`} className="hover:text-white transition">Sobre Nós</Link></li>
               <li><Link to={`/${slug}/servicos`} className="hover:text-white transition">Menu / Serviços</Link></li>
               <li><Link to={`/${slug}/galeria`} className="hover:text-white transition">Galeria</Link></li>
-              <li><Link to={`/${slug}/depoimentos`} className="hover:text-white transition">Depoimentos</Link></li>
-              <li><Link to={`/${slug}/faq`} className="hover:text-white transition">FAQ</Link></li>
-              <li><Link to={`/${slug}/blog`} className="hover:text-white transition">Blog</Link></li>
-              <li><Link to={`/${slug}/localizacao`} className="hover:text-white transition">Localização</Link></li>
               <li><Link to={`/${slug}/contactos`} className="hover:text-white transition">Contactos</Link></li>
-              <li><Link to={`/${slug}/eventos`} className="hover:text-white transition">Eventos</Link></li>
-              <li><Link to={`/${slug}/takeaway`} className="hover:text-white transition">Takeaway</Link></li>
+              {business.type?.includes("restaurante") && (
+                <>
+                  <li><Link to={`/${slug}/takeaway`} className="hover:text-white transition">Takeaway</Link></li>
+                  <li><Link to={`/${slug}/eventos`} className="hover:text-white transition">Eventos</Link></li>
+                </>
+              )}
             </ul>
           </div>
           <div>
