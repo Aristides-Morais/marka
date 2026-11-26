@@ -35,7 +35,7 @@ export default function TakeawayPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (total === 0) return alert("O seu carrinho está vazio.");
+    if (total === 0) return alert("O seu carrinho está vazio. Adicione pratos do menu.");
     
     let message = `Olá, *Alive Restaurante & Lounge*!%0A%0A*NOVO PEDIDO:*%0A%0A`;
     Object.entries(cart).forEach(([id, qty]) => {
@@ -124,7 +124,7 @@ export default function TakeawayPage() {
               </select>
               <textarea placeholder="Observações" rows={2} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} className="w-full border p-3 rounded-lg resize-none" />
               
-              <button type="submit" className="w-full py-4 rounded-xl font-bold uppercase tracking-widest text-white mt-4 shadow-lg" style={{ background: secondary }}>
+              <button type="submit" className="w-full py-4 rounded-xl font-bold uppercase tracking-widest text-white mt-4 shadow-lg transition hover:-translate-y-1" style={{ background: secondary }}>
                 Finalizar Pedido no WhatsApp
               </button>
             </form>
