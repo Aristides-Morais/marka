@@ -30,7 +30,8 @@ export default function SiteHeader({ businessName, primary, secondary, waLink }:
             </Link>
           </div>
           
-          <nav className="hidden lg:flex items-center gap-4 text-[10px] xl:text-xs font-medium uppercase tracking-widest">
+          {/* Menu Desktop */}
+          <nav className="hidden xl:flex items-center gap-3 text-[10px] xl:text-xs font-medium uppercase tracking-widest">
             <Link to={`/${slug}/sobre`} className="hover:opacity-70 transition">Sobre</Link>
             <Link to={`/${slug}/servicos`} className="hover:opacity-70 transition">Menu</Link>
             <Link to={`/${slug}/galeria`} className="hover:opacity-70 transition">Galeria</Link>
@@ -39,16 +40,20 @@ export default function SiteHeader({ businessName, primary, secondary, waLink }:
             <Link to={`/${slug}/blog`} className="hover:opacity-70 transition">Blog</Link>
             <Link to={`/${slug}/localizacao`} className="hover:opacity-70 transition">Localização</Link>
             <Link to={`/${slug}/contactos`} className="hover:opacity-70 transition">Contactos</Link>
+            <Link to={`/${slug}/eventos`} className="hover:opacity-70 transition">Eventos</Link>
             
-            {waLink && (
-              <a href={waLink} target="_blank" rel="noreferrer" className="ml-2 px-4 py-2 rounded-full font-bold text-black transition hover:scale-105 text-[10px] xl:text-xs" style={{ background: secondary }}>
-                Reservar
-              </a>
-            )}
+            {/* Botão de Takeaway de destaque */}
+            <Link to={`/${slug}/takeaway`} className="px-3 py-1.5 rounded-full font-bold text-[10px] uppercase transition hover:scale-105" style={{ background: secondary, color: "#1a1412" }}>
+              Takeaway
+            </Link>
           </nav>
 
-          <div className="lg:hidden">
-            <Link to={`/${slug}/contactos`} className="text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full text-white" style={{ background: primary }}>
+          {/* Menu Mobile */}
+          <div className="xl:hidden flex items-center gap-2">
+            <Link to={`/${slug}/takeaway`} className="text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full text-white" style={{ background: secondary }}>
+              Takeaway
+            </Link>
+            <Link to={`/${slug}/contactos`} className="text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full text-white" style={{ background: primary }}>
               Menu
             </Link>
           </div>

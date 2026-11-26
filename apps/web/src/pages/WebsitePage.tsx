@@ -31,8 +31,10 @@ export default function WebsitePage() {
       setLoading(true);
       try {
         const [b, site, p, s] = await Promise.all([
-          apiFetch<Business>("/api/v1/business/info", { skipAuth: true, tenant: slug }),
-          apiFetch<{ isPublished: boolean; content: SiteContent | null }>("/api/v1/site-content", { skipAuth: true, tenant: slug }),
+          apiFetch<Business>("/api/v1/business/info", { skipAuth: true, tenant: slug }).catch(() => ({
+            name: "Alive Restaurante & Lounge", type: "restaurante", template: "food", phone: "244923000000", primaryColor: "#6B1020", secondaryColor: "#9A7634"
+          })),
+          apiFetch<{ isPublished: boolean; content: SiteContent | null }>("/api/v1/site-content", { skipAuth: true, tenant: slug }).catch(() => null),
           apiFetch<Product[]>("/api/v1/products", { skipAuth: true, tenant: slug }).catch(() => []),
           apiFetch<Service[]>("/api/v1/reservations/services", { skipAuth: true, tenant: slug }).catch(() => []),
         ]);
@@ -154,6 +156,26 @@ export default function WebsitePage() {
         </div>
       </section>
 
+      {/* SECÇÃO DE DESTAQUE DO TAKEAWAY (NOVO) */}
+      <section className="py-16 px-6 bg-white">
+        <div className="container mx-auto max-w-5xl">
+          <div className="bg-[#1a1412] rounded-3xl p-8 md:p-16 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
+            <div className="absolute inset-0 opacity-20">
+              <img src="https://images.unsplash.com/photo-1526367790999-0150786686a2?auto=format&fit=crop&w=1200&q=80" alt="Delivery" className="w-full h-full object-cover" />
+            </div>
+            <div className="relative z-10 md:w-2/3">
+              <h2 className="font-serif text-3xl md:text-5xl text-white mb-4">Comer em casa?</h2>
+              <p className="text-white/80 text-lg">Peça os seus pratos favoritos e receba em casa em Luanda. Rápido e saboroso.</p>
+            </div>
+            <div className="relative z-10 w-full md:w-auto">
+              <Link to={`/${slug}/takeaway`} className="block text-center px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition hover:-translate-y-1 shadow-xl w-full" style={{ background: secondary, color: "#1a1412" }}>
+                Fazer Pedido Takeaway
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* GALERIA 3D */}
       <section id="galeria" className="py-24 bg-[#1a1412]">
         <div className="container mx-auto max-w-6xl px-6">
@@ -215,6 +237,8 @@ export default function WebsitePage() {
               <li><Link to={`/${slug}/blog`} className="hover:text-white transition">Blog</Link></li>
               <li><Link to={`/${slug}/localizacao`} className="hover:text-white transition">Localização</Link></li>
               <li><Link to={`/${slug}/contactos`} className="hover:text-white transition">Contactos</Link></li>
+              <li><Link to={`/${slug}/eventos`} className="hover:text-white transition">Eventos</Link></li>
+              <li><Link to={`/${slug}/takeaway`} className="hover:text-white transition">Takeaway</Link></li>
             </ul>
           </div>
           <div>
