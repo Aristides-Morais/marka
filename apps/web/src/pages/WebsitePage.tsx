@@ -23,6 +23,7 @@ export default function WebsitePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [experience, setExperience] = useState<string>("classic");
 
   useEffect(() => {
     let live = true;
@@ -73,6 +74,7 @@ export default function WebsitePage() {
           site?.isPublished && site.content
             ? site.content
             : null;
+                    setExperience((site?.content as any)?.animations?.experience || "classic");
 
         setContent(
           mergeWithDefaults(
@@ -191,7 +193,7 @@ export default function WebsitePage() {
           primaryColor={primary}
           secondaryColor={secondary}
           heroImage={content.gallery?.[0]}
-          experience={(content as any).animations?.experience}
+          experience={experience}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
 
