@@ -9,9 +9,24 @@ type Props = {
   primaryColor: string;
   secondaryColor: string;
   heroImage?: string;
+  experience?: string;
 };
 
-export default function HeroScene({ sector, primaryColor, secondaryColor, heroImage }: Props) {
+export default function HeroScene({ sector, primaryColor, secondaryColor, heroImage, experience }: Props) {
+  const isClassic = experience === "classic";
+
+  // CLASSIC = foto parada, sem 3D, sem rotação
+  if (isClassic) {
+    return (
+      <div className="absolute inset-0 overflow-hidden bg-black">
+        {heroImage && (
+          <img src={heroImage} alt="Hero Background" className="absolute inset-0 h-full w-full object-cover opacity-60" />
+        )}
+        <div className="absolute inset-0 bg-black/40" />
+      </div>
+    );
+  }
+
   if (sector === "food") {
     return (
       <div className="absolute inset-0 bg-[#1a1412]">

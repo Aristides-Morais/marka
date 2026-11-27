@@ -186,13 +186,13 @@ export default function WebsitePage() {
         id="inicio"
         className="relative h-[100svh] flex items-center justify-center overflow-hidden pt-20"
       >
-        <HeroScene
+                <HeroScene
           sector={visualSector}
           primaryColor={primary}
           secondaryColor={secondary}
           heroImage={content.gallery?.[0]}
+          experience={(content as any).animations?.experience}
         />
-
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
 
         <div className="relative z-10 text-center px-6 max-w-4xl mx-auto flex flex-col items-center justify-center h-full pb-10">

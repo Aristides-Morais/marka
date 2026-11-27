@@ -67,7 +67,7 @@ function readSettings(value?: Record<string, unknown> | null): AnimationSettings
     intensity: intensity === "subtle" || intensity === "bold" ? intensity : "normal",
     duration: clamp(Number(source.duration ?? 800) || 800, 200, 2000),
     stagger: clamp(Number(source.stagger ?? 90), 0, 400),
-    parallax: source.parallax !== false,
+        parallax: requestedExperience === "classic" ? false : source.parallax !== false,
     hover: source.hover !== false,
   };
 }
