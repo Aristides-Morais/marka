@@ -213,7 +213,7 @@ const config = useMemo(() => readSettings(settings), [settingsKey]);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
 
-    return () => {
+        return () => {
       observer?.disconnect();
       cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);
@@ -229,10 +229,7 @@ const config = useMemo(() => readSettings(settings), [settingsKey]);
         element.querySelectorAll<HTMLElement>("img").forEach((img) => img.style.removeProperty("translate"));
       });
       root.style.removeProperty("--site-duration");
-      delete root.dataset.siteMotion;
-      delete root.dataset.siteIntensity;
-      delete root.dataset.siteExperience;
-delete root.dataset.sitePreview;
+      // NÃO apagar dataset aqui - senão volta a classic entre renders
     };
   }, [config, preview]);
 

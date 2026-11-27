@@ -14,17 +14,26 @@ export default function GlobalSiteLayout() {
       .then((b) => setTheme(b?.theme || b || {}))
       .catch(() => {});
     apiFetch<any>("/api/v1/site-content", { skipAuth: true, tenant: slug })
-      .then((r) => {
-        const c = r?.content || r?.published || r?.data || r || {};
-        setContent(c);
-      })
-      .catch(() => {});
+  .then((r) => {
+    // Aceita TODAS as formas que a API pode devolver
+    const content =
+      r?.content?.animations ? r.content :
+      r?.published?.content ? r.published.content :
+      r?.data?.content ? r.data.content :
+      r?.data ? r.data :
+      r?.published ? r.published :
+      r?.content ? r.content :
+      r || {};
+    console.log("[site-content] raw:", r, "parsed:", content);
+    setContent(content);
+  })
+  .catch(() => {});
   }, [slug]);
 
   const animFromContent = content?.animations || content?.animation || {};
   const animFromTheme = theme?.animation || theme?.animations || {};
-
-  const experience = animFromContent.experience || animFromTheme.experience || "classic";
+  const experience = animFromContent.experience || "classic";
+  
   const intensity = animFromContent.intensity || animFromTheme.intensity || "normal";
   const enabled = animFromContent.enabled ?? animFromTheme.enabled ?? true;
   const duration = animFromContent.duration || animFromTheme.duration || 800;
