@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import type { Business } from "./usePublicSite";
 import type { SiteContent } from "../../lib/siteContent";
 import { normalizeUrl } from "../../lib/theme";
+import { BUSINESS_TYPES, resolveType } from "../../lib/businessTypes";
 
 type Props = {
   business: Business;
@@ -35,19 +36,14 @@ export default function SiteLayout({
     if (title) document.title = title;
   }, [title]);
 
+  const type = resolveType(business as any);
+  const cfg = BUSINESS_TYPES[type];
+  const c = content as any;
+
   const menu =
-    content.menu?.length
-      ? content.menu
-      : [
-          { label: "Início", href: "" },
-          { label: "Sobre", href: "sobre" },
-          { label: "Menu / Serviços", href: "servicos" },
-          { label: "Galeria", href: "galeria" },
-          { label: "Eventos", href: "eventos" },
-          { label: "Blog", href: "blog" },
-          { label: "Contactos", href: "contactos" },
-          { label: "Takeaway", href: "takeaway" },
-        ];
+    c.menu?.length
+      ? c.menu
+      : cfg.menu;
 
   const hrefOf = (h: string) => (h ? `/${slug}/${h}` : `/${slug}`);
 
@@ -125,12 +121,11 @@ export default function SiteLayout({
             )}
           </Link>
 
-          {/* PC: CAIXA BONITA COM TODOS OS BOTÕES */}
           <nav
             className="sl-nav"
             style={{ display: "none", alignItems: "center", gap: 6, background: "#F8F4EF", padding: 4, borderRadius: 999 }}
           >
-            {menu.map((m) => (
+            {menu.map((m: any) => (
               <Link key={m.href + m.label} to={hrefOf(m.href)} style={{ color: "#1a1412", padding: "8px 12px", borderRadius: 999, background: "#fff" }}>
                 {m.label}
               </Link>
@@ -144,7 +139,6 @@ export default function SiteLayout({
             </Link>
           </nav>
 
-          {/* TELEFONE: SÓ 3 PONTOS */}
           <button
             type="button"
             aria-label="Menu"
@@ -170,7 +164,7 @@ export default function SiteLayout({
         {open && (
           <div style={{ borderTop: "1px solid #EDE6DF", padding: "16px 0 24px", background: "#fff" }}>
             <div className="sl-wrap" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {menu.map((m) => (
+              {menu.map((m: any) => (
                 <Link
                   key={m.href + m.label}
                   to={hrefOf(m.href)}
@@ -201,14 +195,14 @@ export default function SiteLayout({
               {business.name}
             </div>
             <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
-              {content.contactIntro || "Estamos disponíveis para si."}
+              {c.contactIntro || "Estamos disponíveis para si."}
             </p>
           </div>
           <div>
             <div style={{ color: "#fff", fontSize: 12, letterSpacing: ".12em", textTransform: "uppercase", marginBottom: 12, fontWeight: 600 }}>
               Navegação
             </div>
-            {menu.slice(0, 6).map((m) => (
+            {menu.slice(0, 6).map((m: any) => (
               <div key={m.href + m.label} style={{ marginBottom: 8 }}>
                 <Link to={hrefOf(m.href)} style={{ color: "#a89f98", textDecoration: "none", fontSize: 13 }}>
                   {m.label}

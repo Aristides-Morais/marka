@@ -3,8 +3,9 @@ import SiteLayout, { PageHero } from "./SiteLayout";
 import { usePublicSite, money } from "./usePublicSite";
 import PhotoEffect from "../../components/site/PhotoEffect";
 
-export default function ServicosPage() {
+export default function ServicesListPage() {
   const { slug, business, content, products, services, sector, loading, primary, secondary } = usePublicSite();
+  const c = content as any;
 
   if (loading || !business) {
     return (
@@ -26,7 +27,7 @@ export default function ServicosPage() {
       secondary={secondary}
       title={`${title} | ${business.name}`}
     >
-      <PageHero kicker={isService ? "O que fazemos" : "O nosso menu"} title={title} subtitle={content.servicesIntro || `Descubra ${title.toLowerCase()} na ${business.name}. Clique numa foto para ver em zoom e girar.`} primary={primary} />
+      <PageHero kicker={isService ? "O que fazemos" : "O nosso menu"} title={title} subtitle={c.servicesIntro || `Descubra ${title.toLowerCase()} na ${business.name}. Clique numa foto para ver em zoom e girar.`} primary={primary} />
 
       <section style={{ padding: "56px 0" }}>
         <div className="sl-wrap">
