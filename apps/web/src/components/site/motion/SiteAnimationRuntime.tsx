@@ -75,6 +75,7 @@ function readSettings(value?: Record<string, unknown> | null): AnimationSettings
 export default function SiteAnimationRuntime({ settings, preview = false }: Props) {
   const settingsKey = JSON.stringify(settings ?? {});
 const config = useMemo(() => readSettings(settings), [settingsKey]);
+console.log("[runtime] settings:", settings, "config:", config);
 
   useEffect(() => {
     const root =

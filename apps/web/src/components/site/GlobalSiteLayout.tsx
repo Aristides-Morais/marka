@@ -33,6 +33,7 @@ export default function GlobalSiteLayout() {
   const animFromContent = content?.animations || content?.animation || {};
   const animFromTheme = theme?.animation || theme?.animations || {};
   const experience = animFromContent.experience || "classic";
+  console.log("[layout] experience:", experience, "animFromContent:", animFromContent);
   
   const intensity = animFromContent.intensity || animFromTheme.intensity || "normal";
   const enabled = animFromContent.enabled ?? animFromTheme.enabled ?? true;
