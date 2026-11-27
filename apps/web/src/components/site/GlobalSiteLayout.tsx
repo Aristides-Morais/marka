@@ -53,8 +53,10 @@ export default function GlobalSiteLayout() {
 
   // VERIFICAÇÃO ROBUSTA - SÓ RESTAURANTE MOSTRA TAKEAWAY
   // A API devolve business/info com type/template diferentes, por isso testamos tudo
-  const rawType = `${business?.type || ""} ${business?.template || ""} ${business?.category || ""} ${business?.sector || ""} ${theme?.type || ""} ${theme?.template || ""} ${content?.sector || ""}`.toLowerCase();
-  const isRestaurant = rawType.includes("restaur") || rawType.includes("food") || rawType.includes("lounge") || rawType.includes("bar") || rawType.includes("cozinha") || rawType.includes("comida");
+    const rawType = `${business?.type || ""} ${business?.template || ""} ${business?.category || ""} ${business?.sector || ""} ${theme?.type || ""} ${theme?.template || ""} ${content?.sector || ""}`.toLowerCase();
+  const nameCheck = `${business?.name || ""} ${theme?.name || ""}`.toLowerCase();
+  const hasTakeawayModule = JSON.stringify(business?.modules || business?.enabledModules || content?.modules || "").toLowerCase().includes("takeaway");
+  const isRestaurant = rawType.includes("restaur") || rawType.includes("food") || rawType.includes("lounge") || rawType.includes("bar") || rawType.includes("cozinha") || rawType.includes("comida") || nameCheck.includes("restaur") || nameCheck.includes("lounge") || hasTakeawayModule;
 
   // DEBUG - abre F12 > Console para ver o que vem da API
   console.log("[GlobalSiteLayout] business:", business, "rawType:", rawType, "isRestaurant:", isRestaurant);

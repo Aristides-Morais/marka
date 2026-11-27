@@ -12,7 +12,6 @@ export default function SiteHeader({ businessName, primary, secondary, waLink, b
   const isRestaurant = raw.includes("restaur") || raw.includes("food") || raw.includes("lounge") || raw.includes("bar") || raw.includes("cozinha") || raw.includes("comida");
 
   // DEBUG - abre o console (F12) e vê o que está a vir
-  console.log("DEBUG Takeaway - businessType:", businessType, "business:", business, "isRestaurant:", isRestaurant);
 
   const links = [
     { to: `/${slug}`, label: "Início" },
