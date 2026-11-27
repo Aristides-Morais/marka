@@ -74,7 +74,7 @@ export default function SiteLayout({
         .sl-nav a { text-decoration: none; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-weight: 500; opacity: .85; }
         .sl-nav a:hover { opacity: 1; }
         .sl-card { transition: transform .3s, box-shadow .3s; }
-        .sl-card:hover { transform: translateY(-4px); box-shadow: 0 16px 32px -12px rgba(0,0,0,.12); }
+        .sl-card:hover { box-shadow: 0 16px 32px -12px rgba(0,0,0,.12); }
         @media (min-width: 900px) {
           .sl-nav { display: flex !important; }
           .sl-burger { display: none !important; }

@@ -64,10 +64,10 @@ export default function ServiceDetailPage() {
           >
             {item.imageUrl ? (
               <img
-                src={item.imageUrl}
-                alt={item.name}
-                style={{ width: "100%", height: "100%", objectFit: "cover", minHeight: 280 }}
-              />
+  src={item.imageUrl}
+  alt={item.name}
+  style={{ width: "100%", height: "100%", objectFit: "cover", minHeight: 280 }}
+/>
             ) : (
               <span className="sl-serif" style={{ fontSize: 48, opacity: 0.3, color: primary }}>
                 {item.name.charAt(0)}
