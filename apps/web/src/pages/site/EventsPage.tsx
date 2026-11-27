@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../../lib/api";
 import { detectSector, mergeWithDefaults, type SiteContent } from "../../lib/siteContent";
 import SiteHeader from "../../components/site/SiteHeader";
+import PhotoEffect from "../../components/site/PhotoEffect";
 
 type EventItem = {
   title: string;
@@ -82,7 +83,7 @@ export default function EventsPage() {
           {events.map((ev, i) => (
             <div key={i} className="group flex flex-col md:flex-row gap-8 bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100">
               <div className="w-full md:w-1/3 aspect-[4/3] md:aspect-auto overflow-hidden">
-                <img src={ev.image} alt={ev.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <PhotoEffect src={ev.image} alt={ev.title} className="w-full h-full object-cover" gallery={events.map(e => e.image)} />
               </div>
               <div className="p-8 flex-1 flex flex-col justify-center">
                 <span className="text-sm font-bold uppercase tracking-wider mb-2" style={{ color: secondary }}>{ev.date}</span>
