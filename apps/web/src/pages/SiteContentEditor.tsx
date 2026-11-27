@@ -136,6 +136,20 @@ const colorPalettes: ColorPalette[] = [
     border: "#E7DDD5",
   },
 ];
+const ANIMATION_EXPERIENCES = [
+  ["classic", "Classic - Sem animação forte"],
+  ["store-3d", "Loja 3D (Blockbuster)"],
+  ["immersive", "Scroll Imersivo (SOLCO)"],
+  ["beauty", "Beauty / Suave (brune)"],
+  ["real-estate", "Real Estate - Zoom suave"],
+  ["corporate", "Corporate - Troca de Cor"],
+  ["color-theme", "A1 - Troca de Cor (Vernizes)"],
+  ["drag-3d", "A4 - Arrastar 3D (brune)"],
+  ["fade-up", "Fade Up - Sobe suave"],
+  ["zoom-hero", "Zoom Hero - Zoom gigante"],
+  ["slide-cards", "Slide Cards - Entra de lado"],
+  ["parallax-forte", "Parallax Forte"],
+] as const;
 
 const colorFields = [
   {
@@ -267,6 +281,68 @@ export default function SiteContentEditor({
     });
 
     setError("");
+  }
+    // CONFIGURAÇÕES DE ANIMAÇÃO DO WEBSITE
+  function getAnimations(): Record<string, unknown> {
+    const currentAnimations = content.animations;
+
+    const defaults: Record<string, unknown> = {
+  enabled: true,
+  experience: "classic",
+  intensity: "normal",
+  reveal: "fade-up",
+  hero: "cinematic",
+  hover: "lift",
+  duration: 850,
+  stagger: 90,
+  parallax: true,
+};
+    if (
+      !currentAnimations ||
+      typeof currentAnimations !== "object" ||
+      Array.isArray(currentAnimations)
+    ) {
+      return defaults;
+    }
+
+    return {
+      ...defaults,
+      ...(currentAnimations as Record<string, unknown>),
+    };
+  }
+
+  function updateAnimations(values: Record<string, unknown>) {
+    setContent((current) => {
+      const currentAnimations =
+        current.animations &&
+        typeof current.animations === "object" &&
+        !Array.isArray(current.animations)
+          ? (current.animations as Record<string, unknown>)
+          : {};
+
+      const updated = {
+  ...current,
+  animations: {
+    enabled: true,
+    experience: "classic",
+    intensity: "normal",
+    reveal: "fade-up",
+    hero: "cinematic",
+    hover: "lift",
+    duration: 850,
+    stagger: 90,
+    parallax: true,
+    ...currentAnimations,
+    ...values,
+  },
+};
+      setJsonText(JSON.stringify(updated, null, 2));
+
+      return updated;
+    });
+
+    setError("");
+    setMessage("Configurações de animação actualizadas no rascunho.");
   }
 
   function updateJson(value: string) {
@@ -772,6 +848,265 @@ export default function SiteContentEditor({
                 </div>
               </section>
 
+              {/* ANIMAÇÕES DO WEBSITE */}
+              <section className="rounded-2xl border border-zinc-700 bg-zinc-950 p-5 md:p-6 space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-white">
+                    Animações do website
+                  </h2>
+                  <p className="text-sm text-zinc-400 mt-2">
+                    Controla os efeitos visuais deste website.
+                    Estas definições são geridas pelo Super Admin.
+                  </p>
+                </div>
+
+                {/* ACTIVAR ANIMAÇÕES */}
+                <label className="flex items-center justify-between gap-4 rounded-xl border border-zinc-800 p-4">
+                  <span>
+                    <span className="block text-white font-semibold">
+                      Activar animações
+                    </span>
+                    <span className="block text-sm text-zinc-400 mt-1">
+                      Permitir efeitos de movimento no website.
+                    </span>
+                  </span>
+
+                  <input
+                    type="checkbox"
+                    checked={Boolean(getAnimations().enabled)}
+                    onChange={(e) =>
+                      updateAnimations({ enabled: e.target.checked })
+                    }
+                    className="h-5 w-5 accent-emerald-500"
+                  />
+                </label>
+{/* EXPERIÊNCIA GLOBAL - IGUAL AO SUPER ADMIN */}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+  <div>
+    <label className="block text-sm text-zinc-300 mb-2">
+      Experiência global do site (igual ao Super Admin)
+    </label>
+    <select
+      value={String(getAnimations().experience || "classic")}
+      onChange={(e) => {
+        updateAnimations({ experience: e.target.value });
+        // Mantém o reveal sincronizado para o site reagir logo
+        if (e.target.value === "fade-up") updateAnimations({ reveal: "fade-up" });
+        if (e.target.value === "zoom-hero") updateAnimations({ reveal: "zoom", hero: "zoom" });
+        if (e.target.value === "slide-cards") updateAnimations({ reveal: "slide-left" });
+        if (e.target.value === "parallax-forte") updateAnimations({ parallax: true });
+      }}
+      className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white"
+    >
+      {ANIMATION_EXPERIENCES.map(([v, l]) => (
+        <option key={v} value={v}>{l}</option>
+      ))}
+    </select>
+    <p className="text-xs text-zinc-500 mt-1">
+      Esta é a mesma lista do Super Admin. Escolhe aqui e guarda + publica.
+    </p>
+  </div>
+
+  <div>
+    <label className="block text-sm text-zinc-300 mb-2">
+      Intensidade
+    </label>
+    <select
+      value={String(getAnimations().intensity || "normal")}
+      onChange={(e) => updateAnimations({ intensity: e.target.value })}
+      className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white"
+    >
+      <option value="subtle">Suave</option>
+      <option value="normal">Normal</option>
+      <option value="bold">Forte</option>
+    </select>
+  </div>
+</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* EFEITO DE ENTRADA */}
+                  <div>
+                    <label className="block text-sm text-zinc-300 mb-2">
+                      Efeito de entrada ao fazer scroll
+                    </label>
+
+                    <select
+                      value={String(getAnimations().reveal)}
+                      
+                      onChange={(e) =>
+                        updateAnimations({ reveal: e.target.value })
+                      }
+                      
+                      className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white"
+                    >
+                      <option value="fade-up">Fade + subir</option>
+                      <option value="fade">Fade simples</option>
+                      <option value="slide-left">Deslizar da esquerda</option>
+                      <option value="slide-right">Deslizar da direita</option>
+                      <option value="zoom">Zoom suave</option>
+                      <option value="blur">Desfoque suave</option>
+                      <option value="flip">Rotação 3D</option>
+                    </select>
+                  </div>
+
+                  {/* EFEITO PRINCIPAL */}
+                  <div>
+                    <label className="block text-sm text-zinc-300 mb-2">
+                      Efeito do destaque principal
+                    </label>
+
+                    <select
+                      value={String(getAnimations().hero)}
+                      onChange={(e) =>
+                        updateAnimations({ hero: e.target.value })
+                      }
+                      className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white"
+                    >
+                      <option value="cinematic">Cinemático</option>
+                      <option value="zoom">Zoom lento</option>
+                      <option value="float">Flutuação suave</option>
+                      <option value="none">Sem efeito</option>
+                    </select>
+                  </div>
+
+                  {/* EFEITO HOVER */}
+                  <div>
+                    <label className="block text-sm text-zinc-300 mb-2">
+                      Efeito ao passar o rato
+                    </label>
+
+                    <select
+                      value={String(getAnimations().hover)}
+                      onChange={(e) =>
+                        updateAnimations({ hover: e.target.value })
+                      }
+                      className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white"
+                    >
+                      <option value="lift">Elevação</option>
+                      <option value="glow">Brilho</option>
+                      <option value="scale">Aumentar ligeiramente</option>
+                      <option value="none">Sem efeito</option>
+                    </select>
+                  </div>
+
+                  {/* PARALLAX */}
+                  <label className="flex items-center justify-between gap-4 rounded-xl border border-zinc-800 p-4">
+                    <span>
+                      <span className="block text-white font-semibold">
+                        Movimento Parallax
+                      </span>
+                      <span className="block text-sm text-zinc-400 mt-1">
+                        Movimento suave durante o scroll.
+                      </span>
+                    </span>
+
+                    <input
+                      type="checkbox"
+                      checked={Boolean(getAnimations().parallax)}
+                      onChange={(e) =>
+                        updateAnimations({ parallax: e.target.checked })
+                      }
+                      className="h-5 w-5 accent-emerald-500"
+                    />
+                  </label>
+                </div>
+
+                {/* DURAÇÃO */}
+                <div className="rounded-xl border border-zinc-800 p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="text-white font-semibold">
+                      Duração da animação
+                    </label>
+
+                    <span className="text-emerald-400 font-bold tabular-nums">
+                      {Number(getAnimations().duration)} ms
+                    </span>
+                  </div>
+
+                  <input
+                    type="range"
+                    min="150"
+                    max="2000"
+                    step="50"
+                    value={Number(getAnimations().duration)}
+                    onChange={(e) =>
+                      updateAnimations({
+                        duration: Number(e.target.value),
+                      })
+                    }
+                    disabled={!Boolean(getAnimations().enabled)}
+                    className="w-full accent-emerald-500 disabled:opacity-40"
+                  />
+
+                  <div className="flex justify-between text-xs text-zinc-500">
+                    <span>150 ms — Rápida</span>
+                    <span>2.000 ms — Lenta</span>
+                  </div>
+                </div>
+
+                {/* INTERVALO */}
+                <div className="rounded-xl border border-zinc-800 p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <label className="text-white font-semibold">
+                      Intervalo entre elementos
+                    </label>
+
+                    <span className="text-emerald-400 font-bold tabular-nums">
+                      {Number(getAnimations().stagger)} ms
+                    </span>
+                  </div>
+
+                  <input
+                    type="range"
+                    min="0"
+                    max="500"
+                    step="10"
+                    value={Number(getAnimations().stagger)}
+                    onChange={(e) =>
+                      updateAnimations({
+                        stagger: Number(e.target.value),
+                      })
+                    }
+                    disabled={!Boolean(getAnimations().enabled)}
+                    className="w-full accent-emerald-500 disabled:opacity-40"
+                  />
+
+                  <div className="flex justify-between text-xs text-zinc-500">
+                    <span>0 ms — Simultâneo</span>
+                    <span>500 ms — Sequencial</span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-zinc-500">
+                  As alterações ficam no conteúdo do rascunho.
+                  Para serem apresentadas aos visitantes, será necessário
+                  guardar e publicar o website.
+                </p>
+              </section>
+
+{/* EDITAR CADA PÁGINA */}
+<section className="rounded-2xl border border-zinc-700 bg-zinc-950 p-5 md:p-6 space-y-5 mt-6">
+  <h2 className="text-xl font-bold text-white">Editar cada página</h2>
+  <p className="text-sm text-zinc-400">Tudo o que mudares aqui aparece nessa página, com a mesma animação global.</p>
+
+  {[
+    ["loja", "Loja", "lojaTitle", "lojaSubtitle", "lojaImage"],
+    ["reservas", "Reservas / Booking", "reservasTitle", "reservasSubtitle", "reservasImage"],
+    ["sobre", "Sobre", "sobreTitle", "sobreSubtitle", "sobreImage"],
+    ["galeria", "Galeria", "galeriaTitle", "galeriaSubtitle", "galeriaImage"],
+    ["blog", "Blog", "blogTitle", "blogSubtitle", "blogImage"],
+    ["eventos", "Eventos", "eventosTitle", "eventosSubtitle", "eventosImage"],
+    ["menu", "Menu / Takeaway", "menuTitle", "menuSubtitle", "menuImage"],
+    ["contactos", "Contactos", "contactosTitle", "contactosSubtitle", "contactosImage"],
+  ].map(([key, label, titleKey, subKey, imgKey]) => (
+    <div key={key} className="border border-zinc-800 rounded-xl p-4 space-y-3">
+      <h3 className="font-bold text-white">{label}</h3>
+      <input value={String(content[titleKey] || "")} onChange={(e) => updateField(titleKey, e.target.value)} placeholder={`Título - ${label}`} className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white" />
+      <input value={String(content[subKey] || "")} onChange={(e) => updateField(subKey, e.target.value)} placeholder={`Subtítulo - ${label}`} className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white" />
+      <input value={String(content[imgKey] || "")} onChange={(e) => updateField(imgKey, e.target.value)} placeholder={`Imagem (URL) - ${label} https://...`} className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white" />
+    </div>
+  ))}
+</section>
+
               {/* CONTEÚDO DO WEBSITE */}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -866,7 +1201,7 @@ export default function SiteContentEditor({
                 </div>
               </div>
 
-              {/* ACÇÕES */}
+                            {/* ACÇÕES */}
 
               <div className="flex flex-wrap gap-3 mt-7">
                 <button
@@ -896,6 +1231,25 @@ export default function SiteContentEditor({
                   Retirar publicação
                 </button>
               </div>
+
+              {message && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="mt-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-sm font-semibold"
+                >
+                  ✓ {message}
+                </div>
+              )}
+
+              {error && (
+                <div
+                  role="alert"
+                  className="mt-4 p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 text-sm font-semibold"
+                >
+                  {error}
+                </div>
+              )}
             </>
           )}
         </div>

@@ -29,3 +29,6 @@ skills-lock.json
 # Sistema Operativo (Ficheiros ocultos do Windows/Mac)
 .DS_Store
 Thumbs.db
+apps.zip
+
+*.zip

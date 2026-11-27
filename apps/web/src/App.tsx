@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import GlobalSiteLayout from "./components/site/GlobalSiteLayout";
 import ModuleAwareWebsitePage from "./pages/ModuleAwareWebsitePage";
 import ClientPage from "./pages/ClientPage";
 import AdminPage from "./pages/AdminPage";
@@ -31,24 +32,27 @@ export default function App() {
         <Route path="/super-admin/modulos" element={<BusinessModulesPage />} />
         <Route path="/:slug/admin/website" element={<TenantSiteContentPage />} />
 
-        <Route path="/:slug" element={<ModuleAwareWebsitePage />} />
-        <Route path="/:slug/sobre" element={<AboutPage />} />
-        <Route path="/:slug/servicos" element={<ServicesListPage />} />
-        <Route path="/:slug/servicos/:id" element={<ServiceDetailPage />} />
-        <Route path="/:slug/depoimentos" element={<TestimonialsPage />} />
-        <Route path="/:slug/faq" element={<FaqPage />} />
-        <Route path="/:slug/contactos" element={<ContactPage />} />
-        <Route path="/:slug/localizacao" element={<LocationPage />} />
-        <Route path="/:slug/privacidade" element={<PrivacyPage />} />
-        <Route path="/:slug/termos" element={<TermsPage />} />
-        <Route path="/:slug/blog" element={<BlogPage />} />
-        <Route path="/:slug/blog/:postSlug" element={<BlogPostPage />} />
-        <Route path="/:slug/galeria" element={<GalleryPage />} />
-        <Route path="/:slug/eventos" element={<EventsPage />} />
-        <Route path="/:slug/takeaway" element={<TakeawayPage />} />
+        {/* TODAS AS PÁGINAS DO SITE COM A MESMA ANIMAÇÃO */}
+        <Route element={<GlobalSiteLayout />}>
+          <Route path="/:slug" element={<ModuleAwareWebsitePage />} />
+          <Route path="/:slug/sobre" element={<AboutPage />} />
+          <Route path="/:slug/servicos" element={<ServicesListPage />} />
+          <Route path="/:slug/servicos/:id" element={<ServiceDetailPage />} />
+          <Route path="/:slug/depoimentos" element={<TestimonialsPage />} />
+          <Route path="/:slug/faq" element={<FaqPage />} />
+          <Route path="/:slug/contactos" element={<ContactPage />} />
+          <Route path="/:slug/localizacao" element={<LocationPage />} />
+          <Route path="/:slug/privacidade" element={<PrivacyPage />} />
+          <Route path="/:slug/termos" element={<TermsPage />} />
+          <Route path="/:slug/blog" element={<BlogPage />} />
+          <Route path="/:slug/blog/:postSlug" element={<BlogPostPage />} />
+          <Route path="/:slug/galeria" element={<GalleryPage />} />
+          <Route path="/:slug/eventos" element={<EventsPage />} />
+          <Route path="/:slug/takeaway" element={<TakeawayPage />} />
+          <Route path="/:slug/loja" element={<StorePage />} />
+          <Route path="/:slug/reservas" element={<ClientPage />} />
+        </Route>
 
-        <Route path="/:slug/loja" element={<StorePage />} />
-        <Route path="/:slug/reservas" element={<ClientPage />} />
         <Route path="/:slug/admin" element={<AdminPage />} />
         <Route path="/:slug/planos" element={<SubscriptionPage />} />
       </Routes>

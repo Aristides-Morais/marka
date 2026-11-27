@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+:root {
+  --marka-primary: #173B67;
+  --marka-secondary: #F2A900;
+  --scroll-zoom: 1;
+  --scroll-fade: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-animation-root *,
+  .site-animation-root *::before,
+  .site-animation-root *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

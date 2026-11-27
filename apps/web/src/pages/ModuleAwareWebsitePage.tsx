@@ -1,15 +1,19 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import WebsitePage from "./WebsitePage";
+import SiteAnimationRuntime from "../components/site/motion/SiteAnimationRuntime";
 
 type BusinessInfo = {
   modules?: string[];
+  theme?: {
+    animation?: Record<string, unknown>;
+  } | null;
 };
 
 export default function ModuleAwareWebsitePage() {
   const { slug = "" } = useParams();
+  const [business, setBusiness] = useState<BusinessInfo | null>(null);
   const [modules, setModules] = useState<string[] | null>(null);
 
   useEffect(() => {
@@ -19,17 +23,19 @@ export default function ModuleAwareWebsitePage() {
       skipAuth: true,
       tenant: slug,
     })
-      .then((business) => {
-        if (active) {
-          setModules(
-            Array.isArray(business.modules)
-              ? business.modules.map((module) => module.toLowerCase())
-              : ["website", "store", "booking"]
-          );
-        }
+      .then((data) => {
+        if (!active) return;
+        setBusiness(data);
+        setModules(
+          Array.isArray(data.modules)
+            ? data.modules.map((m) => m.toLowerCase())
+            : ["website", "store", "booking"]
+        );
       })
       .catch(() => {
-        if (active) setModules([]);
+        if (!active) return;
+        setBusiness(null);
+        setModules([]);
       });
 
     return () => {
@@ -51,23 +57,21 @@ export default function ModuleAwareWebsitePage() {
   }
 
   return (
-    <>
+    <div>
+      {/* Animação escolhida no Super Admin - vem de business.theme.animation */}
+      <SiteAnimationRuntime settings={business?.theme?.animation} />
+
       <style>
         {`
-          ${
-            modules.includes("store")
-              ? ""
-              : `a[href$="/loja"] { display: none !important; }`
-          }
-
-          ${
-            modules.includes("booking")
-              ? ""
-              : `a[href$="/reservas"] { display: none !important; }`
-          }
+          ${modules.includes("store") ? "" : `a[href$="/loja"] { display: none !important; }`}
+          ${modules.includes("booking") ? "" : `a[href$="/reservas"] { display: none !important; }`}
         `}
       </style>
-      <WebsitePage />
-    </>
+
+      {/* O runtime procura por .site-animation-root, por isso tem de estar aqui */}
+      <main className="site-animation-root">
+        <WebsitePage />
+      </main>
+    </div>
   );
 }

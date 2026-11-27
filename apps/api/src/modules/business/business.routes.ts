@@ -52,6 +52,30 @@ const linksSchema = z
   )
   .max(12);
 
+// CORRIGIDO - Agora aceita animação e não apaga o resto
+const animationSchema = z.object({
+  enabled: z.boolean().optional(),
+  experience: z.enum([
+    "classic",
+    "store-3d",
+    "immersive",
+    "beauty",
+    "real-estate",
+    "corporate",
+    "color-theme",
+    "drag-3d",
+    "fade-up",
+    "zoom-hero",
+    "slide-cards",
+    "parallax-forte",
+  ]).optional(),
+  intensity: z.enum(["subtle", "normal", "bold"]).optional(),
+  duration: z.number().optional(),
+  stagger: z.number().optional(),
+  parallax: z.boolean().optional(),
+  hover: z.boolean().optional(),
+}).passthrough();
+
 const themeSchema = z.object({
   headerBg: colorOrEmpty,
   bannerBg: colorOrEmpty,
@@ -61,7 +85,8 @@ const themeSchema = z.object({
   bookingTitleColor: colorOrEmpty,
   bookingSubtitleColor: colorOrEmpty,
   headingFont: z.string().max(60).optional(),
-});
+  animation: animationSchema.optional(),
+}).passthrough();
 
 businessRouter.patch("/info", requireAuth, async (req, res, next) => {
   try {
@@ -98,6 +123,26 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
     const theme = (v: string | null | undefined) =>
       v === undefined ? undefined : v || null;
 
+        // CORRIGIDO - Faz merge, não apaga a animação do Super Admin
+    let finalTheme: any = undefined;
+    if (data.theme !== undefined && data.theme !== null) {
+      const current: any = (req.business as any)?.theme && typeof (req.business as any).theme === "object"
+        ? (req.business as any).theme
+        : {};
+      const incoming: any = data.theme ?? {};
+      finalTheme = {
+        ...current,
+        ...incoming,
+        animation: {
+          ...(current.animation || {}),
+          ...(incoming.animation || {}),
+        },
+      };
+      // Se não veio animation no body, mantém a antiga intacta
+      if (!incoming.animation) {
+        finalTheme.animation = current.animation;
+      }
+    }
     const updated = await prisma.business.update({
       where: { id: req.business!.id },
       data: {
@@ -122,7 +167,7 @@ businessRouter.patch("/info", requireAuth, async (req, res, next) => {
         heroSubtitle: theme(data.heroSubtitle),
         mapsUrl: theme(data.mapsUrl),
         links: data.links === undefined ? undefined : data.links ?? [],
-        theme: data.theme === undefined ? undefined : ((data.theme ?? {}) as any),
+        theme: finalTheme,
       } as any,
     });
 
