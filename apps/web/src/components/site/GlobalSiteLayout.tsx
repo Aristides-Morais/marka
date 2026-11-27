@@ -2,6 +2,7 @@ import { Outlet, useParams, Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../../lib/api";
 import SiteAnimationRuntime from "./motion/SiteAnimationRuntime";
+import { BUSINESS_TYPES, resolveType } from "../../lib/businessTypes";
 
 export default function GlobalSiteLayout() {
   const { slug } = useParams();
@@ -47,32 +48,13 @@ export default function GlobalSiteLayout() {
     experience, intensity, enabled, duration, stagger, parallax, hover,
   }), [experience, intensity, enabled, duration, stagger, parallax, hover]);
 
-  // ---------- MENU + TAKEAWAY ----------
+  // ---------- MENU POR TIPO DE NEGÓCIO - SÓ UMA VEZ ----------
+  const type = resolveType(business);
+  const cfg = BUSINESS_TYPES[type];
+  const menu = cfg.menu; // <-- SÓ ESTA, APAGA A OUTRA
   const primary = theme?.primaryColor || theme?.primary || "#6B1020";
   const businessName = business?.name || theme?.name || "Alive";
-
-  // VERIFICAÇÃO ROBUSTA - SÓ RESTAURANTE MOSTRA TAKEAWAY
-  // A API devolve business/info com type/template diferentes, por isso testamos tudo
-    const rawType = `${business?.type || ""} ${business?.template || ""} ${business?.category || ""} ${business?.sector || ""} ${theme?.type || ""} ${theme?.template || ""} ${content?.sector || ""}`.toLowerCase();
-  const nameCheck = `${business?.name || ""} ${theme?.name || ""}`.toLowerCase();
-  const hasTakeawayModule = JSON.stringify(business?.modules || business?.enabledModules || content?.modules || "").toLowerCase().includes("takeaway");
-  const isRestaurant = rawType.includes("restaur") || rawType.includes("food") || rawType.includes("lounge") || rawType.includes("bar") || rawType.includes("cozinha") || rawType.includes("comida") || nameCheck.includes("restaur") || nameCheck.includes("lounge") || hasTakeawayModule;
-
-  // DEBUG - abre F12 > Console para ver o que vem da API
-  console.log("[GlobalSiteLayout] business:", business, "rawType:", rawType, "isRestaurant:", isRestaurant);
-
-  const menu = [
-    { label: "Início", href: "" },
-    { label: "Sobre", href: "sobre" },
-    { label: "Menu / Serviços", href: "servicos" },
-    { label: "Galeria", href: "galeria" },
-    { label: "Eventos", href: "eventos" },
-    { label: "Blog", href: "blog" },
-    { label: "Contactos", href: "contactos" },
-    // SÓ SE FOR RESTAURANTE
-    ...(isRestaurant ? [{ label: "Takeaway", href: "takeaway" }] : []),
-    { label: "Reservas", href: "reservas" },
-  ];
+  const waNumber = business?.phone || business?.whatsapp || "244923000000";
 
   const hrefOf = (h: string) => (h ? `/${slug}/${h}` : `/${slug}`);
 
@@ -80,21 +62,20 @@ export default function GlobalSiteLayout() {
     <div className="site-animation-root">
       <SiteAnimationRuntime settings={settings} />
 
-      {/* HEADER GLOBAL - UMA VEZ SÓ PARA TODAS AS PÁGINAS */}
       <header className="fixed top-0 left-0 right-0 z-[90]">
         <div className="mx-3 md:mx-6 mt-3">
           <div className="bg-white/95 backdrop-blur-md shadow-xl rounded-2xl px-4 py-3 flex items-center justify-between border border-black/5">
             <Link to={`/${slug}`} className="font-serif font-bold text-xl" style={{ color: primary }}>{businessName}</Link>
 
-            {/* PC: CAIXA BONITA COM TODOS OS BOTÕES */}
             <nav className="hidden md:flex items-center gap-1 bg-[#F8F4EF] rounded-full p-1">
               {menu.map((m) => (
                 <Link key={m.href} to={hrefOf(m.href)} className="px-3 py-2 rounded-full text-[13px] font-bold hover:bg-white hover:shadow transition">{m.label}</Link>
               ))}
-              <Link to={`/${slug}/reservas`} className="ml-1 px-4 py-2 rounded-full text-white text-[13px] font-bold" style={{ background: primary }}>Reservar</Link>
+              <Link to={`/${slug}/reservas`} className="ml-1 px-4 py-2 rounded-full text-white text-[13px] font-bold" style={{ background: primary }}>
+                {type === "salao" ? "Marcar" : type === "tatuador" ? "Orçamento" : type === "clinica" || type === "ortodontia" ? "Marcar Consulta" : type === "boutique" ? "Encomendar" : "Reservar"}
+              </Link>
             </nav>
 
-            {/* TELEFONE: SÓ 3 PONTOS */}
             <button onClick={() => setOpen(!open)} className="md:hidden w-11 h-11 rounded-full bg-black text-white text-xl leading-none" aria-label="Menu">⋯</button>
           </div>
 
@@ -108,6 +89,9 @@ export default function GlobalSiteLayout() {
           )}
         </div>
       </header>
+
+      {/* BOTÃO FIXO WHATSAPP - TODAS AS PÁGINAS, TODOS OS TIPOS */}
+      <a href={`https://wa.me/${String(waNumber).replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="fixed bottom-5 right-5 z-[95] w-14 h-14 rounded-full flex items-center justify-center text-2xl text-white shadow-2xl" style={{ background: "#25D366" }}>💬</a>
 
       <Outlet />
     </div>

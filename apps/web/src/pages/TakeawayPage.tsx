@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { apiFetch } from "../lib/api";
+import { resolveType } from "../lib/businessTypes";
 
 const MENU = [
   { id: "mufete", name: "Mufete Perfeito", price: 12000, img: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80" },
@@ -10,12 +12,24 @@ const MENU = [
 
 export default function TakeawayPage() {
   const { slug = "" } = useParams();
-  const primary = "#6B1020";
-  const waNumber = "244923000000";
+  const [business, setBusiness] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const [cart, setCart] = useState<Record<string, number>>({ mufete: 1 });
   const [form, setForm] = useState({ nome: "", telefone: "", entrega: "Levantamento", morada: "", obs: "" });
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    if (!slug) return;
+    apiFetch<any>("/api/v1/business/info", { skipAuth: true, tenant: slug })
+      .then((b) => setBusiness(b || {}))
+      .catch(() => setBusiness({}))
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  const primary = business?.theme?.primaryColor || business?.primaryColor || "#6B1020";
+  const businessName = business?.name || "Alive";
+  const waNumber = String(business?.phone || business?.whatsapp || "244923000000").replace(/\D/g, "");
 
   const add = (id: string) => setCart((c) => ({ ...c, [id]: (c[id] || 0) + 1 }));
   const remove = (id: string) => setCart((c) => { const n = { ...c }; n[id] = Math.max(0, (n[id] || 0) - 1); if (n[id] === 0) delete n[id]; return n; });
@@ -25,10 +39,28 @@ export default function TakeawayPage() {
   const total = items.reduce((s, i) => s + i.price * i.qty, 0);
   const isValid = items.length > 0 && form.nome.trim().length >= 2 && form.telefone.trim().length >= 9 && (form.entrega === "Levantamento" || form.morada.trim().length >= 5);
 
-  const msg = `Olá Alive! Pedido Takeaway:\n\n${items.map((i) => `• ${i.qty}x ${i.name} - ${i.price * i.qty} Kz`).join("\n")}\n\nTotal: ${total} Kz\n\n👤 ${form.nome}\n📞 ${form.telefone}\n🚚 ${form.entrega}${form.entrega === "Entrega" ? ` - ${form.morada}` : ""}\n📝 ${form.obs || "-"}`;
+  const msg = `Olá ${businessName}! Pedido Takeaway:\n\n${items.map((i) => `• ${i.qty}x ${i.name} - ${i.price * i.qty} Kz`).join("\n")}\n\nTotal: ${total.toLocaleString()} Kz\n\n👤 ${form.nome}\n📞 ${form.telefone}\n🚚 ${form.entrega}${form.entrega === "Entrega" ? ` - ${form.morada}` : ""}\n📝 ${form.obs || "-"}`;
   const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`;
 
   const inputStyle: React.CSSProperties = { width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid #E5DDD6", fontSize: 15, background: "#fff" };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#F8F4EF] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-gray-200 rounded-full animate-spin" style={{ borderTopColor: primary }} />
+      </main>
+    );
+  }
+
+  if (business && resolveType(business) !== "restaurante") {
+    return (
+      <main className="min-h-screen bg-[#F8F4EF] font-sans pt-32 px-6 text-center">
+        <h1 className="font-serif text-4xl mb-3">Takeaway não disponível</h1>
+        <p className="text-gray-500 mb-6">Takeaway só está disponível para restaurantes.</p>
+        <Link to={`/${slug}`} className="inline-block px-6 py-3 rounded-full border bg-white font-bold">← Voltar à Página Inicial</Link>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#F8F4EF] font-sans">
