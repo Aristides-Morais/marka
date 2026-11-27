@@ -17,7 +17,7 @@ export default function Gallery3D({ images, primary, secondary, experience = "im
   const next = () => setIndex((v) => Math.min(items.length - 1, v + 1));
   const prev = () => setIndex((v) => Math.max(0, v - 1));
 
-  // SE O ADMIN ESCOLHER CLASSIC, MOSTRA GRELHA SIMPLES - SEM TRAVAR NADA
+  // SE O ADMIN ESCOLHER CLASSIC, MOSTRA GRELHA SIMPLES
   if (experience === "classic") {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-10 bg-[#1a1412]">
@@ -35,7 +35,6 @@ export default function Gallery3D({ images, primary, secondary, experience = "im
   // IMERSIVO: SÓ O SCROLL HORIZONTAL MUDA DE FOTO. VERTICAL PASSA DIRETO.
   useEffect(() => {
     const onWheel = (e: WheelEvent) => {
-      // Só trava se for MESMO horizontal (2 dedos para o lado) - vertical deixa passar
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
       if (lockRef.current) return;
       e.preventDefault();
@@ -47,7 +46,6 @@ export default function Gallery3D({ images, primary, secondary, experience = "im
     return () => window.removeEventListener("wheel", onWheel);
   }, [items.length]);
 
-  // TELEFONE / TABLET: SWIPE
   const onTouchStart = (e: React.TouchEvent) => {
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
@@ -55,7 +53,6 @@ export default function Gallery3D({ images, primary, secondary, experience = "im
     if (!touchStart.current) return;
     const dx = e.changedTouches[0].clientX - touchStart.current.x;
     const dy = e.changedTouches[0].clientY - touchStart.current.y;
-    // Só considera swipe horizontal se for maior que vertical - senão é scroll da página
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
       if (dx < 0) next(); else prev();
     }
@@ -71,7 +68,6 @@ export default function Gallery3D({ images, primary, secondary, experience = "im
         <p className="text-gray-400 text-sm mt-2">Desliza para o lado ou clica numa foto para ver com zoom</p>
       </div>
 
-      {/* FOTO ATUAL COM ZOOM + DESCRIÇÃO */}
       <div className="px-4 md:px-6 pb-8 flex flex-col items-center">
         <div className="relative w-full max-w-3xl">
           <img key={current.image} src={current.image} alt={current.title} onClick={() => setSelected(index)}
@@ -84,7 +80,6 @@ export default function Gallery3D({ images, primary, secondary, experience = "im
           </div>
         </div>
 
-        {/* SETAS + MINIATURAS - FUNCIONA EM PC, TELEFONE E TABLET */}
         <div className="flex items-center gap-3 mt-6 w-full max-w-3xl">
           <button onClick={prev} className="w-11 h-11 shrink-0 rounded-full bg-white text-black font-bold">←</button>
           <div className="flex gap-2 overflow-x-auto flex-1 py-1">
@@ -98,7 +93,6 @@ export default function Gallery3D({ images, primary, secondary, experience = "im
         </div>
       </div>
 
-      {/* ZOOM AO CLICAR - AQUI SIM VÊ UMA A UMA COM DESCRIÇÃO */}
       {selected !== null && <Lightbox items={items} selected={selected} setSelected={setSelected} />}
       <style>{`@keyframes galleryZoom{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}} @keyframes galleryUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
     </div>
@@ -106,35 +100,41 @@ export default function Gallery3D({ images, primary, secondary, experience = "im
 }
 
 function Lightbox({ items, selected, setSelected }: { items: any[]; selected: number; setSelected: (v: number | null) => void }) {
+  const [rotate, setRotate] = useState(0);
   const start = useRef<{ x: number; y: number } | null>(null);
   const it = items[selected];
+
+  useEffect(() => { setRotate(0); }, [selected]);
+
   return (
-    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 animate-[galleryZoom_0.35s_ease-out]"
+    <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center p-4"
       onClick={() => setSelected(null)}
       onTouchStart={(e) => { start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
       onTouchEnd={(e) => {
         if (!start.current) return;
         const dx = e.changedTouches[0].clientX - start.current.x;
-        if (Math.abs(dx) > 50) {
+        if (Math.abs(dx) > 60) {
           if (dx < 0) setSelected(Math.min(items.length - 1, selected + 1));
           else setSelected(Math.max(0, selected - 1));
         }
         start.current = null;
       }}>
-      <div className="max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
-        <img key={it.image} src={it.image} alt={it.title} className="w-full max-h-[70vh] object-cover rounded-[2rem] animate-[galleryZoom_0.35s_ease-out]" />
-        <div className="bg-white rounded-2xl p-5 -mt-6 mx-3 relative">
-          <p className="text-xs uppercase tracking-widest text-gray-400">{selected + 1} / {items.length}</p>
-          <h3 className="font-serif text-2xl font-bold">{it.title}</h3>
-          <p className="text-gray-600 mt-1">{it.desc}</p>
-          <div className="flex gap-2 mt-4">
-            <button onClick={() => setSelected(Math.max(0, selected - 1))} className="px-4 py-2 rounded-full bg-black text-white text-sm">← Anterior</button>
-            <button onClick={() => setSelected(Math.min(items.length - 1, selected + 1))} className="px-4 py-2 rounded-full bg-black text-white text-sm">Seguinte →</button>
-            <button onClick={() => setSelected(null)} className="ml-auto px-4 py-2 rounded-full border text-sm">Fechar ✕</button>
-          </div>
-          <p className="text-[11px] text-gray-400 mt-2">No telefone: desliza para o lado para ver a próxima foto com zoom</p>
-        </div>
+      <div className="relative" onClick={(e) => e.stopPropagation()}>
+        <img key={it.image} src={it.image} alt=""
+          className="max-w-[92vw] max-h-[78vh] object-contain rounded-2xl transition-transform duration-500 animate-[galleryZoom_0.4s_ease-out]"
+          style={{ transform: `rotate(${rotate}deg)` }}
+          draggable={false}
+        />
       </div>
+      <div className="flex items-center gap-2 mt-4" onClick={(e) => e.stopPropagation()}>
+        <button onClick={() => setSelected(Math.max(0, selected - 1))} className="w-11 h-11 rounded-full bg-white text-black font-bold">←</button>
+        <button onClick={() => setRotate((r) => r - 90)} className="px-4 py-2 rounded-full bg-white text-black text-sm font-bold">↺ Girar</button>
+        <span className="text-white text-sm font-bold px-2">{selected + 1} / {items.length}</span>
+        <button onClick={() => setRotate((r) => r + 90)} className="px-4 py-2 rounded-full bg-white text-black text-sm font-bold">Girar ↻</button>
+        <button onClick={() => setSelected(Math.min(items.length - 1, selected + 1))} className="w-11 h-11 rounded-full bg-white text-black font-bold">→</button>
+        <button onClick={() => setSelected(null)} className="ml-2 w-11 h-11 rounded-full bg-red-500 text-white font-bold">✕</button>
+      </div>
+      <p className="text-white/60 text-xs mt-2">Desliza para o lado para trocar de foto • Clica em Girar para rodar</p>
     </div>
   );
 }

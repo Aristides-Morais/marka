@@ -41,8 +41,12 @@ export default function SiteLayout({
       : [
           { label: "Início", href: "" },
           { label: "Sobre", href: "sobre" },
-          { label: "Serviços", href: "servicos" },
+          { label: "Menu / Serviços", href: "servicos" },
+          { label: "Galeria", href: "galeria" },
+          { label: "Eventos", href: "eventos" },
+          { label: "Blog", href: "blog" },
           { label: "Contactos", href: "contactos" },
+          { label: "Takeaway", href: "takeaway" },
         ];
 
   const hrefOf = (h: string) => (h ? `/${slug}/${h}` : `/${slug}`);
@@ -121,24 +125,26 @@ export default function SiteLayout({
             )}
           </Link>
 
+          {/* PC: CAIXA BONITA COM TODOS OS BOTÕES */}
           <nav
             className="sl-nav"
-            style={{ display: "none", alignItems: "center", gap: 22 }}
+            style={{ display: "none", alignItems: "center", gap: 6, background: "#F8F4EF", padding: 4, borderRadius: 999 }}
           >
             {menu.map((m) => (
-              <Link key={m.href + m.label} to={hrefOf(m.href)} style={{ color: "#1a1412" }}>
+              <Link key={m.href + m.label} to={hrefOf(m.href)} style={{ color: "#1a1412", padding: "8px 12px", borderRadius: 999, background: "#fff" }}>
                 {m.label}
               </Link>
             ))}
             <Link
               to={`/${slug}/contactos`}
               className="sl-btn"
-              style={{ background: primary, color: "#fff", padding: "10px 18px" }}
+              style={{ background: primary, color: "#fff", padding: "10px 18px", borderRadius: 999 }}
             >
               Contactar
             </Link>
           </nav>
 
+          {/* TELEFONE: SÓ 3 PONTOS */}
           <button
             type="button"
             aria-label="Menu"
@@ -146,13 +152,18 @@ export default function SiteLayout({
             className="sl-burger"
             style={{
               border: "none",
-              background: "transparent",
+              background: "#1a1412",
+              color: "#fff",
+              width: 44,
+              height: 44,
+              borderRadius: 999,
               fontSize: 22,
               cursor: "pointer",
               display: "block",
+              lineHeight: 1,
             }}
           >
-            {open ? "×" : "☰"}
+            {open ? "×" : "⋯"}
           </button>
         </div>
 

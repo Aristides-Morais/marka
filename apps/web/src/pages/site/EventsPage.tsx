@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../../lib/api";
 import { detectSector, mergeWithDefaults, type SiteContent } from "../../lib/siteContent";
+import SiteHeader from "../../components/site/SiteHeader";
 
 type EventItem = {
   title: string;
@@ -52,31 +53,23 @@ export default function EventsPage() {
   const secondary = content.visualIdentity?.secondaryColor || business.secondaryColor || "#9A7634";
   const waLink = `https://wa.me/${(business.phone || "").replace(/\D/g, "")}`;
 
-  // Usa os eventos do Super Admin. Se vazio, usa fallback.
   const defaultEvents: EventItem[] = [
     { title: "Noite de Fado ao Vivo", date: "Todas as Sextas", desc: "Junte-se a nós para uma noite mágica com música ao vivo e um menu especial de tapas.", image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80" },
     { title: "Almoço Executivo", date: "Segunda a Sexta, 12h-15h", desc: "Menu completo com entrada, prato principal e bebida por apenas 8.500 Kz.", image: "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=800&q=80" },
   ];
 
-  // Garante que o array de eventos existe e tem o tipo certo
-  const events: EventItem[] = Array.isArray(content.events) && content.events.length > 0 
-    ? (content.events as EventItem[]) 
+  const events: EventItem[] = Array.isArray((content as any).events) && (content as any).events.length > 0
+    ? ((content as any).events as EventItem[])
     : defaultEvents;
 
   return (
     <main className="min-h-screen bg-[#F8F4EF] text-[#35232B] font-sans">
+      <SiteHeader businessName={business?.name || "Alive"} primary={primary} secondary={secondary} waLink={waLink} businessType={business?.type} />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:wght@400;500;600;700&display=swap');
         .font-serif { font-family: 'Playfair Display', serif; }
         .font-sans { font-family: 'DM Sans', sans-serif; }
       `}</style>
-
-      <header className="fixed inset-x-0 top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm py-4">
-        <div className="container mx-auto px-6 flex items-center justify-between">
-          <Link to={`/${slug}`} className="font-serif text-2xl font-bold text-[#221A18]">{business.name}</Link>
-          <Link to={`/${slug}`} className="text-sm font-medium uppercase tracking-widest text-gray-600 hover:text-black">← Voltar ao Início</Link>
-        </div>
-      </header>
 
       <section className="pt-32 pb-16 px-6 text-center bg-white">
         <p className="text-sm font-bold tracking-[0.2em] uppercase mb-4" style={{ color: primary }}>Agenda</p>

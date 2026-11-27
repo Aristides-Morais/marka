@@ -1,6 +1,5 @@
 import { Link, useParams } from "react-router-dom";
 import SiteHeader from "../../components/site/SiteHeader";
-
 const BLOG_DATA = [
   { title: "A Arte de Preparar um Mufete Perfeito", excerpt: "Descubra os segredos do nosso chef para grelhar o peixe na perfeição e o equilíbrio do óleo de palma.", date: "15 Nov 2026", category: "Gastronomia", image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80" },
   { title: "Harmonização de Vinhos com Pratos Angolanos", excerpt: "Saiba qual vinho escolher para acompanhar o Calulu ou a Muamba de Galinha.", date: "02 Nov 2026", category: "Vinhos", image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80" },
@@ -18,6 +17,7 @@ export default function BlogPage() {
   return (
     <main className="min-h-screen bg-[#F8F4EF] text-[#35232B] font-sans">
       <style>{`
+            <SiteHeader businessName={business?.name || "Alive"} primary={primary} secondary={secondary} waLink={waLink} businessType={business?.type} />
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:wght@400;500;600;700&display=swap');
         .font-serif { font-family: 'Playfair Display', serif; }
         .font-sans { font-family: 'DM Sans', sans-serif; }

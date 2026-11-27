@@ -1,139 +1,52 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import WhatsAppFloat from "./WhatsAppFloat";
 
-type Props = {
-  businessName: string;
-  primary: string;
-  secondary: string;
-  waLink: string | null;
-  businessType?: string;
-};
+type Props = { businessName: string; primary: string; secondary: string; waLink: string | null; businessType?: string };
 
-export default function SiteHeader({ businessName, primary, secondary, waLink, businessType = "restaurante" }: Props) {
+export default function SiteHeader({ businessName, primary, secondary, waLink, businessType }: Props) {
   const { slug = "" } = useParams();
-  const phoneNumber = waLink ? waLink.split("/").pop()?.split("?")[0] || "" : "";
+  const [open, setOpen] = useState(false);
 
-  const type = (businessType || "").toLowerCase();
-
-  // Define os links permitidos por tipo de negócio
-  const getLinks = () => {
-    // RESTAURANTE
-    if (type.includes("restaurante") || type.includes("bar") || type.includes("cafe") || type.includes("padaria")) {
-      return [
-        { to: `/${slug}/sobre`, label: "Sobre" },
-        { to: `/${slug}/servicos`, label: "Menu" },
-        { to: `/${slug}/galeria`, label: "Galeria" },
-        { to: `/${slug}/eventos`, label: "Eventos" },
-        { to: `/${slug}/blog`, label: "Blog" },
-        { to: `/${slug}/localizacao`, label: "Localização" },
-        { to: `/${slug}/contactos`, label: "Contactos" },
-        { to: `/${slug}/takeaway`, label: "Takeaway", highlight: true },
-      ];
-    }
-    // SALÃO DE BELEZA
-    if (type.includes("salao") || type.includes("barbearia") || type.includes("beleza") || type.includes("unhas") || type.includes("estetica")) {
-      return [
-        { to: `/${slug}/sobre`, label: "Sobre" },
-        { to: `/${slug}/servicos`, label: "Serviços" },
-        { to: `/${slug}/galeria`, label: "Galeria" },
-        { to: `/${slug}/depoimentos`, label: "Depoimentos" },
-        { to: `/${slug}/contactos`, label: "Contactos" },
-      ];
-    }
-    // CLÍNICA
-    if (type.includes("clinica") || type.includes("dentista") || type.includes("saude") || type.includes("consultorio")) {
-      return [
-        { to: `/${slug}/sobre`, label: "Sobre" },
-        { to: `/${slug}/servicos`, label: "Especialidades" },
-        { to: `/${slug}/faq`, label: "FAQ" },
-        { to: `/${slug}/localizacao`, label: "Localização" },
-        { to: `/${slug}/contactos`, label: "Contactos" },
-      ];
-    }
-    // LOJA / BOUTIQUE
-    if (type.includes("loja") || type.includes("boutique") || type.includes("comercio")) {
-      return [
-        { to: `/${slug}/sobre`, label: "Sobre" },
-        { to: `/${slug}/servicos`, label: "Produtos" },
-        { to: `/${slug}/galeria`, label: "Colecção" },
-        { to: `/${slug}/contactos`, label: "Contactos" },
-      ];
-    }
-    // TATUADOR
-    if (type.includes("tatuagem") || type.includes("tatuador")) {
-      return [
-        { to: `/${slug}/sobre`, label: "Sobre" },
-        { to: `/${slug}/servicos`, label: "Portfólio" },
-        { to: `/${slug}/galeria`, label: "Galeria" },
-        { to: `/${slug}/contactos`, label: "Contactos" },
-      ];
-    }
-    // ORTODONTIA
-    if (type.includes("ortodontia") || type.includes("placas")) {
-      return [
-        { to: `/${slug}/sobre`, label: "Sobre" },
-        { to: `/${slug}/servicos`, label: "Tratamentos" },
-        { to: `/${slug}/faq`, label: "FAQ" },
-        { to: `/${slug}/contactos`, label: "Contactos" },
-      ];
-    }
-
-    // DEFAULT
-    return [
-      { to: `/${slug}/sobre`, label: "Sobre" },
-      { to: `/${slug}/servicos`, label: "Serviços" },
-      { to: `/${slug}/galeria`, label: "Galeria" },
-      { to: `/${slug}/contactos`, label: "Contactos" },
-    ];
-  };
-
-  const links = getLinks();
+  const links = [
+    { to: `/${slug}`, label: "Início" },
+    { to: `/${slug}/sobre`, label: "Sobre" },
+    { to: `/${slug}/servicos`, label: "Menu / Serviços" },
+    { to: `/${slug}/galeria`, label: "Galeria" },
+    { to: `/${slug}/eventos`, label: "Eventos" },
+    { to: `/${slug}/blog`, label: "Blog" },
+    { to: `/${slug}/contactos`, label: "Contactos" },
+    ...(businessType?.includes("restaurante") ? [{ to: `/${slug}/takeaway`, label: "Takeaway" }] : []),
+  ];
 
   return (
-    <>
-      <header className="fixed inset-x-0 top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm py-3">
-        <div className="container mx-auto px-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to={`/${slug}`} className="text-xs font-medium uppercase tracking-widest text-gray-500 hover:text-black transition" title="Voltar ao Início">
-              ← Início
-            </Link>
-            <Link to={`/${slug}`} className="font-serif text-xl font-bold text-[#221A18] truncate max-w-[180px]">
-              {businessName}
-            </Link>
-          </div>
-          
-          <nav className="hidden xl:flex items-center gap-4 text-[10px] xl:text-xs font-medium uppercase tracking-widest">
-            {links.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={link.highlight ? "px-3 py-1.5 rounded-full font-bold transition hover:scale-105" : "hover:opacity-70 transition"}
-                style={link.highlight ? { background: secondary, color: "#1a1412" } : {}}
-              >
-                {link.label}
-              </Link>
+    <header className="fixed top-0 left-0 right-0 z-[90]">
+      <div className="mx-3 md:mx-6 mt-3">
+        <div className="bg-white/95 backdrop-blur-md shadow-xl rounded-2xl px-4 py-3 flex items-center justify-between border border-black/5">
+          <Link to={`/${slug}`} className="font-serif font-bold text-xl" style={{ color: primary }}>{businessName}</Link>
+
+          {/* PC: CAIXA BONITA COM TODOS OS BOTÕES */}
+          <nav className="hidden md:flex items-center gap-1 bg-[#F8F4EF] rounded-full p-1">
+            {links.map((l) => (
+              <Link key={l.to} to={l.to} className="px-3 py-2 rounded-full text-[13px] font-bold hover:bg-white hover:shadow transition">{l.label}</Link>
             ))}
-            {waLink && (
-              <a href={waLink} target="_blank" rel="noreferrer" className="ml-2 px-4 py-2 rounded-full font-bold text-black transition hover:scale-105 text-[10px] xl:text-xs" style={{ background: secondary }}>
-                Reservar
-              </a>
-            )}
+            {waLink && <a href={waLink} target="_blank" rel="noreferrer" className="ml-1 px-4 py-2 rounded-full text-white text-[13px] font-bold" style={{ background: primary }}>Reservar</a>}
           </nav>
 
-          <div className="xl:hidden flex items-center gap-2">
-            {links.find(l => l.label === "Takeaway") && (
-              <Link to={`/${slug}/takeaway`} className="text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full text-white" style={{ background: secondary }}>
-                Takeaway
-              </Link>
-            )}
-            <Link to={`/${slug}/contactos`} className="text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-full text-white" style={{ background: primary }}>
-              Menu
-            </Link>
-          </div>
+          {/* TELEFONE: SÓ 3 PONTOS */}
+          <button onClick={() => setOpen(!open)} className="md:hidden w-11 h-11 rounded-full bg-black text-white text-xl leading-none" aria-label="Menu">⋯</button>
         </div>
-      </header>
 
-      {phoneNumber && <WhatsAppFloat phone={phoneNumber} message={`Olá! Vi o site do ${businessName} e gostaria de mais informações.`} />}
-    </>
+        {/* MENU DOS 3 PONTOS - TELEFONE */}
+        {open && (
+          <div className="md:hidden mt-2 bg-white rounded-2xl shadow-2xl p-3 animate-[galleryUp_0.3s_ease-out]">
+            {links.map((l) => (
+              <Link key={l.to} to={l.to} onClick={() => setOpen(false)} className="block px-4 py-3 rounded-xl font-bold text-[15px] hover:bg-[#F8F4EF]">{l.label}</Link>
+            ))}
+            {waLink && <a href={waLink} target="_blank" rel="noreferrer" className="block mt-2 text-center px-4 py-3 rounded-xl text-white font-bold" style={{ background: primary }}>Reservar no WhatsApp</a>}
+          </div>
+        )}
+      </div>
+      <style>{`@keyframes galleryUp{from{transform:translateY(-8px);opacity:0}to{transform:translateY(0);opacity:1}}`}</style>
+    </header>
   );
 }
