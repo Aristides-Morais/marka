@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import WebsitePage from "./WebsitePage";
-import SiteAnimationRuntime from "../components/site/motion/SiteAnimationRuntime";
+
 
 type BusinessInfo = {
   modules?: string[];
@@ -58,8 +58,7 @@ export default function ModuleAwareWebsitePage() {
 
   return (
     <div>
-      {/* Animação escolhida no Super Admin - vem de business.theme.animation */}
-      <SiteAnimationRuntime settings={business?.theme?.animation} />
+  
 
       <style>
         {`

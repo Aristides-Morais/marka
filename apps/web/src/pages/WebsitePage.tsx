@@ -4,7 +4,6 @@ import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import HeroScene from "../components/site/three/HeroScene";
 import Gallery3D from "../components/site/motion/Gallery3D";
-import SiteAnimationRuntime from "../components/site/motion/SiteAnimationRuntime";
 import SiteHeader from "../components/site/SiteHeader";
 import {
   detectSector,
@@ -161,11 +160,7 @@ export default function WebsitePage() {
 
   return (
     <main className="site-animation-root min-h-screen bg-[#F8F4EF] text-[#35232B] font-sans overflow-x-hidden">
-      {/* Sistema de animações controlado pelo Super Admin */}
-      <SiteAnimationRuntime
-        settings={content.animations as any}
-      />
-
+  
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:wght@400;500;600;700&display=swap');
 
