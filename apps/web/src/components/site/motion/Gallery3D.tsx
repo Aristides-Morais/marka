@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 
 type Props = {
   images: string[];
@@ -7,47 +7,55 @@ type Props = {
 };
 
 export default function Gallery3D({ images, primary, secondary }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState(0);
 
-  // Aplica o efeito de rotação contínua com CSS puro
+  // Scroll com 2 dedos empurra as fotos para o lado - estilo SOLCO
   useEffect(() => {
-    const cards = containerRef.current?.querySelectorAll(".gallery-card");
-    if (!cards) return;
-    
-    cards.forEach((card, index) => {
-      const el = card as HTMLElement;
-      el.style.transform = `rotateY(${index * 15}deg) translateZ(${index * 20}px)`;
-      el.style.transitionDelay = `${index * 0.1}s`;
-    });
-  }, [images]);
+    const onScroll = () => {
+      const el = sectionRef.current;
+      const track = trackRef.current;
+      if (!el || !track) return;
+      const rect = el.getBoundingClientRect();
+      const total = el.offsetHeight - window.innerHeight;
+      const p = Math.min(1, Math.max(0, -rect.top / total));
+      setProgress(p);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const maxX = trackRef.current ? trackRef.current.scrollWidth - window.innerWidth : 0;
 
   return (
-    <div className="relative w-full py-20 overflow-hidden bg-[#1a1412]" ref={containerRef}>
-      <div className="flex gap-6 px-6 animate-[scroll_30s_linear_infinite] hover:[animation-play-state:paused]">
-        {images.map((img, idx) => (
-          <div
-            key={idx}
-            className="gallery-card group relative w-[280px] h-[380px] flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl transition-all duration-700 hover:scale-105 hover:z-20"
-            style={{
-              transformStyle: "preserve-3d",
-              perspective: "1000px",
-            }}
-          >
-            <img src={img} alt={`Prato ${idx + 1}`} className="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-500" />
-            <div className="absolute bottom-4 left-4 right-4 text-white opacity-0 group-hover:opacity-100 transition duration-500">
-              <p className="font-serif text-lg font-bold">Prato Especial</p>
-              <p className="text-xs text-white/80">Descubra o nosso sabor</p>
+    <div ref={sectionRef} className="relative" style={{ height: "300vh" }}>
+      <div className="sticky top-0 h-screen overflow-hidden bg-[#1a1412] flex flex-col justify-center">
+        <div className="px-6 mb-6">
+          <p className="text-xs tracking-[0.3em] uppercase" style={{ color: secondary }}>Momentos</p>
+          <h2 className="font-serif text-4xl md:text-6xl text-white mt-2">Desliza para ver</h2>
+        </div>
+        <div
+          ref={trackRef}
+          className="flex gap-6 px-6 will-change-transform"
+          style={{ transform: `translateX(${-progress * maxX}px)` }}
+        >
+          {images.map((img, idx) => (
+            <div key={idx} className="relative w-[280px] md:w-[380px] h-[380px] md:h-[520px] flex-shrink-0 rounded-2xl overflow-hidden shadow-2xl">
+              <img src={img} alt={`Momento ${idx + 1}`} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute bottom-4 left-4 text-white">
+                <p className="font-serif text-lg font-bold">Momento {idx + 1}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+        {/* Barra de progresso do scroll */}
+        <div className="mx-6 mt-8 h-[3px] bg-white/20 rounded-full overflow-hidden">
+          <div className="h-full bg-white transition-none" style={{ width: `${progress * 100}%`, background: primary }} />
+        </div>
       </div>
-      <style>{`
-        @keyframes scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
     </div>
   );
 }

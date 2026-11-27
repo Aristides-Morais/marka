@@ -27,9 +27,11 @@ type BusinessForm = {
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
-  animationExperience: string;
+    animationExperience: string;
   animationIntensity: string;
   animationEnabled: boolean;
+  immersiveSpeed: number;
+  immersiveZoom: number;
 };
 
 const initialForm: BusinessForm = {
@@ -42,9 +44,11 @@ const initialForm: BusinessForm = {
   primaryColor: "#173B67",
   secondaryColor: "#F2A900",
   accentColor: "#F7F9FC",
-  animationExperience: "classic",
+    animationExperience: "classic",
   animationIntensity: "normal",
   animationEnabled: true,
+  immersiveSpeed: 2,
+  immersiveZoom: 1.2,
 };
 
 const businessTypes = [
@@ -143,9 +147,11 @@ export default function SuperAdminPage() {
       name: business.name, slug: business.slug, adminEmail: "", adminPassword: "",
       type: business.type || "loja", template: business.template || "comercio",
       primaryColor: business.primaryColor || "#173B67", secondaryColor: business.secondaryColor || "#F2A900", accentColor: business.accentColor || "#F7F9FC",
-      animationExperience: business.theme?.animation?.experience || "classic",
+            animationExperience: business.theme?.animation?.experience || "classic",
       animationIntensity: business.theme?.animation?.intensity || "normal",
       animationEnabled: business.theme?.animation?.enabled ?? true,
+      immersiveSpeed: business.theme?.animation?.immersiveSpeed || 2,
+      immersiveZoom: business.theme?.animation?.immersiveZoom || 1.2,
     });
     setError(""); setShowCreate(true);
   }
@@ -158,7 +164,7 @@ export default function SuperAdminPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); setError("");
-    const animationPayload = { enabled: form.animationEnabled, experience: form.animationExperience, intensity: form.animationIntensity, duration: 800, stagger: 90, parallax: true, hover: true };
+        const animationPayload = { enabled: form.animationEnabled, experience: form.animationExperience, intensity: form.animationIntensity, duration: 800, stagger: 90, parallax: form.animationExperience !== "classic" && form.animationExperience !== "imersivo", hover: true, immersiveSpeed: form.immersiveSpeed, immersiveZoom: form.immersiveZoom };
     try {
       if (editingId) {
         await apiFetch(`/api/v1/super-admin/businesses/${editingId}`, {
@@ -235,7 +241,12 @@ export default function SuperAdminPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div><label className="block text-xs text-zinc-400 mb-2">Animação</label><select value={form.animationExperience} onChange={(e) => setForm({ ...form, animationExperience: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm">{animationOptions.map(([v, l]) => (<option key={v} value={v}>{l}</option>))}</select></div>
                   <div><label className="block text-xs text-zinc-400 mb-2">Intensidade</label><select value={form.animationIntensity} onChange={(e) => setForm({ ...form, animationIntensity: e.target.value })} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 text-sm"><option value="subtle">Suave</option><option value="normal">Normal</option><option value="bold">Forte</option></select></div>
-                  <label className="flex items-center gap-2 text-sm pt-6"><input type="checkbox" checked={form.animationEnabled} onChange={(e) => setForm({ ...form, animationEnabled: e.target.checked })} className="w-4 h-4" />Animação ligada</label>
+                                    {form.animationExperience === "imersivo" && (
+                    <div className="md:col-span-3 grid grid-cols-2 gap-4 bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+                      <div><label className="block text-xs text-zinc-400 mb-2">Velocidade Imersivo - quanto mais alto, mais preso ({form.immersiveSpeed})</label><input type="range" min="1" max="3" step="0.5" value={form.immersiveSpeed} onChange={(e) => setForm({ ...form, immersiveSpeed: Number(e.target.value) })} className="w-full" /></div>
+                      <div><label className="block text-xs text-zinc-400 mb-2">Zoom do Hero ({form.immersiveZoom})</label><input type="range" min="1" max="1.5" step="0.1" value={form.immersiveZoom} onChange={(e) => setForm({ ...form, immersiveZoom: Number(e.target.value) })} className="w-full" /></div>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -112,11 +112,12 @@ export function mergeWithDefaults(raw: SiteContent | null, sector: Sector, busin
   if (raw?.aboutTitle && raw.aboutTitle !== "Curadoria de Estilo") finalContent.aboutTitle = raw.aboutTitle;
   if (raw?.aboutText && raw.aboutText !== "Selecionamos as melhores peças.") finalContent.aboutText = raw.aboutText;
   
-  if (raw?.services && raw.services.length > 0 && finalSector !== "food") finalContent.services = raw.services;
-  else if (finalSector === "food") finalContent.services = defaults.services; // Força o menu do restaurante
+    if (raw?.services && raw.services.length > 0) finalContent.services = raw.services;
 
-  // GALERIA ATUALIZADA COM 8 IMAGENS DE PRATOS VARIADOS
-  if (!finalContent.gallery || finalContent.gallery.length === 0 || finalSector === "food") {
+    // GALERIA: Super Admin manda sempre. Só usa default se o Admin não tiver fotos.
+  if (raw?.gallery && raw.gallery.length > 0) {
+    finalContent.gallery = raw.gallery;
+  } else if (!finalContent.gallery || finalContent.gallery.length === 0) {
     finalContent.gallery = [
       "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1600&q=80", // Mesa posta
       "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80",  // Prato de carne
