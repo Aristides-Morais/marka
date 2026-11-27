@@ -74,7 +74,8 @@ export default function WebsitePage() {
           site?.isPublished && site.content
             ? site.content
             : null;
-                    setExperience((site?.content as any)?.animations?.experience || "classic");
+                                        // PRIORIDADE: Super Admin (business.theme) > SiteContentEditor (site.content)
+                    setExperience((b as any)?.theme?.animation?.experience || (site?.content as any)?.animations?.experience || "classic");
 
         setContent(
           mergeWithDefaults(
@@ -183,53 +184,52 @@ export default function WebsitePage() {
         businessType={business.type}
       />
 
-      {/* HERO */}
+            {/* HERO */}
       <section
         id="inicio"
-        className="relative h-[100svh] flex items-center justify-center overflow-hidden pt-20"
+        className={experience === "imersivo" ? "relative h-[250vh] overflow-hidden" : "relative h-[100svh] overflow-hidden pt-20"}
       >
-                <HeroScene
-          sector={visualSector}
-          primaryColor={primary}
-          secondaryColor={secondary}
-          heroImage={content.gallery?.[0]}
-          experience={experience}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
+        <div className={experience === "imersivo" ? "sticky top-0 h-[100svh] flex items-center justify-center overflow-hidden pt-20" : "relative h-full flex items-center justify-center overflow-hidden"}>
+          <HeroScene
+            sector={visualSector}
+            primaryColor={primary}
+            secondaryColor={secondary}
+            heroImage={content.gallery?.[0]}
+            experience={experience}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none" />
 
-        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto flex flex-col items-center justify-center h-full pb-10">
-          <p className="text-xs md:text-sm font-bold tracking-[0.3em] uppercase text-white/80 mb-4 md:mb-6 mt-10">
-            Bem-vindo ao {business.name}
-          </p>
+          <div className="relative z-10 text-center px-6 max-w-4xl mx-auto flex flex-col items-center justify-center h-full pb-10">
+            <p className="text-xs md:text-sm font-bold tracking-[0.3em] uppercase text-white/80 mb-4 md:mb-6 mt-10">
+              Bem-vindo ao {business.name}
+            </p>
 
-          <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white leading-tight mb-6 drop-shadow-xl">
-            {content.heroTitle}
-          </h1>
+            <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white leading-tight mb-6 drop-shadow-xl">
+              {content.heroTitle}
+            </h1>
 
-          <p className="text-base md:text-lg text-white/90 max-w-2xl mx-auto mb-10 drop-shadow-md">
-            {content.heroSubtitle}
-          </p>
+            <p className="text-base md:text-lg text-white/90 max-w-2xl mx-auto mb-10 drop-shadow-md">
+              {content.heroSubtitle}
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
-            <a
-              href={waLink || "#"}
-              target="_blank"
-              rel="noreferrer"
-              className="px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition hover:-translate-y-1 shadow-xl w-full sm:w-auto"
-              style={{
-                background: secondary,
-                color: "#1a1412",
-              }}
-            >
-              {content.buttonText || "Contactar"}
-            </a>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full">
+              <a
+                href={waLink || "#"}
+                target="_blank"
+                rel="noreferrer"
+                className="px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm transition hover:-translate-y-1 shadow-xl w-full sm:w-auto"
+                style={{ background: secondary, color: "#1a1412" }}
+              >
+                {content.buttonText || "Contactar"}
+              </a>
 
-            <a
-              href="#sobre"
-              className="px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm border-2 border-white text-white hover:bg-white hover:text-black transition w-full sm:w-auto"
-            >
-              Descobrir Mais
-            </a>
+              <a
+                href="#sobre"
+                className="px-8 py-4 rounded-full font-bold uppercase tracking-widest text-sm border-2 border-white text-white hover:bg-white hover:text-black transition w-full sm:w-auto"
+              >
+                Descobrir Mais
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -385,9 +385,9 @@ export default function WebsitePage() {
       )}
 
       {/* GALERIA 3D */}
-      <section
+            <section
         id="galeria"
-        className="py-24 bg-[#1a1412]"
+        className="bg-[#1a1412]"
       >
         <div className="container mx-auto max-w-6xl px-6">
           <div className="text-center mb-12">
@@ -401,10 +401,11 @@ export default function WebsitePage() {
           </div>
         </div>
 
-        <Gallery3D
+                <Gallery3D
           images={content.gallery || []}
           primary={primary}
           secondary={secondary}
+          experience={experience}
         />
       </section>
 
