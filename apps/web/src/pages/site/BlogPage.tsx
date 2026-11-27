@@ -1,29 +1,25 @@
 import { Link, useParams } from "react-router-dom";
-import SiteHeader from "../../components/site/SiteHeader";
-const BLOG_DATA = [
-  { title: "A Arte de Preparar um Mufete Perfeito", excerpt: "Descubra os segredos do nosso chef para grelhar o peixe na perfeição e o equilíbrio do óleo de palma.", date: "15 Nov 2026", category: "Gastronomia", image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80" },
-  { title: "Harmonização de Vinhos com Pratos Angolanos", excerpt: "Saiba qual vinho escolher para acompanhar o Calulu ou a Muamba de Galinha.", date: "02 Nov 2026", category: "Vinhos", image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80" },
-  { title: "Os Segredos dos Temperos Angolanos", excerpt: "Uma viagem pelos sabores que tornam a nossa comida única no mundo.", date: "25 Out 2026", category: "Cultura", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80" },
-  { title: "Como Criar o Ambiente Perfeito para um Jantar", excerpt: "Dicas de decoração, iluminação e música para uma noite memorável.", date: "10 Out 2026", category: "Lifestyle", image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80" },
+import PhotoEffect from "../../components/site/PhotoEffect";
+
+export const BLOG_DATA = [
+  { slug: "mufete-perfeito", title: "A Arte de Preparar um Mufete Perfeito", excerpt: "Descubra os segredos do nosso chef para grelhar o peixe na perfeição e o equilíbrio do óleo de palma.", date: "15 Nov 2026", category: "Gastronomia", image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80", body: "O mufete é mais do que um prato, é a nossa identidade. Começa no peixe fresco, escolhido de manhã no mercado, grelhado na brasa sem pressa. O segredo está no óleo de palma, no feijão bem temperado e na farofa crocante. Na Alive, servimos como em casa, com carinho e tradição." },
+  { slug: "harmonizacao-vinhos", title: "Harmonização de Vinhos com Pratos Angolanos", excerpt: "Saiba qual vinho escolher para acompanhar o Calulu ou a Muamba de Galinha.", date: "02 Nov 2026", category: "Vinhos", image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=800&q=80", body: "Um bom vinho eleva o Calulu e a Muamba. Para pratos com óleo de palma, prefira um branco encorpado. Para grelhados, um tinto leve e fresco." },
+  { slug: "temperos-angolanos", title: "Os Segredos dos Temperos Angolanos", excerpt: "Uma viagem pelos sabores que tornam a nossa comida única no mundo.", date: "25 Out 2026", category: "Cultura", image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80", body: "Gindungo, alho, cebola e coentros. Os nossos temperos são a alma da cozinha angolana." },
+  { slug: "ambiente-perfeito", title: "Como Criar o Ambiente Perfeito para um Jantar", excerpt: "Dicas de decoração, iluminação e música para uma noite memorável.", date: "10 Out 2026", category: "Lifestyle", image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80", body: "Luz quente, música baixa e mesa bem posta. O ambiente faz metade do jantar." },
 ];
 
 export default function BlogPage() {
   const { slug = "" } = useParams();
   const primary = "#6B1020";
   const secondary = "#9A7634";
-  const businessName = "Alive Restaurante & Lounge";
-  const waLink = "https://wa.me/244923000000";
 
   return (
     <main className="min-h-screen bg-[#F8F4EF] text-[#35232B] font-sans">
       <style>{`
-            <SiteHeader businessName={business?.name || "Alive"} primary={primary} secondary={secondary} waLink={waLink} businessType={business?.type} />
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:wght@400;500;600;700&display=swap');
         .font-serif { font-family: 'Playfair Display', serif; }
         .font-sans { font-family: 'DM Sans', sans-serif; }
       `}</style>
-
-      <SiteHeader businessName={businessName} primary={primary} secondary={secondary} waLink={waLink} />
 
       <section className="pt-32 pb-20 px-6 text-center bg-white">
         <p className="text-sm font-bold tracking-[0.2em] uppercase mb-4" style={{ color: primary }}>O Nosso Blog</p>
@@ -33,10 +29,10 @@ export default function BlogPage() {
 
       <section className="py-20 px-6">
         <div className="container mx-auto max-w-6xl">
-          <div className="mb-16 group cursor-pointer">
-            <Link to={`/${slug}/blog/mufete-perfeito`} className="grid md:grid-cols-2 gap-8 items-center bg-white rounded-3xl overflow-hidden shadow-lg border border-gray-100 transition hover:shadow-2xl">
-              <div className="aspect-[4/3] md:aspect-auto md:h-full overflow-hidden">
-                <img src={BLOG_DATA[0].image} alt={BLOG_DATA[0].title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          <div className="mb-16 group">
+            <Link to={`/${slug}/blog/${BLOG_DATA[0].slug}`} className="grid md:grid-cols-2 gap-8 items-center bg-white rounded-3xl overflow-hidden shadow-lg border border-gray-100 transition hover:shadow-2xl">
+              <div className="aspect-[4/3] md:aspect-auto md:h-full overflow-hidden" onClick={(e) => e.preventDefault()}>
+                <PhotoEffect src={BLOG_DATA[0].image} alt={BLOG_DATA[0].title} className="w-full h-full object-cover" gallery={BLOG_DATA.map((p) => p.image)} />
               </div>
               <div className="p-8 md:p-12">
                 <span className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-4 inline-block" style={{ background: `${secondary}20`, color: secondary }}>{BLOG_DATA[0].category}</span>
@@ -51,11 +47,11 @@ export default function BlogPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {BLOG_DATA.slice(1).map((post, index) => (
-              <div key={index} className="group cursor-pointer">
-                <Link to={`/${slug}/blog/post-${index}`} className="block bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition hover:-translate-y-2 hover:shadow-xl h-full flex flex-col">
-                  <div className="aspect-[16/9] overflow-hidden">
-                    <img src={post.image} alt={post.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+            {BLOG_DATA.slice(1).map((post) => (
+              <div key={post.slug} className="group">
+                <Link to={`/${slug}/blog/${post.slug}`} className="block bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition hover:-translate-y-2 hover:shadow-xl h-full flex flex-col">
+                  <div className="aspect-[16/9] overflow-hidden" onClick={(e) => e.preventDefault()}>
+                    <PhotoEffect src={post.image} alt={post.title} className="w-full h-full object-cover" gallery={BLOG_DATA.map((p) => p.image)} />
                   </div>
                   <div className="p-6 flex-grow flex flex-col">
                     <span className="text-[10px] font-bold uppercase tracking-widest mb-2 opacity-70" style={{ color: primary }}>{post.category}</span>
