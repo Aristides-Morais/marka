@@ -38,7 +38,6 @@ export default function GlobalSiteLayout() {
   const animFromContent: any = content?.animations || content?.animation || {};
   const animFromTheme: any = theme?.animation || theme?.animations || {};
 
-  // FIX BRANCO NO TELEFONE: no mobile força classic e desliga animação
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const experience = isMobile ? "classic" : (animFromContent.experience || "classic");
   const intensity = animFromContent.intensity || animFromTheme.intensity || "normal";
@@ -57,8 +56,7 @@ export default function GlobalSiteLayout() {
   const cfg: any = (BUSINESS_TYPES as any)[type] || (BUSINESS_TYPES as any).restaurante || {};
   const rawMenu: any[] = Array.isArray(cfg.menu) ? cfg.menu : [];
 
-  // Menu de cima: SÓ navegação. Sem cardapio / reservas / takeaway / servicos
-  // Esses 4 vão para os botões empilhados em baixo
+  // Menu de cima: só navegação, sem duplicar os 3 botões
   const menu = rawMenu.filter(
     (m: any) => !["cardapio", "reservas", "takeaway", "servicos"].includes(String(m.href || "").toLowerCase())
   );
@@ -74,41 +72,100 @@ export default function GlobalSiteLayout() {
       <SiteAnimationRuntime settings={settings} />
 
       <header className="fixed top-0 left-0 right-0 z-[90]">
-  <div className="mx-3 md:mx-6 mt-3">
-    <div className="bg-white/95 backdrop-blur-md shadow-xl rounded-2xl px-3 py-2.5 flex items-center justify-between border border-black/5 gap-2">
-      <Link to={`/${slug}`} className="font-serif font-bold text-lg whitespace-nowrap shrink-0" style={{ color: primary }}>
-        {businessName}
-      </Link>
+        <div className="mx-3 md:mx-6 mt-3">
+          <div className="bg-white/95 backdrop-blur-md shadow-xl rounded-2xl px-4 py-3 flex items-center justify-between gap-3 border border-black/5">
 
-      {/* DESKTOP - Os 3 botões em cima, pintados igual */}
-      <nav className="hidden md:flex items-center gap-2">
-        <Link to={`/${slug}/cardapio`} className="px-4 py-2.5 rounded-full text-[13px] font-bold text-white shadow" style={{ background: primary }}>Cardápio Digital</Link>
-        <Link to={`/${slug}/reservas`} className="px-4 py-2.5 rounded-full text-[13px] font-bold text-white shadow" style={{ background: "#1a1412" }}>Reservar Mesa</Link>
-        <Link to={`/${slug}/takeaway`} className="px-4 py-2.5 rounded-full text-[13px] font-bold text-black shadow" style={{ background: "#E8C87A" }}>Takeaway</Link>
-        <Link to={`/${slug}/contactos`} className="px-4 py-2.5 rounded-full text-[13px] font-bold border">Contactar</Link>
-      </nav>
+            {/* LOGO */}
+            <Link to={`/${slug}`} className="font-serif font-bold text-xl shrink-0" style={{ color: primary }}>
+              {businessName}
+            </Link>
 
-      {/* MOBILE - Os 3 botões em cima, por baixo do nome, com scroll */}
-      <button onClick={() => setOpen(!open)} className="md:hidden w-10 h-10 rounded-full bg-black text-white text-lg leading-none shrink-0" aria-label="Menu">⋯</button>
-    </div>
+            {/* MENU CENTRO - Igual à tua foto: Início, Sobre, Galeria, Eventos, Blog, Contactos */}
+            <nav className="hidden lg:flex items-center gap-1 bg-[#F8F4EF] rounded-full p-1">
+              {menu.map((m: any) => (
+                <Link
+                  key={String(m.href) + String(m.label)}
+                  to={hrefOf(m.href)}
+                  className="px-3 py-2 rounded-full text-[13px] font-bold hover:bg-white hover:shadow transition whitespace-nowrap"
+                >
+                  {m.label}
+                </Link>
+              ))}
+            </nav>
 
-    {/* BARRA MOBILE - Sempre visível, com os 3 botões */}
-    <div className="md:hidden mt-2 flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-      <Link to={`/${slug}/cardapio`} className="whitespace-nowrap px-4 py-2.5 rounded-full text-[12px] font-bold text-white shadow" style={{ background: primary }}>Cardápio Digital</Link>
-      <Link to={`/${slug}/reservas`} className="whitespace-nowrap px-4 py-2.5 rounded-full text-[12px] font-bold text-white shadow" style={{ background: "#1a1412" }}>Reservar Mesa</Link>
-      <Link to={`/${slug}/takeaway`} className="whitespace-nowrap px-4 py-2.5 rounded-full text-[12px] font-bold text-black shadow" style={{ background: "#E8C87A" }}>Takeaway</Link>
-    </div>
+            {/* 3 BOTÕES SEMPRE VISÍVEIS AÍ EM CIMA - NÃO PRECISA CLICAR NO CONTACTAR */}
+            <div className="hidden md:flex items-center gap-2 shrink-0">
+              <Link
+                to={`/${slug}/cardapio`}
+                className="px-4 py-2.5 rounded-full text-[13px] font-bold bg-white text-[#1a1412] border border-[#EDE6DF] shadow-sm hover:-translate-y-0.5 transition whitespace-nowrap"
+              >
+                Cardápio Digital
+              </Link>
+              <Link
+                to={`/${slug}/reservas`}
+                className="px-4 py-2.5 rounded-full text-[13px] font-bold text-white shadow-sm hover:-translate-y-0.5 transition whitespace-nowrap"
+                style={{ background: primary }}
+              >
+                Reservar Mesa
+              </Link>
+              <Link
+                to={`/${slug}/takeaway`}
+                className="px-4 py-2.5 rounded-full text-[13px] font-bold text-white shadow-sm hover:-translate-y-0.5 transition whitespace-nowrap"
+                style={{ background: "#1A1412" }}
+              >
+                Takeaway
+              </Link>
+            </div>
 
-    {open && (
-      <div className="md:hidden mt-2 bg-white rounded-2xl shadow-2xl p-3">
-        {menu.map((m: any) => (
-          <Link key={String(m.href) + String(m.label)} to={hrefOf(m.href)} onClick={() => setOpen(false)} className="block px-4 py-3 rounded-xl font-bold text-[15px] hover:bg-[#F8F4EF]">{m.label}</Link>
-        ))}
-      </div>
-    )}
-  </div>
-</header>
+            {/* BOTÃO MOBILE - abre os 3 botões também */}
+            <button
+              onClick={() => setOpen(!open)}
+              className="md:hidden w-11 h-11 rounded-full bg-black text-white text-xl leading-none shrink-0"
+              aria-label="Menu"
+            >
+              ⋯
+            </button>
+          </div>
 
+          {/* MENU MOBILE - com os 3 botões em cima */}
+          {open && (
+            <div className="md:hidden mt-2 bg-white rounded-2xl shadow-2xl p-3">
+              {/* 3 BOTÕES PRIMEIRO NO MOBILE */}
+              <div className="grid grid-cols-1 gap-2 mb-3">
+                <Link to={`/${slug}/cardapio`} onClick={() => setOpen(false)} className="block text-center px-4 py-3 rounded-xl font-bold bg-white text-black border border-[#EDE6DF]">
+                  Cardápio Digital
+                </Link>
+                <Link to={`/${slug}/reservas`} onClick={() => setOpen(false)} className="block text-center px-4 py-3 rounded-xl font-bold text-white" style={{ background: primary }}>
+                  Reservar Mesa
+                </Link>
+                <Link to={`/${slug}/takeaway`} onClick={() => setOpen(false)} className="block text-center px-4 py-3 rounded-xl font-bold text-white" style={{ background: "#1A1412" }}>
+                  Takeaway
+                </Link>
+              </div>
+              {menu.map((m: any) => (
+                <Link
+                  key={String(m.href) + String(m.label)}
+                  to={hrefOf(m.href)}
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-3 rounded-xl font-bold text-[15px] hover:bg-[#F8F4EF]"
+                >
+                  {m.label}
+                </Link>
+              ))}
+              <Link
+                to={`/${slug}/contactos`}
+                onClick={() => setOpen(false)}
+                className="block mt-2 text-center px-4 py-3 rounded-xl text-white font-bold"
+                style={{ background: primary }}
+              >
+                Contactar
+              </Link>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* EM BAIXO FICA SÓ O WHATSAPP */}
       <FloatingActions phone={phone} primary={primary} />
 
       <Outlet />
