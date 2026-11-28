@@ -1,187 +1,88 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { apiFetch } from "../lib/api";
 
-// Dados hardcoded para garantir que abre instantaneamente
-const ALIVE_DATA = {
-  name: "Alive Restaurante & Lounge",
-  phone: "244923000000",
-  primaryColor: "#6B1020",
-  secondaryColor: "#9A7634",
-};
+type Dish = { id: string; name: string; price: number };
 
 export default function ClientPage() {
   const { slug = "" } = useParams();
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    date: "",
-    time: "",
-    guests: "2",
-    notes: "",
-  });
+  const [business, setBusiness] = useState<any>(null);
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [form, setForm] = useState({ nome: "", telefone: "", data: "", hora: "19:00", pessoas: "2", pratoId: "", obs: "" });
+  const [sent, setSent] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const primary = ALIVE_DATA.primaryColor;
-  const secondary = ALIVE_DATA.secondaryColor;
-  const waLink = `https://wa.me/${ALIVE_DATA.phone}`;
+  useEffect(() => {
+    if (!slug) return;
+    apiFetch<any>("/api/v1/business/info", { skipAuth: true, tenant: slug }).then(setBusiness).catch(() => {});
+    apiFetch<Dish[]>("/api/v1/products", { skipAuth: true, tenant: slug }).then((p) => setDishes(Array.isArray(p) ? p : [])).catch(() => {});
+  }, [slug]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const primary = business?.primaryColor || "#6B1020";
+  const waNumber = String(business?.phone || "244923000000").replace(/\D/g, "");
+  const prato = dishes.find((d) => d.id === form.pratoId);
+  const setF = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const isValid = form.nome.trim().length >= 2 && form.telefone.trim().length >= 9 && form.data && form.hora;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Cria a mensagem formatada para o WhatsApp
-    const text = `Olá, *${ALIVE_DATA.name}*!%0A%0A` +
-                 `Gostaria de fazer uma reserva:%0A%0A` +
-                 `*Nome:* ${formData.name}%0A` +
-                 `*Telefone:* ${formData.phone}%0A` +
-                 `*Data:* ${formData.date}%0A` +
-                 `*Hora:* ${formData.time}%0A` +
-                 `*Pessoas:* ${formData.guests}%0A` +
-                 (formData.notes ? `*Observações:* ${formData.notes}` : "");
-                 
-    // Abre o WhatsApp com a mensagem
-    window.open(`${waLink}?text=${text}`, "_blank");
-  };
+  const msg = `Olá ${business?.name || ""}! Quero reservar mesa:\n\n👤 ${form.nome}\n📞 ${form.telefone}\n📅 ${form.data} às ${form.hora}\n👥 ${form.pessoas} pessoa(s)\n🍽️ Prato: ${prato ? `${prato.name} - ${Number(prato.price).toLocaleString()} Kz` : "Sem prato escolhido"}\n📝 ${form.obs || "-"}`;
+  const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`;
+
+  async function saveAndWhatsApp() {
+    setSaving(true);
+    try {
+      const start = new Date(`${form.data}T${form.hora}:00`).toISOString();
+      await apiFetch("/api/v1/reservations", {
+        method: "POST", skipAuth: true, tenant: slug,
+        body: JSON.stringify({ clientName: form.nome, clientPhone: form.telefone, startTime: start, notes: `[RESERVA MESA] ${form.pessoas} pessoa(s) | Prato: ${prato ? prato.name : "Sem prato"} | Obs: ${form.obs || "-"}` }),
+      }).catch(() => null);
+    } finally { setSaving(false); window.open(waLink, "_blank"); setSent(true); }
+  }
+
+  const inputStyle: React.CSSProperties = { width: "100%", padding: "12px 14px", borderRadius: 12, border: "1px solid #E5DDD6", fontSize: 15, background: "#fff" };
 
   return (
-    <main className="min-h-screen flex flex-col md:flex-row bg-[#F8F4EF]">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:wght@400;500;600;700&display=swap');
-        .font-serif { font-family: 'Playfair Display', serif; }
-        .font-sans { font-family: 'DM Sans', sans-serif; }
-      `}</style>
-
-      {/* LADO ESQUERDO: IMAGEM E BRANDING */}
+    <main className="min-h-screen flex flex-col md:flex-row bg-[#F8F4EF] pb-24">
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap'); .font-serif{font-family:'Playfair Display',serif} .font-sans{font-family:'DM Sans',sans-serif}`}</style>
       <div className="relative w-full md:w-1/2 h-[40vh] md:h-screen flex flex-col justify-between p-8 md:p-16 overflow-hidden">
-        <img 
-          src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80" 
-          alt="Restaurante" 
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80" alt="Restaurante" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-black/60" />
-        
-        <div className="relative z-10">
-          <Link to={`/${slug}`} className="font-serif text-2xl font-bold text-white hover:opacity-80 transition">
-            {ALIVE_DATA.name}
-          </Link>
-        </div>
-
-        <div className="relative z-10">
-          <h1 className="font-serif text-4xl md:text-6xl text-white leading-tight mb-4">
-            Reserve o seu <br/>momento.
-          </h1>
-          <p className="text-white/80 text-lg max-w-md">
-            Garanta o seu lugar e prepare-se para uma experiência gastronómica inesquecível.
-          </p>
-        </div>
+        <div className="relative z-10"><Link to={`/${slug}`} className="font-serif text-2xl font-bold text-white">{business?.name || "Alive"}</Link></div>
+        <div className="relative z-10"><h1 className="font-serif text-4xl md:text-6xl text-white leading-tight mb-4">Reserve o seu<br />momento.</h1><p className="text-white/80 text-lg max-w-md">Garanta o seu lugar.</p></div>
       </div>
-
-      {/* LADO DIREITO: FORMULÁRIO */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-8 md:p-16">
         <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h2 className="font-serif text-3xl font-bold text-[#221A18] mb-2">Faça a sua Reserva</h2>
-            <p className="text-gray-500 text-sm">Preencha os dados abaixo e envie-nos uma mensagem via WhatsApp.</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Nome Completo *</label>
-              <input 
-                type="text" 
-                name="name" 
-                required
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition"
-                placeholder="O seu nome" 
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Telefone *</label>
-              <input 
-                type="tel" 
-                name="phone" 
-                required
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition"
-                placeholder="+244 9XX XXX XXX" 
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Data *</label>
-                <input 
-                  type="date" 
-                  name="date" 
-                  required
-                  value={formData.date}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition"
-                />
+          <h2 className="font-serif text-3xl font-bold mb-2">Faça a sua Reserva</h2>
+          <p className="text-gray-500 text-sm mb-6">Preencha, guardamos para o restaurante e reencaminhamos no WhatsApp.</p>
+          {!sent ? (
+            <div className="space-y-4">
+              <input style={inputStyle} placeholder="Nome completo *" value={form.nome} onChange={(e) => setF("nome", e.target.value)} />
+              <input style={inputStyle} placeholder="Telefone / WhatsApp *" value={form.telefone} onChange={(e) => setF("telefone", e.target.value)} />
+              <div className="grid grid-cols-2 gap-3">
+                <input style={inputStyle} type="date" value={form.data} onChange={(e) => setF("data", e.target.value)} />
+                <input style={inputStyle} type="time" value={form.hora} onChange={(e) => setF("hora", e.target.value)} />
               </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Hora *</label>
-                <input 
-                  type="time" 
-                  name="time" 
-                  required
-                  value={formData.time}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition"
-                />
+              <select style={inputStyle} value={form.pessoas} onChange={(e) => setF("pessoas", e.target.value)}>{["1","2","3","4","5","6","7+"].map((n) => <option key={n} value={n}>{n} Pessoa(s)</option>)}</select>
+              {dishes.length > 0 && (
+                <div><label className="block text-sm font-bold mb-1">Escolher prato (do Cardápio Digital)</label>
+                  <select style={inputStyle} value={form.pratoId} onChange={(e) => setF("pratoId", e.target.value)}>
+                    <option value="">Sem prato / Só mesa</option>
+                    {dishes.map((d) => <option key={d.id} value={d.id}>{d.name} - {Number(d.price).toLocaleString()} Kz</option>)}
+                  </select></div>
+              )}
+              <textarea style={{ ...inputStyle, minHeight: 80 }} placeholder="Observações" value={form.obs} onChange={(e) => setF("obs", e.target.value)} />
+              <button onClick={() => { if (isValid) setSent(true); }} disabled={!isValid} className="w-full py-4 rounded-full text-white font-bold" style={{ background: isValid ? primary : "#ccc" }}>{isValid ? "Confirmar Reserva →" : "Preencha nome, telefone, data e hora"}</button>
+            </div>
+          ) : (
+            <div className="text-center">
+              <div className="text-6xl mb-3">✅</div><h2 className="font-serif text-2xl font-bold mb-3">Resumo da reserva</h2>
+              <div className="bg-white rounded-2xl p-5 text-left text-sm space-y-1 border">
+                <p>👤 {form.nome} • 📞 {form.telefone}</p><p>📅 {form.data} às {form.hora} • 👥 {form.pessoas}</p><p>🍽️ {prato ? prato.name : "Sem prato escolhido"}</p><p>📝 {form.obs || "-"}</p>
               </div>
+              <button onClick={saveAndWhatsApp} disabled={saving} className="block w-full mt-5 py-4 rounded-full text-white font-bold" style={{ background: "#25D366" }}>{saving ? "A guardar..." : "Guardar e reencaminhar no WhatsApp"}</button>
+              <button onClick={() => setSent(false)} className="mt-3 text-sm underline text-gray-500 font-bold">Editar reserva</button>
             </div>
-
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Número de Pessoas *</label>
-              <select 
-                name="guests" 
-                value={formData.guests}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition bg-white"
-              >
-                <option value="1">1 Pessoa</option>
-                <option value="2">2 Pessoas</option>
-                <option value="3">3 Pessoas</option>
-                <option value="4">4 Pessoas</option>
-                <option value="5">5 Pessoas</option>
-                <option value="6">6 Pessoas</option>
-                <option value="7+">Mais de 6 Pessoas</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Observações (Opcional)</label>
-              <textarea 
-                name="notes" 
-                rows={2}
-                value={formData.notes}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition resize-none"
-                placeholder="Alguma restrição alimentar ou pedido especial?" 
-              ></textarea>
-            </div>
-
-            <button 
-              type="submit" 
-              className="w-full py-4 rounded-xl font-bold uppercase tracking-widest text-white transition hover:-translate-y-1 shadow-lg mt-4"
-              style={{ background: primary }}
-            >
-              Confirmar via WhatsApp
-            </button>
-          </form>
-
-          <div className="mt-8 text-center">
-            <Link to={`/${slug}`} className="text-sm text-gray-500 hover:text-black transition">
-              ← Voltar ao site
-            </Link>
-          </div>
+          )}
+          <div className="mt-8 text-center"><Link to={`/${slug}`} className="text-sm text-gray-500">← Voltar ao site</Link></div>
         </div>
       </div>
     </main>

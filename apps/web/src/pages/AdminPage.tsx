@@ -6,23 +6,23 @@ import { prettyName, textOn } from "../lib/theme";
 
 type Service = { id: string; name: string; durationMin: number; price: number };
 type Reservation = { id: string; clientName: string; clientPhone: string; startTime: string; status: string; notes?: string | null; service: { name: string; durationMin?: number } };
-type Product = { id: string; name: string; description: string | null; price: number; stock: number; imageUrl: string | null };
+type Product = { id: string; name: string; description: string | null; price: number; stock: number; imageUrl: string | null; category?: string | null };
 type Tab = "reservations" | "services" | "store" | "settings" | "appearance" | "profile" | "security";
 type ResFilter = "pending" | "today" | "done" | "all" | "cancelled";
 
 const CORES = ["#16a34a", "#1A4D2E", "#1877F2", "#000000", "#DC2626", "#EA580C", "#DB2777", "#7C3AED", "#EAB308"];
-const EMPTY_PRODUCT = { name: "", description: "", price: "", stock: "10", imageUrl: "" };
+const EMPTY_PRODUCT = { name: "", description: "", price: "", stock: "10", imageUrl: "", category: "Pratos" };
+const CATEGORIAS = ["Pratos", "Grelhados", "Entradas", "Bebidas", "Sobremesas", "Pizzas", "Hambúrgueres", "Outros"];
 const TAB_LABELS: Record<Tab, string> = {
   reservations: "Reservas",
   services: "Serviços",
-  store: "Loja",
+  store: "Cardápio Digital",
   settings: "Horário",
   appearance: "Aparência",
   profile: "Perfil",
   security: "Segurança",
 };
 
-// A hora é guardada como o cliente a escolheu (em UTC), por isso mostramos em UTC
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString("pt-AO", { timeZone: "UTC", weekday: "short", day: "2-digit", month: "short", year: "numeric" });
 const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString("pt-AO", { timeZone: "UTC", hour: "2-digit", minute: "2-digit" });
@@ -65,6 +65,8 @@ export default function AdminPage() {
   const [securityData, setSecurityData] = useState({ currentPassword: "", newEmail: "", newPassword: "" });
   const [resFilter, setResFilter] = useState<ResFilter>("pending");
   const [resSearch, setResSearch] = useState("");
+  const [productSearch, setProductSearch] = useState("");
+  const [productCatFilter, setProductCatFilter] = useState("Todas");
 
   function showToast(message: string, type: "success" | "error") {
     setToast({ message, type });
@@ -248,6 +250,7 @@ export default function AdminPage() {
       price: String(p.price),
       stock: String(p.stock),
       imageUrl: p.imageUrl || "",
+      category: (p as any).category || "Pratos",
     });
     setImageFile(null);
     setImagePreview(p.imageUrl || null);
@@ -277,13 +280,15 @@ export default function AdminPage() {
         price: Number(productData.price),
         stock: Number(productData.stock),
         imageUrl: finalImageUrl || null,
+        // Categoria vai para o Cardápio. Se o backend ainda não tem este campo, ele ignora e o Cardápio usa "Pratos"
+        category: productData.category || "Pratos",
       };
       if (editingProductId) {
         await apiFetch(`/api/v1/products/${editingProductId}`, { method: "PATCH", body: JSON.stringify(payload), tenant: slug });
-        showToast("Produto atualizado!", "success");
+        showToast("Prato atualizado!", "success");
       } else {
         await apiFetch("/api/v1/products", { method: "POST", body: JSON.stringify(payload), tenant: slug });
-        showToast("Produto adicionado!", "success");
+        showToast("Prato adicionado!", "success");
       }
       cancelEditProduct();
       await loadData();
@@ -312,7 +317,6 @@ export default function AdminPage() {
     }
   }
 
-  // ---- Reservas: contadores e filtros ----
   const today = todayKey();
   const countToday = reservations.filter((r) => !isCancelled(r) && r.startTime.slice(0, 10) === today).length;
   const countPending = reservations.filter(isPending).length;
@@ -331,7 +335,7 @@ export default function AdminPage() {
     .filter((r) => {
       const q = resSearch.trim().toLowerCase();
       if (!q) return true;
-      return r.clientName.toLowerCase().includes(q) || r.clientPhone.includes(q) || r.service.name.toLowerCase().includes(q);
+      return r.clientName.toLowerCase().includes(q) || r.clientPhone.includes(q) || r.service?.name?.toLowerCase().includes(q) || (r.notes || "").toLowerCase().includes(q);
     })
     .sort((a, b) => (resFilter === "pending" || resFilter === "today" ? a.startTime.localeCompare(b.startTime) : b.startTime.localeCompare(a.startTime)));
 
@@ -342,6 +346,14 @@ export default function AdminPage() {
     { id: "all", label: "Todas", count: reservations.length },
     { id: "cancelled", label: "Canceladas", count: countCancelled },
   ];
+
+  const visibleProducts = products
+    .filter((p) => productCatFilter === "Todas" || ((p as any).category || "Pratos") === productCatFilter)
+    .filter((p) => {
+      const q = productSearch.trim().toLowerCase();
+      if (!q) return true;
+      return p.name.toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q);
+    });
 
   const primary = businessData.primaryColor;
   const displayName = prettyName(businessData.name);
@@ -397,11 +409,11 @@ export default function AdminPage() {
           )}
           <div className="min-w-0">
             <h1 className="text-xl md:text-2xl font-bold text-zinc-900 leading-tight break-words" style={{ overflowWrap: "anywhere" }}>{displayName}</h1>
-            <p className="text-zinc-500 text-sm">Gestão de Reservas e Loja.</p>
+            <p className="text-zinc-500 text-sm">Gestão de Reservas e Cardápio Digital.</p>
           </div>
         </div>
         <div className="flex gap-3 w-full md:w-auto">
-          <Link to={`/${slug}/loja`} target="_blank" className="flex-1 md:flex-none text-center text-sm font-semibold border-2 border-zinc-200 text-zinc-700 px-5 py-2.5 rounded-xl bg-white">Ver Loja</Link>
+          <Link to={`/${slug}/cardapio`} target="_blank" className="flex-1 md:flex-none text-center text-sm font-semibold border-2 border-zinc-200 text-zinc-700 px-5 py-2.5 rounded-xl bg-white">Ver Cardápio</Link>
           <button onClick={() => { setAccessToken(null); setIsAuthenticated(false); }} className="flex-1 md:flex-none text-sm font-semibold bg-white border-2 border-red-100 text-red-600 px-5 py-2.5 rounded-xl">Sair</button>
         </div>
       </header>
@@ -448,7 +460,7 @@ export default function AdminPage() {
               <input
                 value={resSearch}
                 onChange={(e) => setResSearch(e.target.value)}
-                placeholder="Pesquisar cliente, telefone ou serviço..."
+                placeholder="Pesquisar cliente, telefone, prato..."
                 className="w-full md:w-72 border rounded-full px-4 py-2 text-sm bg-white"
               />
             </div>
@@ -460,6 +472,8 @@ export default function AdminPage() {
                 {visibleReservations.map((r) => {
                   const cancelled = isCancelled(r);
                   const done = isDone(r);
+                  const isTakeaway = (r.notes || "").includes("[TAKEAWAY]");
+                  const isMesa = (r.notes || "").includes("[RESERVA MESA]");
                   return (
                     <div key={r.id} className={`bg-white rounded-2xl border shadow-sm p-4 flex gap-4 items-center ${cancelled ? "opacity-60" : ""}`}>
                       <div className="w-16 shrink-0 rounded-xl text-center py-2" style={{ backgroundColor: cancelled ? "#A1A1AA" : done ? "#059669" : primary, color: cancelled ? "#FFFFFF" : done ? "#FFFFFF" : textOn(primary) }}>
@@ -473,9 +487,11 @@ export default function AdminPage() {
                           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${cancelled ? "bg-zinc-100 text-zinc-500" : done ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
                             {cancelled ? "Cancelada" : done ? "Feita" : "Pendente"}
                           </span>
+                          {isTakeaway && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700">🛍️ TAKEAWAY</span>}
+                          {isMesa && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">🍽️ RESERVA MESA</span>}
                         </div>
                         <p className="text-sm text-zinc-600 break-words">
-                          {r.service.name} · <span className="font-semibold">{fmtTime(r.startTime)}</span>
+                          {r.service?.name || "Pedido"} · <span className="font-semibold">{fmtTime(r.startTime)}</span>
                         </p>
                         <p className="text-xs text-zinc-400">{fmtDate(r.startTime)} · {r.clientPhone}</p>
                         {r.notes && <p className="text-xs text-zinc-500 mt-1 break-words">📝 {r.notes}</p>}
@@ -484,18 +500,12 @@ export default function AdminPage() {
                       <div className="flex flex-col gap-2 shrink-0">
                         {isPending(r) && (
                           <>
-                            <button onClick={() => setResStatus(r.id, "DONE")} className="text-xs font-semibold text-white bg-emerald-600 px-3 py-2 rounded-full">
-                              ✓ Feita
-                            </button>
-                            <button onClick={() => setDeleteModal({ type: "reservation", id: r.id })} className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-2 rounded-full">
-                              Cancelar
-                            </button>
+                            <button onClick={() => setResStatus(r.id, "DONE")} className="text-xs font-semibold text-white bg-emerald-600 px-3 py-2 rounded-full">✓ Feita</button>
+                            <button onClick={() => setDeleteModal({ type: "reservation", id: r.id })} className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-2 rounded-full">Cancelar</button>
                           </>
                         )}
                         {done && (
-                          <button onClick={() => setResStatus(r.id, "PENDING")} className="text-xs font-semibold text-zinc-700 bg-zinc-100 px-3 py-2 rounded-full">
-                            Voltar a pendente
-                          </button>
+                          <button onClick={() => setResStatus(r.id, "PENDING")} className="text-xs font-semibold text-zinc-700 bg-zinc-100 px-3 py-2 rounded-full">Voltar a pendente</button>
                         )}
                       </div>
                     </div>
@@ -534,19 +544,27 @@ export default function AdminPage() {
         {activeTab === "store" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-2xl border h-fit shadow-sm">
-              <h2 className="font-bold text-lg mb-4">{editingProductId ? "Editar Produto" : "Novo Produto"}</h2>
+              <h2 className="font-bold text-lg mb-4">{editingProductId ? "Editar Prato" : "Novo Prato"}</h2>
               <form onSubmit={handleSaveProduct} className="space-y-4">
-                <input required value={productData.name} onChange={(e) => setProductData({ ...productData, name: e.target.value })} placeholder="Nome" className="w-full border rounded-lg px-3 py-2 text-sm" />
-                <textarea rows={3} value={productData.description} onChange={(e) => setProductData({ ...productData, description: e.target.value })} placeholder="Descrição (opcional)" className="w-full border rounded-lg px-3 py-2 text-sm resize-none" />
-                <input type="number" required value={productData.price} onChange={(e) => setProductData({ ...productData, price: e.target.value })} placeholder="Preço (Kz)" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                <input required value={productData.name} onChange={(e) => setProductData({ ...productData, name: e.target.value })} placeholder="Nome do prato *" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                <textarea rows={3} value={productData.description} onChange={(e) => setProductData({ ...productData, description: e.target.value })} placeholder="Descrição (ex: Frango grelhado, funge, feijão...)" className="w-full border rounded-lg px-3 py-2 text-sm resize-none" />
+                <div>
+                  <label className="block text-sm font-medium mb-1">Categoria</label>
+                  <select value={productData.category} onChange={(e) => setProductData({ ...productData, category: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm bg-white">
+                    {CATEGORIAS.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <p className="text-xs text-zinc-500 mt-1">É isto que aparece como filtro no Cardápio Digital.</p>
+                </div>
+                <input type="number" required value={productData.price} onChange={(e) => setProductData({ ...productData, price: e.target.value })} placeholder="Preço (Kz) *" className="w-full border rounded-lg px-3 py-2 text-sm" />
                 <input type="number" required min={0} value={productData.stock} onChange={(e) => setProductData({ ...productData, stock: e.target.value })} placeholder="Stock" className="w-full border rounded-lg px-3 py-2 text-sm" />
                 <div>
+                  <label className="block text-sm font-medium mb-1">Foto do prato</label>
                   <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-sm" />
-                  {imagePreview && <img src={imagePreview} className="mt-3 w-full h-32 object-cover rounded-lg" />}
+                  {imagePreview && <img src={imagePreview} className="mt-3 w-full h-40 object-cover rounded-lg" />}
                   {editingProductId && <p className="text-xs text-zinc-500 mt-1">Se não escolheres foto nova, fica a atual.</p>}
                 </div>
                 <button type="submit" disabled={loading || uploading} className="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-semibold">
-                  {uploading ? "A enviar..." : editingProductId ? "Guardar alterações" : "Adicionar"}
+                  {uploading ? "A enviar..." : editingProductId ? "Guardar alterações" : "Adicionar prato"}
                 </button>
                 {editingProductId && (
                   <button type="button" onClick={cancelEditProduct} className="w-full bg-zinc-100 text-zinc-700 py-2.5 rounded-lg font-semibold">Cancelar edição</button>
@@ -554,18 +572,26 @@ export default function AdminPage() {
               </form>
             </div>
             <div className="md:col-span-2 bg-white rounded-2xl border p-6 shadow-sm">
-              <h2 className="font-bold text-lg mb-4">Produtos na Loja</h2>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+                <h2 className="font-bold text-lg">Pratos no Cardápio ({visibleProducts.length})</h2>
+                <input value={productSearch} onChange={(e) => setProductSearch(e.target.value)} placeholder="Pesquisar prato..." className="border rounded-full px-4 py-2 text-sm w-full md:w-56" />
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-3">
+                {["Todas", ...CATEGORIAS].map((c) => (
+                  <button key={c} onClick={() => setProductCatFilter(c)} className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold border ${productCatFilter === c ? "bg-zinc-900 text-white border-zinc-900" : "bg-white text-zinc-600 border-zinc-200"}`}>{c}</button>
+                ))}
+              </div>
               <ul className="space-y-3">
-                {products.length === 0 ? (
-                  <li className="text-zinc-500 text-sm">Nenhum produto ainda.</li>
+                {visibleProducts.length === 0 ? (
+                  <li className="text-zinc-500 text-sm py-6 text-center">Nenhum prato ainda. Adiciona o primeiro à esquerda.</li>
                 ) : (
-                  products.map((p) => (
+                  visibleProducts.map((p) => (
                     <li key={p.id} className="flex justify-between items-center p-3 border rounded-xl bg-zinc-50 gap-2">
                       <div className="flex items-center gap-3 min-w-0">
-                        {p.imageUrl ? <img src={p.imageUrl} className="w-12 h-12 rounded-md object-cover shrink-0" /> : <div className="w-12 h-12 bg-zinc-200 rounded-md shrink-0" />}
+                        {p.imageUrl ? <img src={p.imageUrl} className="w-14 h-14 rounded-lg object-cover shrink-0" /> : <div className="w-14 h-14 bg-zinc-200 rounded-lg shrink-0 grid place-items-center text-xl">🍽️</div>}
                         <div className="min-w-0">
                           <p className="text-sm font-medium break-words">{p.name}</p>
-                          <p className="text-xs text-zinc-500">{Number(p.price).toLocaleString("pt-AO")} Kz · Stock: {p.stock}</p>
+                          <p className="text-xs text-zinc-500">{Number(p.price).toLocaleString("pt-AO")} Kz · Stock: {p.stock} · {(p as any).category || "Pratos"}</p>
                           {p.description && <p className="text-xs text-zinc-400 truncate">{p.description}</p>}
                         </div>
                       </div>
@@ -607,7 +633,6 @@ export default function AdminPage() {
               <div>
                 <label className="block text-sm font-medium mb-1">Nome</label>
                 <input type="text" required value={businessData.name} onChange={(e) => setBusinessData({ ...businessData, name: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
-                <p className="text-xs text-zinc-500 mt-1">Dica: escreve o nome com espaços (ex: Sara La Belle) e não com "_".</p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Morada</label>
@@ -634,7 +659,6 @@ export default function AdminPage() {
                   <input type="color" value={businessData.primaryColor} onChange={(e) => setBusinessData({ ...businessData, primaryColor: e.target.value })} className="w-12 h-12 rounded cursor-pointer border-0 p-0" />
                   <span className="text-sm font-mono uppercase">{businessData.primaryColor}</span>
                 </div>
-                <p className="text-xs text-zinc-500 mt-1">Para mais cores e letras, usa a aba Aparência.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">WhatsApp de Suporte</label>

@@ -11,18 +11,17 @@ export const BUSINESS_TYPES: Record<BusinessTypeKey, {
   showGalleryLabel: string;
 }> = {
   restaurante: {
-    label: "Restaurante",
-    menu: [
-      { label: "Início", href: "" },
-      { label: "Sobre", href: "sobre" },
-      { label: "Menu", href: "servicos" },
-      { label: "Galeria", href: "galeria" },
-      { label: "Eventos", href: "eventos" },
-      { label: "Blog", href: "blog" },
-      { label: "Contactos", href: "contactos" },
-      { label: "Takeaway", href: "takeaway" },
-      { label: "Reservas", href: "reservas" },
-    ],
+  label: "Restaurante",
+  menu: [
+    { label: "Início", href: "" },
+    { label: "Sobre", href: "sobre" },
+    { label: "Cardápio Digital", href: "cardapio" },
+    { label: "Galeria", href: "galeria" },
+    { label: "Eventos", href: "eventos" },
+    { label: "Blog", href: "blog" },
+    { label: "Contactos", href: "contactos" },
+  ],
+  // resto igual...
     bookingTitle: "Reserve a sua mesa",
     bookingFields: [
       { key: "nome", label: "Nome completo", type: "text", required: true, placeholder: "Ex: Maria dos Santos" },

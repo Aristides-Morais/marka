@@ -22,6 +22,7 @@ import BlogPostPage from "./pages/site/BlogPostPage";
 import GalleryPage from "./pages/site/GalleryPage";
 import EventsPage from "./pages/site/EventsPage";
 import TakeawayPage from "./pages/TakeawayPage";
+import MenuPage from "./pages/MenuPage";
 
 export default function App() {
   return (
@@ -51,6 +52,11 @@ export default function App() {
           <Route path="/:slug/takeaway" element={<TakeawayPage />} />
           <Route path="/:slug/loja" element={<StorePage />} />
           <Route path="/:slug/reservas" element={<ClientPage />} />
+
+          {/* CARDÁPIO DIGITAL - NOVO */}
+          <Route path="/:slug/cardapio" element={<MenuPage />} />
+          {/* Atalho antigo /servicos também abre o Cardápio, para não dar página branca */}
+          <Route path="/:slug/menu" element={<MenuPage />} />
         </Route>
 
         <Route path="/:slug/admin" element={<AdminPage />} />
