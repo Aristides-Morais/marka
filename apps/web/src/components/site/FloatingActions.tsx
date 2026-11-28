@@ -1,5 +1,4 @@
-import { Link, useParams } from "react-router-dom";
-import type { CSSProperties } from "react";
+import { useParams } from "react-router-dom";
 
 export function WhatsAppIcon({ size = 28 }: { size?: number }) {
   return (
@@ -9,27 +8,23 @@ export function WhatsAppIcon({ size = 28 }: { size?: number }) {
   );
 }
 
-export default function FloatingActions({ phone, primary }: { phone: string; primary: string }) {
-  const { slug = "" } = useParams();
+export default function FloatingActions({ phone }: { phone: string; primary?: string }) {
   const waNumber = String(phone || "244923000000").replace(/\D/g, "");
   const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent("Olá! Vim do site.")}`;
-
-  const btn: CSSProperties = {
-    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-    height: 56, padding: "0 18px", borderRadius: 999, fontSize: 13, fontWeight: 700,
-    letterSpacing: ".06em", textTransform: "uppercase", textDecoration: "none",
-    boxShadow: "0 10px 24px rgba(0,0,0,.18)", whiteSpace: "nowrap",
-  };
-
   return (
-    <div style={{ position: "fixed", right: 16, bottom: 16, zIndex: 90, display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
-      <Link to={`/${slug}/cardapio`} style={{ ...btn, background: "#fff", color: "#1a1412", border: "1px solid #EDE6DF" }}>Cardápio Digital</Link>
-      <Link to={`/${slug}/reservas`} style={{ ...btn, background: primary, color: "#fff" }}>Reservar Mesa</Link>
-      <Link to={`/${slug}/takeaway`} style={{ ...btn, background: "#1a1412", color: "#fff" }}>Takeaway</Link>
-      <a href={waLink} target="_blank" rel="noreferrer" aria-label="WhatsApp"
-        style={{ width: 56, height: 56, borderRadius: 999, background: "#25D366", display: "grid", placeItems: "center", boxShadow: "0 10px 24px rgba(0,0,0,.25)" }}>
-        <WhatsAppIcon />
-      </a>
-    </div>
+    <a
+      href={waLink}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="WhatsApp"
+      style={{
+        position: "fixed", right: 16, bottom: 16, zIndex: 90,
+        width: 56, height: 56, borderRadius: 999, background: "#25D366",
+        display: "grid", placeItems: "center",
+        boxShadow: "0 10px 24px rgba(0,0,0,.25)",
+      }}
+    >
+      <WhatsAppIcon />
+    </a>
   );
 }

@@ -25,12 +25,15 @@ export default function MenuPage() {
     if (!slug) return;
     Promise.all([
       apiFetch<any>("/api/v1/business/info", { skipAuth: true, tenant: slug }).catch(() => ({})),
-      apiFetch<Dish[]>("/api/v1/products", { skipAuth: true, tenant: slug }).catch(() => []),
+      apiFetch<any>("/api/v1/products", { skipAuth: true, tenant: slug }).catch(() => []),
     ])
       .then(([b, p]) => {
-        setBusiness(b || {});
-        setDishes(Array.isArray(p) ? p : []);
-      })
+  setBusiness(b || {});
+  // Backend pode devolver array direto, ou { products: [] }, ou { data: [] }
+  const list = Array.isArray(p) ? p : p?.products || p?.data || p?.items || [];
+  console.log("CARDAPIO - produtos recebidos:", list);
+  setDishes(Array.isArray(list) ? list : []);
+})
       .finally(() => setLoading(false));
   }, [slug]);
 

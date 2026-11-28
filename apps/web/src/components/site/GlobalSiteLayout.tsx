@@ -74,64 +74,40 @@ export default function GlobalSiteLayout() {
       <SiteAnimationRuntime settings={settings} />
 
       <header className="fixed top-0 left-0 right-0 z-[90]">
-        <div className="mx-3 md:mx-6 mt-3">
-          <div className="bg-white/95 backdrop-blur-md shadow-xl rounded-2xl px-4 py-3 flex items-center justify-between border border-black/5">
-            <Link to={`/${slug}`} className="font-serif font-bold text-xl" style={{ color: primary }}>
-              {businessName}
-            </Link>
+  <div className="mx-3 md:mx-6 mt-3">
+    <div className="bg-white/95 backdrop-blur-md shadow-xl rounded-2xl px-3 py-2.5 flex items-center justify-between border border-black/5 gap-2">
+      <Link to={`/${slug}`} className="font-serif font-bold text-lg whitespace-nowrap shrink-0" style={{ color: primary }}>
+        {businessName}
+      </Link>
 
-            <nav className="hidden md:flex items-center gap-1 bg-[#F8F4EF] rounded-full p-1">
-              {menu.map((m: any) => (
-                <Link
-                  key={String(m.href) + String(m.label)}
-                  to={hrefOf(m.href)}
-                  className="px-3 py-2 rounded-full text-[13px] font-bold hover:bg-white hover:shadow transition"
-                >
-                  {m.label}
-                </Link>
-              ))}
-              <Link
-                to={`/${slug}/contactos`}
-                className="ml-1 px-4 py-2 rounded-full text-white text-[13px] font-bold"
-                style={{ background: primary }}
-              >
-                Contactar
-              </Link>
-            </nav>
+      {/* DESKTOP - Os 3 botões em cima, pintados igual */}
+      <nav className="hidden md:flex items-center gap-2">
+        <Link to={`/${slug}/cardapio`} className="px-4 py-2.5 rounded-full text-[13px] font-bold text-white shadow" style={{ background: primary }}>Cardápio Digital</Link>
+        <Link to={`/${slug}/reservas`} className="px-4 py-2.5 rounded-full text-[13px] font-bold text-white shadow" style={{ background: "#1a1412" }}>Reservar Mesa</Link>
+        <Link to={`/${slug}/takeaway`} className="px-4 py-2.5 rounded-full text-[13px] font-bold text-black shadow" style={{ background: "#E8C87A" }}>Takeaway</Link>
+        <Link to={`/${slug}/contactos`} className="px-4 py-2.5 rounded-full text-[13px] font-bold border">Contactar</Link>
+      </nav>
 
-            <button
-              onClick={() => setOpen(!open)}
-              className="md:hidden w-11 h-11 rounded-full bg-black text-white text-xl leading-none"
-              aria-label="Menu"
-            >
-              ⋯
-            </button>
-          </div>
+      {/* MOBILE - Os 3 botões em cima, por baixo do nome, com scroll */}
+      <button onClick={() => setOpen(!open)} className="md:hidden w-10 h-10 rounded-full bg-black text-white text-lg leading-none shrink-0" aria-label="Menu">⋯</button>
+    </div>
 
-          {open && (
-            <div className="md:hidden mt-2 bg-white rounded-2xl shadow-2xl p-3">
-              {menu.map((m: any) => (
-                <Link
-                  key={String(m.href) + String(m.label)}
-                  to={hrefOf(m.href)}
-                  onClick={() => setOpen(false)}
-                  className="block px-4 py-3 rounded-xl font-bold text-[15px] hover:bg-[#F8F4EF]"
-                >
-                  {m.label}
-                </Link>
-              ))}
-              <Link
-                to={`/${slug}/contactos`}
-                onClick={() => setOpen(false)}
-                className="block mt-2 text-center px-4 py-3 rounded-xl text-white font-bold"
-                style={{ background: primary }}
-              >
-                Contactar
-              </Link>
-            </div>
-          )}
-        </div>
-      </header>
+    {/* BARRA MOBILE - Sempre visível, com os 3 botões */}
+    <div className="md:hidden mt-2 flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
+      <Link to={`/${slug}/cardapio`} className="whitespace-nowrap px-4 py-2.5 rounded-full text-[12px] font-bold text-white shadow" style={{ background: primary }}>Cardápio Digital</Link>
+      <Link to={`/${slug}/reservas`} className="whitespace-nowrap px-4 py-2.5 rounded-full text-[12px] font-bold text-white shadow" style={{ background: "#1a1412" }}>Reservar Mesa</Link>
+      <Link to={`/${slug}/takeaway`} className="whitespace-nowrap px-4 py-2.5 rounded-full text-[12px] font-bold text-black shadow" style={{ background: "#E8C87A" }}>Takeaway</Link>
+    </div>
+
+    {open && (
+      <div className="md:hidden mt-2 bg-white rounded-2xl shadow-2xl p-3">
+        {menu.map((m: any) => (
+          <Link key={String(m.href) + String(m.label)} to={hrefOf(m.href)} onClick={() => setOpen(false)} className="block px-4 py-3 rounded-xl font-bold text-[15px] hover:bg-[#F8F4EF]">{m.label}</Link>
+        ))}
+      </div>
+    )}
+  </div>
+</header>
 
       <FloatingActions phone={phone} primary={primary} />
 
