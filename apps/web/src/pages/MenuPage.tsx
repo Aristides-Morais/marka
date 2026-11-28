@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
-import FloatingActions from "../components/site/FloatingActions";
 
 type Dish = {
   id: string;
@@ -28,16 +27,15 @@ export default function MenuPage() {
       apiFetch<any>("/api/v1/products", { skipAuth: true, tenant: slug }).catch(() => []),
     ])
       .then(([b, p]) => {
-  setBusiness(b || {});
-  // Backend pode devolver array direto, ou { products: [] }, ou { data: [] }
-  const list = Array.isArray(p) ? p : p?.products || p?.data || p?.items || [];
-  console.log("CARDAPIO - produtos recebidos:", list);
-  setDishes(Array.isArray(list) ? list : []);
-})
+        setBusiness(b || {});
+        const list = Array.isArray(p) ? p : p?.products || p?.data || [];
+        setDishes(Array.isArray(list) ? list : []);
+      })
       .finally(() => setLoading(false));
   }, [slug]);
 
-  const primary = business?.primaryColor || "#C67C2E";
+  // CORES QUE ESTAVAM EM BAIXO
+  const primary = business?.primaryColor || "#C67C2E"; // Reservar Mesa
   const businessName = business?.name || "Restaurante";
   const waNumber = String(business?.phone || business?.whatsapp || "244923000000").replace(/\D/g, "");
 
@@ -61,7 +59,7 @@ export default function MenuPage() {
     <main className="min-h-screen bg-[#0A0A0A] text-white font-sans pb-32">
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap'); .font-serif{font-family:'Playfair Display',serif} .font-sans{font-family:'DM Sans',sans-serif}`}</style>
 
-      {/* TOPO - Igual à foto: nome no centro */}
+      {/* TOPO */}
       <section className="pt-28 px-5 pb-4 max-w-md mx-auto md:max-w-5xl">
         <div className="flex items-center justify-between">
           <Link to={`/${slug}`} className="text-white/80 text-xl">‹</Link>
@@ -72,7 +70,7 @@ export default function MenuPage() {
           <Link to={`/${slug}/takeaway`} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-sm">🛍️</Link>
         </div>
 
-        {/* PESQUISA - Igual à foto */}
+        {/* PESQUISA */}
         <div className="mt-5 flex items-center gap-2 bg-[#1A1A1A] rounded-full px-4 py-3">
           <span className="text-white/50">🔍</span>
           <input
@@ -86,14 +84,14 @@ export default function MenuPage() {
 
         <h2 className="mt-6 font-serif text-xl font-bold">Online Menu:</h2>
 
-        {/* CATEGORIAS */}
+        {/* CATEGORIAS - SELECIONADA FICA COM A COR DO NEGÓCIO */}
         <div className="flex gap-2 overflow-x-auto pb-1 mt-3" style={{ scrollbarWidth: "none" }}>
           {categories.map((c) => (
             <button
               key={c}
               onClick={() => setCat(c)}
               className="whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold"
-              style={{ background: cat === c ? primary : "#1A1A1A", color: cat === c ? "#000" : "#fff" }}
+              style={{ background: cat === c ? primary : "#1A1A1A", color: cat === c ? "#fff" : "#fff" }}
             >
               {c}
             </button>
@@ -101,7 +99,7 @@ export default function MenuPage() {
         </div>
       </section>
 
-      {/* GRELHA 2 COLUNAS - Igual à foto, foto grande, nome em baixo */}
+      {/* GRELHA */}
       <section className="px-5 max-w-md mx-auto md:max-w-5xl">
         {filtered.length === 0 ? (
           <div className="bg-[#141414] rounded-3xl p-10 text-center text-white/50">
@@ -125,6 +123,7 @@ export default function MenuPage() {
                     <div className="w-full h-full bg-[#1F1F1F] grid place-items-center font-serif text-4xl" style={{ color: primary }}>{d.name.charAt(0)}</div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  {/* PREÇO COM A COR DO NEGÓCIO */}
                   <span className="absolute top-2 right-2 px-2.5 py-1 rounded-full text-[11px] font-bold bg-black/70 backdrop-blur" style={{ color: primary }}>
                     {Number(d.price).toLocaleString()} Kz
                   </span>
@@ -138,14 +137,22 @@ export default function MenuPage() {
           </div>
         )}
 
-        {/* BOTÕES RÁPIDOS EM BAIXO DO CARDÁPIO */}
+        {/* BOTÕES EM BAIXO DO CARDÁPIO - COM AS CORES QUE ESTAVAM EM BAIXO */}
         <div className="grid grid-cols-2 gap-3 mt-8">
-          <Link to={`/${slug}/reservas`} className="py-4 rounded-full text-center font-bold text-sm text-white" style={{ background: primary }}>Reservar Mesa</Link>
-          <Link to={`/${slug}/takeaway`} className="py-4 rounded-full text-center font-bold text-sm bg-white text-black">Takeaway</Link>
+          <Link to={`/${slug}/reservas`} className="py-4 rounded-full text-center font-bold text-sm text-white shadow-xl" style={{ background: primary }}>
+            Reservar Mesa
+          </Link>
+          <Link to={`/${slug}/takeaway`} className="py-4 rounded-full text-center font-bold text-sm text-white border border-white/20" style={{ background: "#1A1412" }}>
+            Takeaway
+          </Link>
         </div>
+
+        <Link to={`/${slug}`} className="block mt-3 py-4 rounded-full text-center font-bold text-sm bg-white text-black">
+          Cardápio Digital
+        </Link>
       </section>
 
-      {/* MODAL DO PRATO - Ao clicar, abre detalhe igual à foto mas grande */}
+      {/* MODAL DO PRATO */}
       {selected && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6" onClick={() => setSelected(null)}>
           <div className="w-full max-w-md bg-[#141414] rounded-t-[28px] md:rounded-[28px] overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -164,6 +171,8 @@ export default function MenuPage() {
                 <span className="text-lg font-bold whitespace-nowrap" style={{ color: primary }}>{Number(selected.price).toLocaleString()} Kz</span>
               </div>
               <p className="text-white/60 text-sm mt-2 leading-relaxed">{selected.description || "Especial da casa, preparado na hora com ingredientes frescos."}</p>
+
+              {/* NO MODAL TAMBÉM COM AS CORES QUE ESTAVAM EM BAIXO */}
               <div className="grid grid-cols-2 gap-3 mt-6">
                 <a
                   href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Olá ${businessName}! Quero pedir: ${selected.name} - ${Number(selected.price).toLocaleString()} Kz`)}`}
@@ -174,16 +183,17 @@ export default function MenuPage() {
                 >
                   Pedir no WhatsApp
                 </a>
-                <Link to={`/${slug}/takeaway`} className="py-4 rounded-full text-center font-bold text-sm bg-white text-black">
-                  Adicionar no Takeaway
+                <Link to={`/${slug}/takeaway`} className="py-4 rounded-full text-center font-bold text-sm text-white border border-white/20" style={{ background: "#1A1412" }}>
+                  Takeaway
                 </Link>
               </div>
+              <Link to={`/${slug}/reservas`} className="block mt-3 py-4 rounded-full text-center font-bold text-sm text-white" style={{ background: primary }}>
+                Reservar Mesa
+              </Link>
             </div>
           </div>
         </div>
       )}
-
-      <FloatingActions phone={business?.phone} primary={primary} />
     </main>
   );
 }
